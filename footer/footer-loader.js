@@ -3,16 +3,16 @@ document.addEventListener("DOMContentLoaded", function () {
   if (!footerTarget) return;
 
   fetch("footer/footer.html")
-    .then(response => {
+    .then(function (response) {
       if (!response.ok) {
-        throw new Error("Footer file not found");
+        throw new Error("Could not load footer/footer.html");
       }
       return response.text();
     })
-    .then(data => {
-      footerTarget.innerHTML = data;
+    .then(function (html) {
+      footerTarget.innerHTML = html;
     })
-    .catch(error => {
-      console.error("Footer failed to load:", error);
+    .catch(function (error) {
+      console.error("Footer load failed:", error);
     });
 });
