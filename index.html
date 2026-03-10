@@ -79,82 +79,83 @@
     </div>
   </header>
 
-    <!-- MENU DRAWER -->
+  <aside class="mobile-menu" id="mobileMenu" aria-hidden="true">
+    <div class="mobile-menu-inner">
+      <div class="mobile-menu-header">
+        <a href="index.html" class="mobile-menu-logo" aria-label="Axiom Peptides home">
+          <img src="images/axiom-menu-logo.PNG" alt="Axiom Peptides logo" />
+        </a>
 
-<aside class="mobile-menu" id="mobileMenu" aria-hidden="true">
-  <div class="mobile-menu-inner">
-    <div class="mobile-menu-header">
-      <a href="index.html" class="mobile-menu-logo" aria-label="Axiom Peptides home">
-        <img src="images/axiom-menu-logo.PNG" alt="Axiom Peptides logo" />
-      </a>
-
-      <button class="drawer-close" id="menuClose" aria-label="Close menu" type="button">
-        &times;
-      </button>
-    </div>
-
-    <nav class="mobile-nav">
-      <a href="index.html" class="mobile-nav-link">
-        <span>Home</span>
-        <span class="mobile-nav-arrow">›</span>
-      </a>
-
-      <a href="catalog.html" class="mobile-nav-link">
-        <span>Products</span>
-        <span class="mobile-nav-arrow">›</span>
-      </a>
-
-      <a href="track-order.html" class="mobile-nav-link">
-        <span>Track Your Order</span>
-        <span class="mobile-nav-arrow">›</span>
-      </a>
-
-      <a href="affiliate-program.html" class="mobile-nav-link">
-        <span>Affiliate Program</span>
-        <span class="mobile-nav-arrow">›</span>
-      </a>
-
-      <a href="contact.html" class="mobile-nav-link">
-        <span>Contact Us</span>
-        <span class="mobile-nav-arrow">›</span>
-      </a>
-    </nav>
-
-    <div class="mobile-menu-divider"></div>
-
-    <div class="mobile-menu-secondary">
-      <a href="account.html" class="mobile-nav-link secondary-link">
-        <span>Account</span>
-        <span class="mobile-nav-arrow">›</span>
-      </a>
-    </div>
-  </div>
-</aside>
-
-  <!-- CART DRAWER -->
-  <aside class="cart-drawer" id="cartDrawer" aria-hidden="true">
-    <div class="cart-drawer-inner">
-      <div class="drawer-top">
-        <h2>Your Cart</h2>
-        <button class="drawer-close" id="cartClose" aria-label="Close cart" type="button">&times;</button>
+        <button class="drawer-close" id="menuClose" aria-label="Close menu" type="button">
+          &times;
+        </button>
       </div>
 
-      <div class="cart-items" id="cartItems">
-        <div class="cart-empty">
-          <p>Your cart is currently empty.</p>
-          <a href="catalog.html" class="btn cart-light-btn">Browse Products</a>
+      <nav class="mobile-nav">
+        <a href="index.html" class="mobile-nav-link">
+          <span>Home</span>
+          <span class="mobile-nav-arrow">›</span>
+        </a>
+
+        <a href="catalog.html" class="mobile-nav-link">
+          <span>Products</span>
+          <span class="mobile-nav-arrow">›</span>
+        </a>
+
+        <a href="track-order.html" class="mobile-nav-link">
+          <span>Track Your Order</span>
+          <span class="mobile-nav-arrow">›</span>
+        </a>
+
+        <a href="affiliate-program.html" class="mobile-nav-link">
+          <span>Affiliate Program</span>
+          <span class="mobile-nav-arrow">›</span>
+        </a>
+
+        <a href="contact.html" class="mobile-nav-link">
+          <span>Contact Us</span>
+          <span class="mobile-nav-arrow">›</span>
+        </a>
+      </nav>
+
+      <div class="mobile-menu-divider"></div>
+
+      <div class="mobile-menu-secondary">
+        <a href="account.html" class="mobile-nav-link secondary-link">
+          <span>Account</span>
+          <span class="mobile-nav-arrow">›</span>
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <aside class="cart-drawer" id="cartDrawer" aria-hidden="true">
+    <div class="cart-drawer-inner">
+      <div class="cart-drawer-header">
+        <h2>Your Cart</h2>
+        <button class="drawer-close" id="cartClose" aria-label="Close cart" type="button">
+          &times;
+        </button>
+      </div>
+
+      <div class="cart-body">
+        <div class="cart-empty-state" id="cartEmptyState">
+          <p class="cart-empty-text">Your cart is currently empty.</p>
+          <a href="catalog.html" class="cart-pill-btn cart-outline-btn">Browse Products</a>
         </div>
+
+        <div class="cart-items-list" id="cartItemsList" hidden></div>
       </div>
 
       <div class="cart-footer">
-        <div class="cart-subtotal">
+        <div class="cart-subtotal-row">
           <span>Subtotal</span>
           <strong id="cartSubtotal">$0.00</strong>
         </div>
 
-        <div class="cart-actions">
-          <a href="cart.html" class="btn cart-ghost-btn">View Cart</a>
-          <a href="checkout.html" class="btn cart-light-btn">Checkout</a>
+        <div class="cart-action-stack">
+          <a href="cart.html" class="cart-pill-btn cart-muted-btn">View Cart</a>
+          <a href="checkout.html" class="cart-pill-btn cart-outline-btn">Checkout</a>
         </div>
       </div>
     </div>
@@ -170,14 +171,10 @@
       <div class="hero-overlay"></div>
 
       <div class="hero-content container">
-        <div class="hero-logo-wrap">
-          <img src="images/logo.png" alt="Axiom Peptides" class="hero-logo" />
-        </div>
-
         <p class="hero-kicker">Premium Research Compounds</p>
         <h1>Your Supplier For Research Compounds</h1>
         <p class="hero-subtext">
-          Clean presentation, trusted branding, and a modern storefront experience built for scientific and laboratory-focused products.
+          Trusted presentation, clean branding, and a premium storefront built for laboratory and scientific research products.
         </p>
 
         <div class="hero-actions">
@@ -190,24 +187,24 @@
     <section class="trust-strip">
       <div class="container trust-strip-grid">
         <div class="trust-item">
-          <span class="trust-icon">🇺🇸</span>
+          <span class="trust-icon">🧪</span>
           <div>
-            <strong>USA Fulfilled</strong>
-            <p>Reliable order handling and fulfillment.</p>
+            <strong>Third-Party Tested</strong>
+            <p>Structured for a clean, high-trust product presentation.</p>
           </div>
         </div>
         <div class="trust-item">
-          <span class="trust-icon">🧪</span>
+          <span class="trust-icon">🇺🇸</span>
           <div>
-            <strong>Lab Tested</strong>
-            <p>Third-party tested for added confidence.</p>
+            <strong>USA Fulfilled</strong>
+            <p>Reliable order handling, fulfillment, and tracking support.</p>
           </div>
         </div>
         <div class="trust-item">
           <span class="trust-icon">⭐</span>
           <div>
             <strong>Trusted Experience</strong>
-            <p>Built to feel clean, simple, and professional.</p>
+            <p>Built to feel premium, professional, and easy to shop.</p>
           </div>
         </div>
       </div>
@@ -219,7 +216,7 @@
           <p class="section-kicker">Featured</p>
           <h2>Shop By Collection</h2>
           <p>
-            This section is controlled by a separate JS data file so you can update homepage collections without editing the main HTML.
+            Browse your most important collections in a cleaner, more premium homepage layout.
           </p>
         </div>
 
@@ -230,10 +227,10 @@
     <section class="featured-products section-pad">
       <div class="container">
         <div class="section-heading">
-          <p class="section-kicker">Popular Picks</p>
+          <p class="section-kicker">Best Sellers</p>
           <h2>Featured Products</h2>
           <p>
-            This product area pulls from your separate product data system so you can keep adding products later.
+            Highlight your top products here while keeping the homepage clean and focused.
           </p>
         </div>
 
@@ -248,26 +245,33 @@
     <section class="why-axiom section-pad light-section" id="why-axiom">
       <div class="container narrow">
         <div class="section-heading center">
-          <h2>Why Axiom Peptides</h2>
+          <p class="section-kicker">Why Axiom</p>
+          <h2>Built For A Better Storefront Experience</h2>
           <p>
-            Axiom Peptides is a research-focused supplier built around a modern, clean, and trustworthy user experience.
+            Axiom Peptides combines a clean laboratory look with a modern shopping experience designed to feel more premium on mobile and desktop.
           </p>
         </div>
 
         <div class="info-grid three-up">
           <article class="info-card">
-            <h3>Clean Branding</h3>
-            <p>A sharp and professional storefront design that feels premium across desktop and mobile.</p>
+            <h3>Clean Design</h3>
+            <p>
+              A sharper homepage layout that looks more polished and trustworthy.
+            </p>
           </article>
 
           <article class="info-card">
-            <h3>Modular System</h3>
-            <p>Collections, homepage products, menu, and cart components are separated into their own files for easier updates.</p>
+            <h3>Research Focused</h3>
+            <p>
+              Branding and presentation built around laboratory and scientific use.
+            </p>
           </article>
 
           <article class="info-card">
-            <h3>Built To Scale</h3>
-            <p>Add more products over time without rebuilding your homepage every single time.</p>
+            <h3>Easy To Scale</h3>
+            <p>
+              Add more collections and products without rebuilding the homepage every time.
+            </p>
           </article>
         </div>
       </div>
@@ -276,30 +280,30 @@
     <section class="research-focus section-pad dark-section" id="research-focus">
       <div class="container split-layout">
         <div class="split-copy">
-          <p class="section-kicker">Research Use</p>
-          <h2>Designed For A Better Product Presentation</h2>
+          <p class="section-kicker">Why Customers Choose Axiom</p>
+          <h2>Premium Presentation With Real Store Structure</h2>
           <p>
-            Your homepage should feel polished and high-trust while still being easy to maintain. This setup gives you a hero image, branded header, hamburger menu, cart drawer, collections section, and dynamic featured products.
+            Your homepage should not just look good — it should feel organized, trusted, and easy to navigate. This setup gives you a cleaner hero, better featured sections, a professional menu drawer, and a stronger cart drawer experience.
           </p>
           <a href="catalog.html" class="btn btn-primary-home">Start Shopping</a>
         </div>
 
         <div class="split-panels">
           <div class="mini-panel">
-            <strong>Hero Section</strong>
-            <p>Image background, logo, headline, CTA buttons.</p>
+            <strong>Clean Collections</strong>
+            <p>Organized homepage collections that are easier to scan and update.</p>
           </div>
           <div class="mini-panel">
-            <strong>Menu Drawer</strong>
-            <p>Mobile-first hamburger drawer for navigation.</p>
+            <strong>Better Product Focus</strong>
+            <p>Featured products stay visible without cluttering the whole homepage.</p>
           </div>
           <div class="mini-panel">
-            <strong>Cart Drawer</strong>
-            <p>Slide-out cart interface tied to JS.</p>
+            <strong>Professional Navigation</strong>
+            <p>The menu drawer feels more like a real storefront instead of a basic panel.</p>
           </div>
           <div class="mini-panel">
-            <strong>Collection System</strong>
-            <p>Homepage collections managed separately.</p>
+            <strong>Stronger Cart Experience</strong>
+            <p>A cleaner slide-out cart that looks more premium and conversion-focused.</p>
           </div>
         </div>
       </div>
@@ -319,7 +323,7 @@
   </main>
 
   <div id="site-footer"></div>
-  
+
   <script src="homepage/featured-collections.js" defer></script>
   <script src="js/menu.js" defer></script>
   <script src="js/cart.js" defer></script>
