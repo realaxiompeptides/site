@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Axiom Peptides | Research Compounds</title>
+  <meta
+    name="description"
+    content="Axiom Peptides offers premium research compounds with a clean, trusted, and modern experience."
+  />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+    rel="stylesheet"
+  />
+
+  <link rel="stylesheet" href="assets/css/style.css" />
+  <link rel="stylesheet" href="assets/css/components.css" />
+  <link rel="stylesheet" href="assets/css/home.css" />
+  <link rel="stylesheet" href="assets/css/responsive.css" />
+</head>
+<body class="home-page">
+
+  <!-- Sitewide Announcement Bar -->
+  <div class="top-announcement-bar">
+    <div class="top-announcement-track">
+      <span class="announcement-item">🇺🇸 USA Fulfilled Orders</span>
+      <span class="announcement-sep">|</span>
+      <span class="announcement-item">🧪 Third-Party Lab Tested</span>
+      <span class="announcement-sep">|</span>
+      <span class="announcement-item">⭐ Trusted by 4,200+ Researchers</span>
+
+      <span class="announcement-sep">|</span>
+      <span class="announcement-item">🇺🇸 USA Fulfilled Orders</span>
+      <span class="announcement-sep">|</span>
+      <span class="announcement-item">🧪 Third-Party Lab Tested</span>
+      <span class="announcement-sep">|</span>
+      <span class="announcement-item">⭐ Trusted by 4,200+ Researchers</span>
+    </div>
+  </div>
+
+  <!-- Header -->
+  <header class="site-header">
+    <div class="header-inner container">
+      <button
+        class="icon-btn hamburger-btn"
+        id="menuToggle"
+        aria-label="Open menu"
+        aria-controls="mobileMenu"
+        aria-expanded="false"
+        type="button"
+      >
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+
+      <a href="index.html" class="site-logo" aria-label="Axiom Peptides home">
+        <img src="assets/images/logo.png" alt="Axiom Peptides logo" />
+      </a>
+
+      <button
+        class="icon-btn cart-btn"
+        id="cartToggle"
+        aria-label="Open cart"
+        aria-controls="cartDrawer"
+        aria-expanded="false"
+        type="button"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2Zm10 0c-1.1 0-1.99.9-1.99 2S15.9 22 17 22s2-.9 2-2-.9-2-2-2ZM7.17 14h9.96c.75 0 1.41-.41 1.75-1.03l3.58-6.49A1 1 0 0 0 21.58 5H6.21l-.94-2H2v2h2l3.6 7.59-1.35 2.44A1.98 1.98 0 0 0 6 16c0 1.1.9 2 2 2h12v-2H8l1.17-2Z"/>
+        </svg>
+        <span class="cart-count" id="cartCount">0</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Mobile Menu Drawer -->
+  <aside class="mobile-menu" id="mobileMenu" aria-hidden="true">
+    <div class="mobile-menu-inner">
+      <div class="drawer-top">
+        <h2>Menu</h2>
+        <button class="drawer-close" id="menuClose" aria-label="Close menu" type="button">&times;</button>
+      </div>
+
+      <nav class="mobile-nav">
+        <a href="index.html">Home</a>
+        <a href="catalog.html">Shop All</a>
+        <a href="#featured-collections">Featured</a>
+        <a href="#why-axiom">Why Axiom</a>
+        <a href="#research-focus">Research Focus</a>
+        <a href="contact.html">Contact</a>
+      </nav>
+
+      <div class="mobile-menu-footer">
+        <p>Premium research compounds with a clean and trusted experience.</p>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Cart Drawer -->
+  <aside class="cart-drawer" id="cartDrawer" aria-hidden="true">
+    <div class="cart-drawer-inner">
+      <div class="drawer-top">
+        <h2>Your Cart</h2>
+        <button class="drawer-close" id="cartClose" aria-label="Close cart" type="button">&times;</button>
+      </div>
+
+      <div class="cart-items" id="cartItems">
+        <div class="cart-empty">
+          <p>Your cart is currently empty.</p>
+          <a href="catalog.html" class="btn btn-primary">Browse Products</a>
+        </div>
+      </div>
+
+      <div class="cart-footer">
+        <div class="cart-subtotal">
+          <span>Subtotal</span>
+          <strong id="cartSubtotal">$0.00</strong>
+        </div>
+        <div class="cart-actions">
+          <a href="cart.html" class="btn btn-secondary">View Cart</a>
+          <a href="checkout.html" class="btn btn-primary">Checkout</a>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Overlay -->
+  <div class="site-overlay" id="siteOverlay"></div>
+
+  <main>
+
+    <!-- Hero -->
+    <section class="hero-section">
+      <div class="hero-bg">
+        <img src="assets/images/hero.jpg" alt="Laboratory research environment" />
+      </div>
+      <div class="hero-overlay"></div>
+
+      <div class="hero-content container">
+        <div class="hero-logo-wrap">
+          <img src="assets/images/logo.png" alt="Axiom Peptides" class="hero-logo" />
+        </div>
+
+        <p class="hero-kicker">Premium Research Compounds</p>
+        <h1>Your Supplier For Research Compounds</h1>
+        <p class="hero-subtext">
+          Clean presentation, trusted branding, and a modern storefront experience built for scientific and laboratory-focused products.
+        </p>
+
+        <div class="hero-actions">
+          <a href="catalog.html" class="btn btn-white">Shop Now</a>
+          <a href="#featured-collections" class="btn btn-glass">Explore Collections</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Quick Trust Strip -->
+    <section class="trust-strip">
+      <div class="container trust-strip-grid">
+        <div class="trust-item">
+          <span class="trust-icon">🇺🇸</span>
+          <div>
+            <strong>USA Fulfilled</strong>
+            <p>Reliable order handling and fulfillment.</p>
+          </div>
+        </div>
+        <div class="trust-item">
+          <span class="trust-icon">🧪</span>
+          <div>
+            <strong>Lab Tested</strong>
+            <p>Third-party tested for added confidence.</p>
+          </div>
+        </div>
+        <div class="trust-item">
+          <span class="trust-icon">⭐</span>
+          <div>
+            <strong>Trusted Experience</strong>
+            <p>Built to feel clean, simple, and professional.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Featured Collections -->
+    <section class="featured-collections section-pad" id="featured-collections">
+      <div class="container">
+        <div class="section-heading">
+          <p class="section-kicker">Featured</p>
+          <h2>Shop By Collection</h2>
+          <p>
+            This section is controlled by a separate JS data file so you can update homepage collections without editing the main HTML.
+          </p>
+        </div>
+
+        <div class="collection-grid" id="collectionGrid">
+          <!-- Filled by homepage/featured-collections.js -->
+        </div>
+      </div>
+    </section>
+
+    <!-- Featured Products -->
+    <section class="featured-products section-pad">
+      <div class="container">
+        <div class="section-heading">
+          <p class="section-kicker">Popular Picks</p>
+          <h2>Featured Products</h2>
+          <p>
+            This product area pulls from your separate product data system so you can keep adding products later.
+          </p>
+        </div>
+
+        <div class="product-grid" id="homeProductGrid">
+          <!-- Filled by assets/js/home-products.js -->
+        </div>
+
+        <div class="section-cta">
+          <a href="catalog.html" class="btn btn-primary">View Full Catalog</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Why Axiom -->
+    <section class="why-axiom section-pad light-section" id="why-axiom">
+      <div class="container narrow">
+        <div class="section-heading center">
+          <h2>Why Axiom Peptides</h2>
+          <p>
+            Axiom Peptides is a research-focused supplier built around a modern, clean, and trustworthy user experience.
+          </p>
+        </div>
+
+        <div class="info-grid three-up">
+          <article class="info-card">
+            <h3>Clean Branding</h3>
+            <p>
+              A sharp and professional storefront design that feels premium across desktop and mobile.
+            </p>
+          </article>
+
+          <article class="info-card">
+            <h3>Modular System</h3>
+            <p>
+              Collections, homepage products, menu, and cart components are separated into their own files for easier updates.
+            </p>
+          </article>
+
+          <article class="info-card">
+            <h3>Built To Scale</h3>
+            <p>
+              Add more products over time without rebuilding your homepage every single time.
+            </p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- Research Focus -->
+    <section class="research-focus section-pad dark-section" id="research-focus">
+      <div class="container split-layout">
+        <div class="split-copy">
+          <p class="section-kicker">Research Use</p>
+          <h2>Designed For A Better Product Presentation</h2>
+          <p>
+            Your homepage should feel polished and high-trust while still being easy to maintain. This setup gives you a hero image, branded header, hamburger menu, cart drawer, collections section, and dynamic featured products.
+          </p>
+          <a href="catalog.html" class="btn btn-primary">Start Shopping</a>
+        </div>
+
+        <div class="split-panels">
+          <div class="mini-panel">
+            <strong>Hero Section</strong>
+            <p>Image background, logo, headline, CTA buttons.</p>
+          </div>
+          <div class="mini-panel">
+            <strong>Menu Drawer</strong>
+            <p>Mobile-first hamburger drawer for navigation.</p>
+          </div>
+          <div class="mini-panel">
+            <strong>Cart Drawer</strong>
+            <p>Slide-out cart interface tied to JS.</p>
+          </div>
+          <div class="mini-panel">
+            <strong>Collection System</strong>
+            <p>Homepage collections managed separately.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="final-cta section-pad">
+      <div class="container">
+        <div class="cta-box">
+          <h2>Explore The Full Store</h2>
+          <p>
+            Browse all collections and products through the catalog page while keeping the homepage clean and focused.
+          </p>
+          <a href="catalog.html" class="btn btn-white-dark">Browse Catalog</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="container footer-grid">
+      <div class="footer-brand">
+        <img src="assets/images/logo.png" alt="Axiom Peptides logo" />
+        <p>
+          Axiom Peptides is built with a clean, premium storefront system for research compounds.
+        </p>
+      </div>
+
+      <div class="footer-links">
+        <h4>Shop</h4>
+        <a href="catalog.html">All Products</a>
+        <a href="#featured-collections">Collections</a>
+        <a href="cart.html">Cart</a>
+      </div>
+
+      <div class="footer-links">
+        <h4>Company</h4>
+        <a href="index.html">Home</a>
+        <a href="#why-axiom">Why Axiom</a>
+        <a href="contact.html">Contact</a>
+      </div>
+
+      <div class="footer-links">
+        <h4>Notice</h4>
+        <p>For research and laboratory presentation purposes only.</p>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <p>&copy; 2026 Axiom Peptides. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script src="assets/js/products-data.js"></script>
+  <script src="homepage/featured-collections.js"></script>
+  <script src="assets/js/home-products.js"></script>
+  <script src="assets/js/menu.js"></script>
+  <script src="assets/js/cart.js"></script>
+  <script src="assets/js/app.js"></script>
+</body>
+</html>
