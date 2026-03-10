@@ -3,6 +3,7 @@ document.addEventListener("DOMContentLoaded", function () {
   const menuClose = document.getElementById("menuClose");
   const mobileMenu = document.getElementById("mobileMenu");
   const overlay = document.getElementById("siteOverlay");
+  const menuLinks = document.querySelectorAll(".mobile-nav-link");
 
   function openMenu() {
     if (!mobileMenu || !overlay) return;
@@ -22,8 +23,17 @@ document.addEventListener("DOMContentLoaded", function () {
     mobileMenu.setAttribute("aria-hidden", "true");
   }
 
-  if (menuToggle) menuToggle.addEventListener("click", openMenu);
-  if (menuClose) menuClose.addEventListener("click", closeMenu);
+  if (menuToggle) {
+    menuToggle.addEventListener("click", openMenu);
+  }
+
+  if (menuClose) {
+    menuClose.addEventListener("click", closeMenu);
+  }
+
+  menuLinks.forEach((link) => {
+    link.addEventListener("click", closeMenu);
+  });
 
   window.closeMenuDrawer = closeMenu;
 });
