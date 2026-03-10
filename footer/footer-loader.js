@@ -1,9 +1,18 @@
 document.addEventListener("DOMContentLoaded", function () {
+  const footerTarget = document.getElementById("site-footer");
+  if (!footerTarget) return;
 
-  fetch("/footer/footer.html")
-    .then(res => res.text())
+  fetch("footer/footer.html")
+    .then(response => {
+      if (!response.ok) {
+        throw new Error("Footer file not found");
+      }
+      return response.text();
+    })
     .then(data => {
-      document.getElementById("footer-container").innerHTML = data;
+      footerTarget.innerHTML = data;
+    })
+    .catch(error => {
+      console.error("Footer failed to load:", error);
     });
-
 });
