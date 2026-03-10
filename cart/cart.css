@@ -1,0 +1,148 @@
+.cart-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(430px, 90vw);
+  background: #ffffff;
+  z-index: 100;
+  transform: translateX(100%);
+  transition: transform 0.28s ease;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.18);
+  overflow-y: auto;
+}
+
+.cart-drawer.active {
+  transform: translateX(0);
+}
+
+.cart-drawer-inner {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 28px 22px 28px;
+}
+
+.cart-drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 22px;
+}
+
+.cart-drawer-header h2 {
+  margin: 0;
+  font-size: 2.1rem;
+  line-height: 1.05;
+  color: #0f172a;
+}
+
+.drawer-close {
+  width: 52px;
+  height: 52px;
+  border: 0;
+  background: transparent;
+  color: #a3a3a3;
+  border-radius: 999px;
+  font-size: 42px;
+  line-height: 1;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.cart-body {
+  flex: 1;
+}
+
+.cart-empty-state {
+  padding-top: 10px;
+}
+
+.cart-empty-text {
+  margin: 0 0 24px;
+  color: #556274;
+  font-size: 1.05rem;
+  line-height: 1.7;
+}
+
+.cart-subtotal-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 24px 0 18px;
+  font-size: 18px;
+  color: #111827;
+}
+
+.cart-subtotal-row strong {
+  font-size: 22px;
+  color: #0f172a;
+}
+
+.cart-action-stack {
+  display: grid;
+  gap: 14px;
+}
+
+.cart-pill-btn {
+  min-height: 64px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  font-weight: 800;
+  font-size: 18px;
+  transition: 0.2s ease;
+}
+
+.cart-muted-btn {
+  background: #f2f4f7;
+  color: #111827;
+}
+
+.cart-outline-btn {
+  background: #ffffff;
+  color: #111827;
+  border: 1.5px solid #d7dce3;
+}
+
+.cart-pill-btn:hover {
+  transform: translateY(-1px);
+}
+
+.site-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(2, 6, 23, 0.42);
+  z-index: 90;
+  opacity: 0;
+  visibility: hidden;
+  transition: 0.25s ease;
+}
+
+.site-overlay.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+@media (max-width: 640px) {
+  .cart-drawer {
+    width: calc(100vw - 24px);
+  }
+
+  .cart-drawer-inner {
+    padding: 24px 20px 24px;
+  }
+
+  .cart-drawer-header h2 {
+    font-size: 2rem;
+  }
+
+  .cart-pill-btn {
+    min-height: 60px;
+    font-size: 17px;
+  }
+}
