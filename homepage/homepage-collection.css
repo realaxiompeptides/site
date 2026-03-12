@@ -1,5 +1,5 @@
 #homepage-collection {
-  background: #f7f8fc;
+  background: #f5f7fb;
 }
 
 #homepage-collection .container {
@@ -8,13 +8,13 @@
 }
 
 .homepage-collection-heading {
-  margin-bottom: 26px;
+  margin-bottom: 28px;
 }
 
 #homepageCollectionGrid {
   display: grid !important;
   grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
-  gap: 14px !important;
+  gap: 16px !important;
   align-items: stretch;
 }
 
@@ -22,18 +22,25 @@
   display: flex;
   flex-direction: column;
   background: #ffffff;
-  border: 1px solid #dfe6f0;
-  border-radius: 22px;
+  border: 1px solid #dbe3ee;
+  border-radius: 24px;
   overflow: hidden;
-  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.05);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
   min-width: 0;
+  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+}
+
+.homepage-product-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 34px rgba(15, 23, 42, 0.1);
+  border-color: #c9d6e6;
 }
 
 .homepage-product-image-wrap {
   position: relative;
-  background: linear-gradient(180deg, #fbfcff 0%, #f3f6fb 100%);
+  background: linear-gradient(180deg, #fcfdff 0%, #f3f7fc 100%);
   padding: 14px 12px 10px;
-  min-height: 170px;
+  min-height: 180px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -49,23 +56,24 @@
 
 .homepage-product-badge {
   position: absolute;
-  top: 10px;
-  left: 10px;
-  background: #2b5fd9;
+  top: 12px;
+  left: 12px;
+  background: #4fa3d9;
   color: #ffffff;
   font-size: 11px;
   font-weight: 800;
   line-height: 1;
-  padding: 8px 10px;
+  padding: 8px 12px;
   border-radius: 999px;
   letter-spacing: 0.02em;
+  box-shadow: 0 8px 18px rgba(79, 163, 217, 0.24);
 }
 
 .homepage-product-card-body {
   display: flex;
   flex-direction: column;
   flex: 1;
-  padding: 14px 14px 16px;
+  padding: 16px 16px 18px;
 }
 
 .homepage-product-title {
@@ -75,17 +83,18 @@
   line-height: 1.2;
   font-weight: 900;
   min-height: 2.4em;
+  letter-spacing: -0.01em;
 }
 
 .homepage-product-price-block {
   margin-bottom: 14px;
-  min-height: 48px;
+  min-height: 50px;
 }
 
 .homepage-product-old-price {
   display: block;
   margin-bottom: 4px;
-  color: #a8afba;
+  color: #a7afbc;
   font-size: 14px;
   font-weight: 700;
   text-decoration: line-through;
@@ -93,7 +102,7 @@
 
 .homepage-product-price {
   display: block;
-  color: #204ea3;
+  color: #4fa3d9;
   font-size: 18px;
   font-weight: 900;
   line-height: 1.2;
@@ -105,29 +114,33 @@
   align-items: center;
   justify-content: center;
   width: 100%;
-  min-height: 50px;
+  min-height: 52px;
   border-radius: 999px;
-  background: #153b8c;
+  background: #4fa3d9;
   color: #ffffff;
   text-decoration: none;
   font-size: 16px;
   font-weight: 900;
   letter-spacing: 0.01em;
+  box-shadow: 0 10px 22px rgba(79, 163, 217, 0.2);
+  transition: transform 0.18s ease, opacity 0.18s ease, background 0.18s ease;
 }
 
 .homepage-product-button:hover {
-  background: #0f2f70;
+  transform: translateY(-1px);
+  opacity: 0.96;
+  background: #4598cd;
 }
 
 .homepage-collection-cta {
-  margin-top: 20px;
+  margin-top: 22px;
   text-align: center;
 }
 
 @media (min-width: 900px) {
   #homepageCollectionGrid {
     grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
-    gap: 20px !important;
+    gap: 22px !important;
   }
 
   .homepage-product-image-wrap {
