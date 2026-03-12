@@ -1,38 +1,38 @@
 window.HOMEPAGE_COLLECTION_PRODUCTS = [
   {
-    name: "GLP-3 RT (5-40MG)",
-    oldPrice: "$70.00 – $200.00",
-    price: "$50.00 – $185.00",
-    image: "images/product-1.PNG",
+    name: "GLP-3 RT",
+    oldPrice: "$45.00",
+    price: "$39.00",
+    image: "images/products/reta-5mg-main.PNG",
     badge: "SALE",
-    buttonText: "Shop Now",
-    link: "product-glp3rt.html"
+    buttonText: "View Product",
+    link: "product.html?slug=glp3-rt"
   },
   {
-    name: "GHK-CU (50-100MG)",
-    oldPrice: "$40.00 – $60.00",
-    price: "$35.00 – $45.00",
-    image: "images/product-2.PNG",
+    name: "GHK-CU",
+    oldPrice: "",
+    price: "$30.00 – $43.00",
+    image: "images/products/ghk-cu-100mg-main.PNG",
     badge: "SALE",
-    buttonText: "Shop Now",
-    link: "product-ghkcu.html"
+    buttonText: "View Product",
+    link: "product.html?slug=ghk-cu"
   },
   {
-    name: "BPC-157 (5MG)",
-    oldPrice: "$55.00",
-    price: "$45.00",
-    image: "images/product-3.PNG",
-    badge: "BEST SELLER",
-    buttonText: "Shop Now",
-    link: "product-bpc157.html"
+    name: "BPC-157",
+    oldPrice: "$35.00",
+    price: "$25.00",
+    image: "images/products/bpc-157-5mg-main.PNG",
+    badge: "SALE",
+    buttonText: "View Product",
+    link: "product.html?slug=bpc-157"
   },
   {
-    name: "TB-500 (10MG)",
-    oldPrice: "$65.00",
-    price: "$45.00",
-    image: "images/product-4.PNG",
-    badge: "POPULAR",
-    buttonText: "Shop Now",
-    link: "product-tb500.html"
+    name: "TB-500",
+    oldPrice: "$45.00",
+    price: "$36.00",
+    image: "images/products/tb-500-5mg-main.PNG",
+    badge: "SALE",
+    buttonText: "View Product",
+    link: "product.html?slug=tb-500"
   }
 ];
