@@ -28,8 +28,8 @@
   <link rel="stylesheet" href="css/home.css" />
   <link rel="stylesheet" href="css/menu.css" />
   <link rel="stylesheet" href="css/cart.css" />
-  <link rel="stylesheet" href="footer/footer.css" />
   <link rel="stylesheet" href="css/catalog.css" />
+  <link rel="stylesheet" href="footer/footer.css" />
 </head>
 <body class="catalog-page">
 
@@ -210,6 +210,7 @@
               <option value="price-low">Price: Low to High</option>
               <option value="price-high">Price: High to Low</option>
               <option value="name-az">Name: A to Z</option>
+              <option value="name-za">Name: Z to A</option>
             </select>
           </div>
         </div>
@@ -220,7 +221,12 @@
             <div class="catalog-sidebar-card">
               <div class="catalog-sidebar-header">
                 <h2>Filters</h2>
-                <button class="catalog-sidebar-close" id="catalogSidebarClose" type="button" aria-label="Close filters">
+                <button
+                  class="catalog-sidebar-close"
+                  id="catalogSidebarClose"
+                  type="button"
+                  aria-label="Close filters"
+                >
                   &times;
                 </button>
               </div>
@@ -228,19 +234,19 @@
               <div class="catalog-filter-group">
                 <h3>Categories</h3>
                 <label class="catalog-check">
-                  <input type="checkbox" value="peptides" class="catalog-category-filter" />
+                  <input type="checkbox" value="Peptides" class="catalog-category-filter" />
                   <span>Peptides</span>
                 </label>
                 <label class="catalog-check">
-                  <input type="checkbox" value="fat-loss" class="catalog-category-filter" />
+                  <input type="checkbox" value="Fat Loss" class="catalog-category-filter" />
                   <span>Fat Loss</span>
                 </label>
                 <label class="catalog-check">
-                  <input type="checkbox" value="research-compounds" class="catalog-category-filter" />
+                  <input type="checkbox" value="Research Compounds" class="catalog-category-filter" />
                   <span>Research Compounds</span>
                 </label>
                 <label class="catalog-check">
-                  <input type="checkbox" value="supplies" class="catalog-category-filter" />
+                  <input type="checkbox" value="Supplies" class="catalog-category-filter" />
                   <span>Supplies</span>
                 </label>
               </div>
@@ -256,13 +262,15 @@
               <div class="catalog-filter-group">
                 <h3>Price Range</h3>
                 <div class="catalog-price-inputs">
-                  <input type="number" id="minPrice" placeholder="Min" />
-                  <input type="number" id="maxPrice" placeholder="Max" />
+                  <input type="number" id="minPrice" placeholder="Min" min="0" />
+                  <input type="number" id="maxPrice" placeholder="Max" min="0" />
                 </div>
               </div>
 
               <div class="catalog-filter-actions">
-                <button class="catalog-clear-btn" id="clearCatalogFilters" type="button">Clear</button>
+                <button class="catalog-clear-btn" id="clearCatalogFilters" type="button">
+                  Clear
+                </button>
               </div>
             </div>
           </aside>
@@ -270,11 +278,11 @@
           <!-- Products -->
           <div class="catalog-products-area">
             <div class="catalog-results-bar">
-              <p id="catalogResultsText">Showing all products</p>
+              <p id="catalogResultsText">Loading products...</p>
             </div>
 
             <div class="catalog-grid" id="catalogGrid">
-              <!-- Filled by catalog.js -->
+              <!-- Products load here from js/catalog.js -->
             </div>
           </div>
         </div>
