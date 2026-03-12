@@ -15,7 +15,15 @@ document.addEventListener("DOMContentLoaded", function () {
       const grid = document.getElementById("homepageCollectionGrid");
       const products = window.HOMEPAGE_COLLECTION_PRODUCTS || [];
 
-      if (!grid || !products.length) return;
+      if (!grid) {
+        console.error("homepageCollectionGrid not found");
+        return;
+      }
+
+      if (!products.length) {
+        console.error("No homepage products found in HOMEPAGE_COLLECTION_PRODUCTS");
+        return;
+      }
 
       grid.innerHTML = products.map(function (product) {
         return `
