@@ -7,27 +7,78 @@
       </button>
     </div>
 
+    <div class="cart-progress-wrap">
+      <div class="cart-progress-text" id="cartProgressText">
+        Add <strong>$50.00</strong> more to unlock free shipping
+      </div>
+      <div class="cart-progress-bar">
+        <span id="cartProgressFill"></span>
+      </div>
+    </div>
+
     <div class="cart-body">
       <div class="cart-empty-state" id="cartEmptyState">
+        <div class="cart-empty-icon">
+          <i class="fa-solid fa-cart-shopping"></i>
+        </div>
         <p class="cart-empty-text">Your cart is currently empty.</p>
         <a href="catalog.html" class="cart-pill-btn cart-outline-btn">Browse Products</a>
       </div>
 
       <div class="cart-items-list" id="cartItemsList" hidden></div>
+
+      <div class="cart-recommend-section" id="cartRecommendSection" hidden>
+        <h3>You May Also Like</h3>
+        <div class="cart-recommend-list" id="cartRecommendList"></div>
+      </div>
     </div>
 
     <div class="cart-footer">
-      <div class="cart-subtotal-row">
-        <span>Subtotal</span>
-        <strong id="cartSubtotal">$0.00</strong>
+      <div class="cart-discount-box">
+        <label for="cartDiscountCode">Gift or Discount Code</label>
+        <div class="cart-discount-row">
+          <input
+            type="text"
+            id="cartDiscountCode"
+            placeholder="Enter code"
+            autocomplete="off"
+          />
+          <button type="button" id="applyCartDiscount">Apply</button>
+        </div>
+        <p class="cart-discount-message" id="cartDiscountMessage"></p>
+      </div>
+
+      <div class="cart-summary">
+        <div class="cart-summary-row">
+          <span>Subtotal</span>
+          <strong id="cartSubtotal">$0.00</strong>
+        </div>
+
+        <div class="cart-summary-row">
+          <span>Estimated Shipping</span>
+          <strong id="cartShipping">$0.00</strong>
+        </div>
+
+        <div class="cart-summary-row">
+          <span>Estimated Tax</span>
+          <strong id="cartTax">$0.00</strong>
+        </div>
+
+        <div class="cart-summary-row cart-summary-discount" id="cartDiscountRow" hidden>
+          <span>Discount</span>
+          <strong id="cartDiscountAmount">-$0.00</strong>
+        </div>
+
+        <div class="cart-summary-row cart-summary-total">
+          <span>Total</span>
+          <strong id="cartTotal">$0.00</strong>
+        </div>
       </div>
 
       <div class="cart-action-stack">
         <a href="cart.html" class="cart-pill-btn cart-muted-btn">View Cart</a>
-        <a href="checkout.html" class="cart-pill-btn cart-outline-btn">Checkout</a>
+        <a href="checkout.html" class="cart-pill-btn cart-primary-btn">Checkout</a>
       </div>
     </div>
   </div>
 </aside>
-
-<div class="site-overlay" id="siteOverlay"></div>
