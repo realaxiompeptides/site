@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport"
+content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+
+<title>Axiom Peptides | Catalog</title>
+
+<meta name="description"
+content="Browse research compounds from Axiom Peptides." />
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+<link rel="stylesheet"
+href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/menu.css">
+<link rel="stylesheet" href="css/cart.css">
+<link rel="stylesheet" href="css/catalog.css">
+<link rel="stylesheet" href="footer/footer.css">
+
+</head>
+
+<body>
+
+<!-- Announcement bar -->
+
+<div class="top-announcement-bar">
+<div class="top-announcement-track">
+
+<span class="announcement-item">
+🇺🇸 USA Fulfilled Orders
+</span>
+
+<span class="announcement-sep">|</span>
+
+<span class="announcement-item">
+🧪 Third-Party Lab Tested
+</span>
+
+<span class="announcement-sep">|</span>
+
+<span class="announcement-item">
+⭐ Trusted by 4,200+ Researchers
+</span>
+
+</div>
+</div>
+
+
+<!-- Header -->
+
+<header class="site-header">
+
+<div class="header-inner container">
+
+<button
+class="icon-btn hamburger-btn"
+id="menuToggle"
+aria-label="Open menu">
+
+<span></span>
+<span></span>
+<span></span>
+
+</button>
+
+<a href="index.html" class="site-logo">
+
+<img src="images/axiom-logo.PNG" alt="Axiom Peptides">
+
+</a>
+
+<button
+class="icon-btn cart-btn"
+id="cartToggle"
+aria-label="Open cart">
+
+<i class="fa-solid fa-cart-shopping"></i>
+
+<span class="cart-count" id="cartCount">0</span>
+
+</button>
+
+</div>
+
+</header>
+
+
+<!-- Mobile menu -->
+
+<aside class="mobile-menu" id="mobileMenu">
+
+<div class="mobile-menu-inner">
+
+<a href="index.html" class="mobile-nav-link">
+Home
+</a>
+
+<a href="catalog.html" class="mobile-nav-link">
+Products
+</a>
+
+<a href="track-order.html" class="mobile-nav-link">
+Track Order
+</a>
+
+<a href="contact.html" class="mobile-nav-link">
+Contact
+</a>
+
+</div>
+
+</aside>
+
+
+<!-- Cart drawer -->
+
+<aside class="cart-drawer" id="cartDrawer">
+
+<div class="cart-drawer-inner">
+
+<h2>Your Cart</h2>
+
+<div id="cartItemsList"></div>
+
+</div>
+
+</aside>
+
+<div class="site-overlay" id="siteOverlay"></div>
+
+
+<!-- PAGE -->
+
+<main>
+
+<section class="catalog-page">
+
+<div class="container">
+
+<!-- breadcrumb -->
+
+<div class="catalog-breadcrumb">
+
+<a href="index.html">Home</a>
+
+<span>/</span>
+
+<strong>Shop All</strong>
+
+</div>
+
+
+<h1 class="catalog-title">
+Shop All Products
+</h1>
+
+
+<!-- filters -->
+
+<div class="catalog-controls">
+
+<button class="filter-toggle">
+
+<i class="fa-solid fa-sliders"></i>
+
+Filters
+
+</button>
+
+
+<select class="catalog-sort" id="sortProducts">
+
+<option value="featured">Featured</option>
+
+<option value="price-low">Price: Low → High</option>
+
+<option value="price-high">Price: High → Low</option>
+
+<option value="newest">Newest</option>
+
+</select>
+
+</div>
+
+
+<div class="catalog-layout">
+
+<!-- sidebar -->
+
+<aside class="catalog-sidebar" id="catalogSidebar">
+
+<h3>Categories</h3>
+
+<label>
+<input type="checkbox" value="peptides">
+Peptides
+</label>
+
+<label>
+<input type="checkbox" value="fat-loss">
+Fat Loss
+</label>
+
+<label>
+<input type="checkbox" value="research">
+Research Compounds
+</label>
+
+
+<h3>Price</h3>
+
+<input type="range" min="0" max="200" value="200" id="priceRange">
+
+
+<h3>Availability</h3>
+
+<label>
+<input type="checkbox">
+In Stock
+</label>
+
+</aside>
+
+
+
+<!-- products -->
+
+<div class="catalog-grid" id="catalogGrid">
+
+
+<!-- PRODUCT CARD -->
+
+<a href="product.html" class="catalog-card">
+
+<div class="catalog-image">
+
+<img src="images/products/bpc157.png">
+
+</div>
+
+<div class="catalog-info">
+
+<h3>BPC-157</h3>
+
+<p class="catalog-price">
+
+$45.00
+
+</p>
+
+<button class="catalog-btn">
+
+View Product
+
+</button>
+
+</div>
+
+</a>
+
+
+<a href="product.html" class="catalog-card">
+
+<div class="catalog-image">
+
+<img src="images/products/tb500.png">
+
+</div>
+
+<div class="catalog-info">
+
+<h3>TB-500</h3>
+
+<p class="catalog-price">
+
+$45.00
+
+</p>
+
+<button class="catalog-btn">
+
+View Product
+
+</button>
+
+</div>
+
+</a>
+
+
+</div>
+
+</div>
+
+</div>
+
+</section>
+
+</main>
+
+
+
+<!-- Footer -->
+
+<div id="site-footer"></div>
+
+
+
+<script src="js/menu.js"></script>
+<script src="js/cart.js"></script>
+<script src="js/catalog.js"></script>
+<script src="footer/footer-loader.js"></script>
+
+</body>
+
+</html>
