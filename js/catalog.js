@@ -1,144 +1,180 @@
 document.addEventListener("DOMContentLoaded", () => {
-  const filterToggle = document.querySelector(".filter-toggle");
-  const sidebar = document.getElementById("catalogSidebar");
-  const sortSelect = document.getElementById("sortProducts");
-  const catalogGrid = document.getElementById("catalogGrid");
-  const priceRange = document.getElementById("priceRange");
+  const productGrid = document.getElementById("catalogProductGrid");
+  const resultsCount = document.getElementById("catalogResultsText");
+  const sortSelect = document.getElementById("catalogSort");
+  const inStockOnly = document.getElementById("inStockOnly");
+  const minPriceInput = document.getElementById("minPrice");
+  const maxPriceInput = document.getElementById("maxPrice");
+  const clearFiltersBtn = document.getElementById("clearFilters");
 
-  if (filterToggle && sidebar) {
-    filterToggle.addEventListener("click", () => {
-      if (window.innerWidth <= 899) {
-        sidebar.classList.toggle("active");
-      }
-    });
-  }
+  const categoryCheckboxes = document.querySelectorAll('input[name="category"]');
 
-  if (!catalogGrid) return;
+  if (!productGrid) return;
 
   const products = [
     {
+      id: 1,
       name: "BPC-157",
       price: 45,
       oldPrice: 55,
-      image: "images/bpc157.PNG",
-      badge: "SALE",
+      image: "images/bpc-157.PNG",
       category: "peptides",
       inStock: true,
-      featured: true,
-      createdAt: 3
+      badge: "SALE",
+      url: "product-bpc-157.html"
     },
     {
+      id: 2,
       name: "TB-500",
       price: 45,
       oldPrice: 65,
-      image: "images/tb500.PNG",
-      badge: "SALE",
+      image: "images/tb-500.PNG",
       category: "peptides",
       inStock: true,
-      featured: true,
-      createdAt: 2
+      badge: "SALE",
+      url: "product-tb-500.html"
     },
     {
+      id: 3,
       name: "GHK-CU",
       price: 35,
       oldPrice: 40,
-      image: "images/ghkcu.PNG",
-      badge: "SALE",
-      category: "research",
+      image: "images/ghk-cu.PNG",
+      category: "research-compounds",
       inStock: true,
-      featured: true,
-      createdAt: 4
+      badge: "SALE",
+      url: "product-ghk-cu.html"
     },
     {
+      id: 4,
       name: "BAC Water",
       price: 20,
       oldPrice: null,
-      image: "images/bacwater.PNG",
-      badge: "SALE",
+      image: "images/bac-water.PNG",
       category: "supplies",
       inStock: true,
-      featured: false,
-      createdAt: 1
+      badge: "SALE",
+      url: "product-bac-water.html"
     }
   ];
 
-  function getCheckedCategories() {
-    return [...document.querySelectorAll('.catalog-sidebar input[type="checkbox"][value]:checked')]
-      .map(input => input.value);
+  function formatPrice(value) {
+    return `$${Number(value).toFixed(2)}`;
   }
 
-  function onlyAvailabilityChecked() {
-    const stockCheckbox = [...document.querySelectorAll('.catalog-sidebar input[type="checkbox"]')]
-      .find(input => !input.value);
-    return stockCheckbox ? stockCheckbox.checked : false;
+  function getSelectedCategories() {
+    return Array.from(categoryCheckboxes)
+      .filter((checkbox) => checkbox.checked)
+      .map((checkbox) => checkbox.value);
   }
 
-  function buildCard(product) {
-    return `
-      <a href="product.html" class="catalog-card">
-        <div class="catalog-image">
-          ${product.badge ? `<span class="catalog-badge">${product.badge}</span>` : ""}
-          <img src="${product.image}" alt="${product.name}">
+  function renderProducts(items) {
+    if (!items.length) {
+      productGrid.innerHTML = `
+        <div class="catalog-empty-state">
+          <h3>No products found</h3>
+          <p>Try changing your filters or clearing them.</p>
         </div>
-        <div class="catalog-info">
-          <h3>${product.name}</h3>
-          <div class="catalog-price-wrap">
-            ${product.oldPrice ? `<span class="catalog-old-price">$${product.oldPrice.toFixed(2)}</span>` : ""}
-            <span class="catalog-price">$${product.price.toFixed(2)}</span>
+      `;
+      if (resultsCount) resultsCount.textContent = "Showing 0 products";
+      return;
+    }
+
+    productGrid.innerHTML = items.map((product) => {
+      return `
+        <article class="catalog-product-card">
+          <div class="catalog-product-image-wrap">
+            <span class="catalog-product-badge">${product.badge || "SALE"}</span>
+            <img src="${product.image}" alt="${product.name}" />
           </div>
-          <button class="catalog-btn">View Product</button>
-        </div>
-      </a>
-    `;
+
+          <div class="catalog-product-card-body">
+            <h3 class="catalog-product-title">${product.name}</h3>
+
+            <div class="catalog-product-price-block">
+              ${product.oldPrice ? `<span class="catalog-product-old-price">${formatPrice(product.oldPrice)}</span>` : ""}
+              <span class="catalog-product-price">${formatPrice(product.price)}</span>
+            </div>
+
+            <a href="${product.url}" class="catalog-product-button">View Product</a>
+          </div>
+        </article>
+      `;
+    }).join("");
+
+    if (resultsCount) {
+      resultsCount.textContent = `Showing ${items.length} product${items.length === 1 ? "" : "s"}`;
+    }
   }
 
-  function renderProducts() {
+  function applyFilters() {
     let filtered = [...products];
 
-    const selectedCategories = getCheckedCategories();
-    const stockOnly = onlyAvailabilityChecked();
-    const maxPrice = priceRange ? Number(priceRange.value) : 200;
-    const sortValue = sortSelect ? sortSelect.value : "featured";
+    const selectedCategories = getSelectedCategories();
+    const minPrice = parseFloat(minPriceInput?.value || "");
+    const maxPrice = parseFloat(maxPriceInput?.value || "");
+    const stockOnly = inStockOnly?.checked;
+    const sortValue = sortSelect?.value || "featured";
 
     if (selectedCategories.length) {
       filtered = filtered.filter(product => selectedCategories.includes(product.category));
+    }
+
+    if (!Number.isNaN(minPrice)) {
+      filtered = filtered.filter(product => product.price >= minPrice);
+    }
+
+    if (!Number.isNaN(maxPrice)) {
+      filtered = filtered.filter(product => product.price <= maxPrice);
     }
 
     if (stockOnly) {
       filtered = filtered.filter(product => product.inStock);
     }
 
-    filtered = filtered.filter(product => product.price <= maxPrice);
-
-    if (sortValue === "price-low") {
-      filtered.sort((a, b) => a.price - b.price);
-    } else if (sortValue === "price-high") {
-      filtered.sort((a, b) => b.price - a.price);
-    } else if (sortValue === "newest") {
-      filtered.sort((a, b) => b.createdAt - a.createdAt);
-    } else {
-      filtered.sort((a, b) => Number(b.featured) - Number(a.featured));
+    switch (sortValue) {
+      case "price-low-high":
+        filtered.sort((a, b) => a.price - b.price);
+        break;
+      case "price-high-low":
+        filtered.sort((a, b) => b.price - a.price);
+        break;
+      case "name-a-z":
+        filtered.sort((a, b) => a.name.localeCompare(b.name));
+        break;
+      case "name-z-a":
+        filtered.sort((a, b) => b.name.localeCompare(a.name));
+        break;
+      default:
+        break;
     }
 
-    if (!filtered.length) {
-      catalogGrid.innerHTML = `<div class="catalog-empty">No products matched your filters.</div>`;
-      return;
-    }
-
-    catalogGrid.innerHTML = filtered.map(buildCard).join("");
+    renderProducts(filtered);
   }
 
-  if (sortSelect) {
-    sortSelect.addEventListener("change", renderProducts);
-  }
-
-  if (priceRange) {
-    priceRange.addEventListener("input", renderProducts);
-  }
-
-  document.querySelectorAll('.catalog-sidebar input[type="checkbox"]').forEach(input => {
-    input.addEventListener("change", renderProducts);
+  categoryCheckboxes.forEach((checkbox) => {
+    checkbox.addEventListener("change", applyFilters);
   });
 
-  renderProducts();
+  if (inStockOnly) inStockOnly.addEventListener("change", applyFilters);
+  if (minPriceInput) minPriceInput.addEventListener("input", applyFilters);
+  if (maxPriceInput) maxPriceInput.addEventListener("input", applyFilters);
+  if (sortSelect) sortSelect.addEventListener("change", applyFilters);
+
+  if (clearFiltersBtn) {
+    clearFiltersBtn.addEventListener("click", () => {
+      categoryCheckboxes.forEach((checkbox) => {
+        checkbox.checked = false;
+      });
+
+      if (inStockOnly) inStockOnly.checked = false;
+      if (minPriceInput) minPriceInput.value = "";
+      if (maxPriceInput) maxPriceInput.value = "";
+      if (sortSelect) sortSelect.value = "featured";
+
+      applyFilters();
+    });
+  }
+
+  applyFilters();
 });
