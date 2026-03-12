@@ -772,3 +772,35 @@
   margin: 0 auto;           /* forces center */
   text-align: center;
 }
+
+/* HERO BUTTON FIX */
+.hero-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;   /* centers buttons horizontally */
+  justify-content: center;
+  gap: 14px;
+}
+
+/* Shop Now button */
+.hero-actions .btn-white {
+  width: auto;           /* prevents full width */
+  min-width: 200px;
+  max-width: 260px;
+  padding: 16px 28px;
+  font-size: 18px;
+  font-weight: 700;
+  border-radius: 999px;
+  text-align: center;
+}
+
+/* Explore Collections button */
+.hero-actions .btn-glass {
+  width: auto;
+  min-width: 200px;
+  max-width: 260px;
+  padding: 14px 26px;
+  font-size: 17px;
+  border-radius: 999px;
+  text-align: center;
+}
