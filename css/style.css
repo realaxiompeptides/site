@@ -61,3 +61,12 @@ a {
   position: relative;
   flex-shrink: 0;
 }
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+}
