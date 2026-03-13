@@ -1,7 +1,17 @@
 <aside class="cart-drawer" id="cartDrawer" aria-hidden="true">
   <div class="cart-drawer-inner">
     <div class="cart-drawer-header">
-      <h2>Your Cart</h2>
+      <div class="cart-drawer-title-group">
+        <div class="cart-drawer-title-icon">
+          <i class="fa-solid fa-cart-shopping"></i>
+        </div>
+
+        <div class="cart-drawer-title-copy">
+          <h2>Your Cart</h2>
+          <p><span id="cartDrawerItemCount">0</span> item(s) in your cart</p>
+        </div>
+      </div>
+
       <button class="drawer-close" id="cartClose" aria-label="Close cart" type="button">
         &times;
       </button>
@@ -22,6 +32,9 @@
           <i class="fa-solid fa-cart-shopping"></i>
         </div>
         <p class="cart-empty-text">Your cart is currently empty.</p>
+        <p class="cart-empty-subtext">
+          Add premium research products to your cart and check out when you're ready.
+        </p>
         <a href="catalog.html" class="cart-pill-btn cart-outline-btn">Browse Products</a>
       </div>
 
@@ -76,7 +89,7 @@
       </div>
 
       <div class="cart-action-stack">
-        <a href="cart.html" class="cart-pill-btn cart-muted-btn">View Cart</a>
+        <a href="/cart/cart-page.html" class="cart-pill-btn cart-muted-btn">View Cart</a>
         <a href="checkout.html" class="cart-pill-btn cart-primary-btn">Checkout</a>
       </div>
     </div>
