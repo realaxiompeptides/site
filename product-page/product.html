@@ -70,7 +70,6 @@
         class="icon-btn cart-btn"
         id="cartToggle"
         aria-label="Open cart"
-        aria-controls="cartDrawer"
         aria-expanded="false"
         type="button"
       >
@@ -95,26 +94,11 @@
       </div>
 
       <nav class="mobile-nav">
-        <a href="../index.html" class="mobile-nav-link">
-          <span>Home</span>
-          <span class="mobile-nav-arrow">›</span>
-        </a>
-        <a href="../catalog.html" class="mobile-nav-link">
-          <span>Products</span>
-          <span class="mobile-nav-arrow">›</span>
-        </a>
-        <a href="../track-order.html" class="mobile-nav-link">
-          <span>Track Your Order</span>
-          <span class="mobile-nav-arrow">›</span>
-        </a>
-        <a href="../affiliate-program.html" class="mobile-nav-link">
-          <span>Affiliate Program</span>
-          <span class="mobile-nav-arrow">›</span>
-        </a>
-        <a href="../contact.html" class="mobile-nav-link">
-          <span>Contact Us</span>
-          <span class="mobile-nav-arrow">›</span>
-        </a>
+        <a href="../index.html" class="mobile-nav-link"><span>Home</span><span class="mobile-nav-arrow">›</span></a>
+        <a href="../catalog.html" class="mobile-nav-link"><span>Products</span><span class="mobile-nav-arrow">›</span></a>
+        <a href="../track-order.html" class="mobile-nav-link"><span>Track Your Order</span><span class="mobile-nav-arrow">›</span></a>
+        <a href="../affiliate-program.html" class="mobile-nav-link"><span>Affiliate Program</span><span class="mobile-nav-arrow">›</span></a>
+        <a href="../contact.html" class="mobile-nav-link"><span>Contact Us</span><span class="mobile-nav-arrow">›</span></a>
       </nav>
 
       <div class="mobile-menu-divider"></div>
@@ -144,13 +128,13 @@
 
         <div class="product-layout">
           <div class="product-gallery-card">
+            <div class="product-badge" id="productBadge">SALE</div>
             <div class="product-gallery-main">
               <img id="productMainImage" src="" alt="" />
             </div>
           </div>
 
           <div class="product-info-card">
-            <div class="product-badge" id="productBadge">SALE</div>
             <h1 id="productName">Loading...</h1>
 
             <div class="product-price-wrap">
@@ -160,36 +144,26 @@
 
             <p class="product-short-description" id="productShortDescription"></p>
 
-            <div class="product-option-group">
-              <label for="productVariantSelect">Choose Variant</label>
-              <select id="productVariantSelect"></select>
-            </div>
-
-            <button class="product-add-btn" id="productAddToCart" type="button">
-              Add To Cart
-            </button>
-
-            <div class="product-meta">
-              <div class="product-meta-item">
+            <div class="product-trust-row">
+              <div class="product-trust-item">
                 <i class="fa-solid fa-flask-vial"></i>
                 <span>Research Use Only</span>
               </div>
-              <div class="product-meta-item">
+              <div class="product-trust-item">
                 <i class="fa-solid fa-file-circle-check"></i>
-                <span>COA Support Positioning</span>
+                <span>COA Available</span>
               </div>
-              <div class="product-meta-item">
+              <div class="product-trust-item">
                 <i class="fa-solid fa-truck-fast"></i>
-                <span>Fast Processing</span>
+                <span>Fast Order Processing</span>
               </div>
             </div>
+
+            <div id="productPurchaseBoxMount"></div>
           </div>
         </div>
 
-        <section class="product-description-card">
-          <h2>Product Description</h2>
-          <p id="productLongDescription"></p>
-        </section>
+        <div id="productDescriptionMount"></div>
       </div>
     </section>
   </main>
@@ -198,9 +172,9 @@
 
   <script src="../cart/cart-loader.js" defer></script>
   <script src="../js/product-data.js" defer></script>
-  <script src="product.js" defer></script>
   <script src="../js/menu.js" defer></script>
   <script src="../cart/cart.js" defer></script>
   <script src="../footer/footer-loader.js" defer></script>
+  <script src="product.js" defer></script>
 </body>
 </html>
