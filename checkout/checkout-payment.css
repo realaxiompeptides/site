@@ -1,0 +1,32 @@
+.payment-box {
+  border: 1px solid #dbe3ee;
+  border-radius: 18px;
+  padding: 18px;
+  background: #f9fbff;
+}
+
+.payment-method {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid #dbe3ee;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: white;
+  margin-bottom: 10px;
+  cursor: pointer;
+}
+
+.payment-method:hover {
+  border-color: #3a8dde;
+}
+
+.payment-method input {
+  accent-color: #3a8dde;
+}
+
+.payment-note {
+  font-size: 14px;
+  color: #64748b;
+  margin-top: 10px;
+}
