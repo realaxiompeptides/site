@@ -7,9 +7,6 @@
 
 <title>Checkout | Axiom Peptides</title>
 
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-
 <link rel="stylesheet" href="../css/style.css">
 <link rel="stylesheet" href="../footer/footer.css">
 <link rel="stylesheet" href="checkout.css">
@@ -18,21 +15,11 @@
 
 <body class="checkout-page">
 
-<!-- Header -->
 <header class="checkout-header">
 
-<div class="checkout-header-inner">
-
 <a href="../index.html" class="checkout-logo">
-<img src="../images/axiom-menu-logo.PNG" alt="Axiom Peptides">
+<img src="../images/axiom-menu-logo.PNG">
 </a>
-
-<div class="checkout-security">
-<i class="fa-solid fa-lock"></i>
-Secure Checkout
-</div>
-
-</div>
 
 </header>
 
@@ -48,160 +35,62 @@ Secure Checkout
 
 <form id="checkoutForm">
 
-<!-- Contact -->
+<!-- CONTACT -->
 <div class="checkout-section">
 
 <h2>Contact</h2>
 
-<input
-type="email"
-placeholder="Email Address"
-required
-id="email"
-/>
+<input type="email" placeholder="Email Address" required>
 
 </div>
 
 
-<!-- Shipping -->
+<!-- SHIPPING -->
 <div class="checkout-section">
 
 <h2>Shipping Address</h2>
 
-<div class="two-col">
+<input type="text" placeholder="First Name" required>
+<input type="text" placeholder="Last Name" required>
 
-<input
-type="text"
-placeholder="First Name"
-required
-id="firstName"
-/>
+<input type="text" placeholder="Address" required>
+<input type="text" placeholder="Apartment / Suite">
 
-<input
-type="text"
-placeholder="Last Name"
-required
-id="lastName"
-/>
+<input type="text" placeholder="City" required>
+<input type="text" placeholder="State" required>
+<input type="text" placeholder="ZIP Code" required>
 
-</div>
-
-<input
-type="text"
-placeholder="Address"
-required
-id="address"
-/>
-
-<input
-type="text"
-placeholder="Apartment / Suite"
-/>
-
-<div class="two-col">
-
-<input
-type="text"
-placeholder="City"
-required
-id="city"
-/>
-
-<input
-type="text"
-placeholder="State"
-required
-id="state"
-/>
-
-</div>
-
-<input
-type="text"
-placeholder="ZIP Code"
-required
-id="zip"
-/>
-
-<input
-type="tel"
-placeholder="Phone"
-required
-id="phone"
-/>
+<input type="tel" placeholder="Phone Number" required>
 
 </div>
 
 
-<!-- Shipping Method -->
+<!-- SHIPPING RATES -->
 <div class="checkout-section">
 
-<h2>Shipping</h2>
+<h2>Shipping Method</h2>
 
 <div id="shippingRates">
 
-<button
-type="button"
-class="get-rates-btn"
-id="getRates"
->
+<button type="button" id="getRates">
+
 Get Live USPS Rates
+
 </button>
 
-<div id="ratesContainer">
-
-<p class="rates-placeholder">
-Enter address and click "Get Rates"
-</p>
-
-</div>
-
 </div>
 
 </div>
 
 
-<!-- Payment -->
-<div class="checkout-section">
-
-<h2>Payment</h2>
-
-<input
-type="text"
-placeholder="Card Number"
-required
-/>
-
-<div class="two-col">
-
-<input
-type="text"
-placeholder="MM / YY"
-required
-/>
-
-<input
-type="text"
-placeholder="CVC"
-required
-/>
-
-</div>
-
-<input
-type="text"
-placeholder="Name on Card"
-required
-/>
-
-</div>
+<!-- PAYMENT METHODS LOAD HERE -->
+<div id="payment-methods"></div>
 
 
-<button
-type="submit"
-class="checkout-button"
->
+<button type="submit" class="checkout-button">
+
 Place Order
+
 </button>
 
 </form>
@@ -209,7 +98,7 @@ Place Order
 </section>
 
 
-<!-- RIGHT SIDE ORDER SUMMARY -->
+<!-- ORDER SUMMARY -->
 <aside class="checkout-summary">
 
 <h2>Order Summary</h2>
@@ -218,19 +107,19 @@ Place Order
 
 <div class="checkout-total">
 
-<div class="row">
+<div>
 <span>Subtotal</span>
-<strong id="checkoutSubtotal">$0.00</strong>
+<strong id="subtotal">$0.00</strong>
 </div>
 
-<div class="row">
+<div>
 <span>Shipping</span>
-<strong id="checkoutShipping">$0.00</strong>
+<strong id="shipping">$0.00</strong>
 </div>
 
-<div class="row total">
+<div class="total">
 <span>Total</span>
-<strong id="checkoutTotal">$0.00</strong>
+<strong id="total">$0.00</strong>
 </div>
 
 </div>
@@ -242,7 +131,6 @@ Place Order
 </main>
 
 
-<!-- Footer -->
 <div id="site-footer"></div>
 
 <script src="../js/cart.js"></script>
