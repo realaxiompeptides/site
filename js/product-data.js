@@ -9,7 +9,7 @@ window.AXIOM_PRODUCTS = [
     longDescription:
       "This product page is powered from a shared product data file so you do not need to hardcode every page separately. Add more variants, prices, images, and descriptions here and the product page will load them automatically.",
     images: [
-      "images/products/glp-3-rt-5mg-main.PNG"
+      "images/products/reta-5mg-main.PNG"
     ],
     variants: [
       { id: "glp3rt-5mg", label: "5MG", price: 39, compareAtPrice: 45, weightOz: 1.2, inStock: true },
