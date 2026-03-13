@@ -21,12 +21,12 @@
     href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
   />
 
-  <link rel="stylesheet" href="css/style.css" />
-  <link rel="stylesheet" href="css/home.css" />
-  <link rel="stylesheet" href="css/menu.css" />
-  <link rel="stylesheet" href="cart/cart.css" />
-  <link rel="stylesheet" href="footer/footer.css" />
-  <link rel="stylesheet" href="product-page/product.css" />
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="../css/home.css" />
+  <link rel="stylesheet" href="../css/menu.css" />
+  <link rel="stylesheet" href="../cart/cart.css" />
+  <link rel="stylesheet" href="../footer/footer.css" />
+  <link rel="stylesheet" href="product.css" />
 </head>
 <body class="product-page">
 
@@ -62,8 +62,8 @@
         <span></span>
       </button>
 
-      <a href="index.html" class="site-logo" aria-label="Axiom Peptides home">
-        <img src="images/axiom-logo.PNG" alt="Axiom Peptides logo" />
+      <a href="../index.html" class="site-logo" aria-label="Axiom Peptides home">
+        <img src="../images/axiom-logo.PNG" alt="Axiom Peptides logo" />
       </a>
 
       <button
@@ -85,8 +85,8 @@
   <aside class="mobile-menu" id="mobileMenu" aria-hidden="true">
     <div class="mobile-menu-inner">
       <div class="mobile-menu-header">
-        <a href="index.html" class="mobile-menu-logo" aria-label="Axiom Peptides home">
-          <img src="images/axiom-menu-logo.PNG" alt="Axiom Peptides logo" />
+        <a href="../index.html" class="mobile-menu-logo" aria-label="Axiom Peptides home">
+          <img src="../images/axiom-menu-logo.PNG" alt="Axiom Peptides logo" />
         </a>
 
         <button class="drawer-close" id="menuClose" aria-label="Close menu" type="button">
@@ -95,18 +95,32 @@
       </div>
 
       <nav class="mobile-nav">
-        <a href="../index.html">
-<a href="../catalog.html">
-<a href="../track-order.html">
-<a href="../affiliate-program.html">
-<a href="../contact.html">
-<a href="../account.html">
+        <a href="../index.html" class="mobile-nav-link">
+          <span>Home</span>
+          <span class="mobile-nav-arrow">›</span>
+        </a>
+        <a href="../catalog.html" class="mobile-nav-link">
+          <span>Products</span>
+          <span class="mobile-nav-arrow">›</span>
+        </a>
+        <a href="../track-order.html" class="mobile-nav-link">
+          <span>Track Your Order</span>
+          <span class="mobile-nav-arrow">›</span>
+        </a>
+        <a href="../affiliate-program.html" class="mobile-nav-link">
+          <span>Affiliate Program</span>
+          <span class="mobile-nav-arrow">›</span>
+        </a>
+        <a href="../contact.html" class="mobile-nav-link">
+          <span>Contact Us</span>
+          <span class="mobile-nav-arrow">›</span>
+        </a>
       </nav>
 
       <div class="mobile-menu-divider"></div>
 
       <div class="mobile-menu-secondary">
-        <a href="account.html" class="mobile-nav-link secondary-link">
+        <a href="../account.html" class="mobile-nav-link secondary-link">
           <span>Account</span>
           <span class="mobile-nav-arrow">›</span>
         </a>
@@ -121,9 +135,9 @@
     <section class="product-shell">
       <div class="container">
         <div class="product-breadcrumbs">
-          <a href="index.html">Home</a>
+          <a href="../index.html">Home</a>
           <span>/</span>
-          <a href="catalog.html">Products</a>
+          <a href="../catalog.html">Products</a>
           <span>/</span>
           <strong id="productBreadcrumbName">Product</strong>
         </div>
@@ -183,10 +197,10 @@
   <div id="site-footer"></div>
 
   <script src="../cart/cart-loader.js" defer></script>
-<script src="../js/product-data.js" defer></script>
-<script src="product.js" defer></script>
-<script src="../js/menu.js" defer></script>
-<script src="../cart/cart.js" defer></script>
-<script src="../footer/footer-loader.js" defer></script>
+  <script src="../js/product-data.js" defer></script>
+  <script src="product.js" defer></script>
+  <script src="../js/menu.js" defer></script>
+  <script src="../cart/cart.js" defer></script>
+  <script src="../footer/footer-loader.js" defer></script>
 </body>
 </html>
