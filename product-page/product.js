@@ -42,6 +42,7 @@ document.addEventListener("DOMContentLoaded", async function () {
   const qtyMinus = document.getElementById("qtyMinus");
   const qtyPlus = document.getElementById("qtyPlus");
   const addToCartBtn = document.getElementById("productAddToCart");
+  const cartCount = document.getElementById("cartCount");
 
   function formatMoney(value) {
     return `$${Number(value || 0).toFixed(2)}`;
@@ -99,6 +100,24 @@ document.addEventListener("DOMContentLoaded", async function () {
       this.onerror = null;
       this.src = "../images/products/placeholder.PNG";
     };
+  }
+
+  function updateCartCountDisplay() {
+    if (!cartCount) return;
+
+    let cart = [];
+    try {
+      cart = JSON.parse(localStorage.getItem("axiom_cart")) || [];
+    } catch (error) {
+      console.error("Failed to read cart from localStorage", error);
+      cart = [];
+    }
+
+    const totalItems = cart.reduce(function (sum, item) {
+      return sum + (Number(item.quantity) || 0);
+    }, 0);
+
+    cartCount.textContent = String(totalItems);
   }
 
   function showNotFoundState() {
@@ -224,6 +243,7 @@ document.addEventListener("DOMContentLoaded", async function () {
   }
 
   updateVariantDisplay();
+  updateCartCountDisplay();
 
   if (variantSelect) {
     variantSelect.addEventListener("change", updateVariantDisplay);
@@ -294,12 +314,21 @@ document.addEventListener("DOMContentLoaded", async function () {
       }
 
       localStorage.setItem("axiom_cart", JSON.stringify(cart));
+
+      updateCartCountDisplay();
+
       window.dispatchEvent(new Event("axiom-cart-updated"));
+      document.dispatchEvent(new CustomEvent("axiom-cart-updated"));
 
       if (typeof window.openCartDrawer === "function") {
         window.openCartDrawer();
       } else {
-        alert("Added to cart");
+        addToCartBtn.textContent = "Added To Cart";
+        setTimeout(function () {
+          const currentVariant = getSelectedVariant();
+          if (!currentVariant || currentVariant.inStock === false) return;
+          addToCartBtn.textContent = "Add To Cart";
+        }, 1200);
       }
     });
   }
