@@ -170,36 +170,39 @@
   <div class="site-overlay" id="siteOverlay"></div>
 
   <main class="track-order-main">
-    <section class="track-order-wrap">
-      <div class="track-order-card">
-        <h1 class="track-order-title">Track Your Order</h1>
+    <section class="track-order-hero">
+      <div class="track-order-wrap">
+        <p class="track-order-kicker">Fast Tracking</p>
+        <div class="track-order-card">
+          <h1 class="track-order-title">Track Your Order</h1>
 
-        <p class="track-order-text">
-          Enter your USPS tracking number below and you will be redirected to the official USPS tracking page.
-        </p>
+          <p class="track-order-text">
+            Enter your USPS tracking number below and you will be redirected to the official USPS tracking page.
+          </p>
 
-        <form class="track-order-form" id="trackOrderForm">
-          <div>
-            <label class="track-order-label" for="trackingNumber">USPS Tracking Number</label>
-            <input
-              class="track-order-input"
-              id="trackingNumber"
-              name="trackingNumber"
-              type="text"
-              inputmode="text"
-              autocomplete="off"
-              placeholder="Enter your USPS tracking number"
-            />
-          </div>
+          <form class="track-order-form" id="trackOrderForm">
+            <div>
+              <label class="track-order-label" for="trackingNumber">USPS Tracking Number</label>
+              <input
+                class="track-order-input"
+                id="trackingNumber"
+                name="trackingNumber"
+                type="text"
+                inputmode="text"
+                autocomplete="off"
+                placeholder="Enter your USPS tracking number"
+              />
+            </div>
 
-          <button class="track-order-btn" type="submit">Track Package</button>
+            <button class="track-order-btn" type="submit">Track Package</button>
 
-          <div class="track-order-error" id="trackOrderError"></div>
-        </form>
+            <div class="track-order-error" id="trackOrderError"></div>
+          </form>
 
-        <p class="track-order-note">
-          You can find your tracking number in your shipping confirmation email.
-        </p>
+          <p class="track-order-note">
+            You can find your tracking number in your shipping confirmation email.
+          </p>
+        </div>
       </div>
     </section>
   </main>
@@ -209,7 +212,27 @@
   <script src="../js/menu.js" defer></script>
   <script src="../js/cart.js" defer></script>
   <script src="../js/app.js" defer></script>
-  <script src="../footer/footer-loader.js" defer></script>
   <script src="track-order.js" defer></script>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const footerTarget = document.getElementById("site-footer");
+      if (!footerTarget) return;
+
+      fetch("../footer/footer.html")
+        .then(function (response) {
+          if (!response.ok) {
+            throw new Error("Could not load ../footer/footer.html");
+          }
+          return response.text();
+        })
+        .then(function (html) {
+          footerTarget.innerHTML = html;
+        })
+        .catch(function (error) {
+          console.error("Footer load failed:", error);
+        });
+    });
+  </script>
 </body>
 </html>
