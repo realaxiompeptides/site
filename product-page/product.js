@@ -68,7 +68,7 @@ document.addEventListener("DOMContentLoaded", async function () {
       return cleanPath;
     }
 
-    return `../images/products/${cleanPath}`;
+    return `../${cleanPath}`;
   }
 
   function getImageForVariant(productObj, variantIndex) {
