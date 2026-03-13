@@ -446,3 +446,135 @@
     font-size: 18px;
   }
 }
+
+.cart-drawer-title-group {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.cart-drawer-title-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #367ec3, #2f60d5);
+  color: #fff;
+  box-shadow: 0 14px 28px rgba(47, 96, 213, 0.22);
+  flex-shrink: 0;
+}
+
+.cart-drawer-title-icon i {
+  font-size: 22px;
+}
+
+.cart-drawer-title-copy h2 {
+  margin: 0;
+}
+
+.cart-drawer-title-copy p {
+  margin: 4px 0 0;
+  color: #64748b;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.cart-empty-subtext {
+  margin: 10px 0 18px;
+  color: #64748b;
+  line-height: 1.7;
+  text-align: center;
+}
+
+.cart-outline-btn {
+  border: 2px solid #cfd8e6;
+  background: #fff;
+  color: #0f172a;
+}
+
+.cart-outline-btn:hover {
+  border-color: #367ec3;
+  color: #367ec3;
+}
+
+.cart-muted-btn {
+  background: #eaf1fb;
+  color: #0f172a;
+}
+
+.cart-muted-btn:hover {
+  background: #dbe8fb;
+}
+
+.cart-primary-btn {
+  background: linear-gradient(135deg, #367ec3, #2f60d5);
+  color: #fff;
+  box-shadow: 0 14px 28px rgba(47, 96, 213, 0.2);
+}
+
+.cart-primary-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 18px 34px rgba(47, 96, 213, 0.24);
+}
+
+.cart-summary-total strong,
+.cart-summary-total span {
+  color: #0f172a;
+}
+
+.cart-discount-box {
+  border: 1px solid #dbe4f0;
+  border-radius: 22px;
+  padding: 18px;
+  background: linear-gradient(180deg, #ffffff, #f8fbff);
+}
+
+.cart-discount-box label {
+  display: block;
+  margin-bottom: 10px;
+  color: #0f172a;
+  font-weight: 800;
+}
+
+.cart-discount-row input {
+  border: 1px solid #d7dfeb;
+  border-radius: 999px;
+  min-height: 50px;
+  padding: 0 16px;
+}
+
+.cart-discount-row button {
+  border: none;
+  border-radius: 999px;
+  min-height: 50px;
+  padding: 0 20px;
+  background: linear-gradient(135deg, #367ec3, #2f60d5);
+  color: #fff;
+  font-weight: 800;
+}
+
+.cart-progress-bar {
+  background: #e8eef8;
+}
+
+.cart-progress-bar span {
+  background: linear-gradient(135deg, #5aa9e6, #2f60d5);
+}
+
+@media (max-width: 640px) {
+  .cart-drawer-title-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 16px;
+  }
+
+  .cart-drawer-title-icon i {
+    font-size: 20px;
+  }
+
+  .cart-drawer-title-copy p {
+    font-size: 13px;
+  }
+}
