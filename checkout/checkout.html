@@ -39,23 +39,20 @@
       <a href="../index.html" class="checkout-logo" aria-label="Axiom Peptides home">
         <img src="../images/axiom-menu-logo.PNG" alt="Axiom Peptides logo" />
       </a>
-
-      <div class="checkout-header-lock">
-        <i class="fa-solid fa-lock"></i>
-        <span>Secure Checkout</span>
-      </div>
     </div>
   </header>
 
   <main class="checkout-main">
     <div class="checkout-container">
 
+      <div class="checkout-page-heading">
+        <h1 class="checkout-page-title">Checkout</h1>
+      </div>
+
       <div class="checkout-layout">
 
-        <!-- LEFT COLUMN -->
         <section class="checkout-form-wrap">
           <div class="checkout-card">
-            <h1 class="checkout-page-title">Checkout</h1>
 
             <form id="checkoutForm" novalidate>
 
@@ -183,10 +180,10 @@
                 </div>
               </section>
 
-              <!-- PAYMENT SECTION LOADS HERE -->
+              <!-- PAYMENT METHODS LOAD HERE -->
               <div id="payment-methods"></div>
 
-              <!-- ORDER SUMMARY ABOVE TERMS + BUTTON -->
+              <!-- ORDER SUMMARY -->
               <section class="checkout-section">
                 <div class="checkout-summary-card">
                   <h2 class="checkout-section-title">Order Summary</h2>
@@ -217,10 +214,10 @@
                 </div>
               </section>
 
-              <!-- TERMS SECTION LOADS HERE -->
+              <!-- TERMS LOAD HERE -->
               <div id="termsSection"></div>
 
-              <!-- PLACE ORDER -->
+              <!-- SUBMIT -->
               <section class="checkout-section checkout-submit-section">
                 <button type="submit" class="checkout-button">
                   Place Order
@@ -237,8 +234,8 @@
 
   <div id="site-footer"></div>
 
-  <script src="../js/cart.js"></script>
-  <script src="../footer/footer-loader.js"></script>
-  <script src="checkout.js"></script>
+  <script src="../js/cart.js" defer></script>
+  <script src="../footer/footer-loader.js" defer></script>
+  <script src="checkout.js" defer></script>
 </body>
 </html>
