@@ -1,141 +1,244 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+  />
+  <title>Checkout | Axiom Peptides</title>
+  <meta
+    name="description"
+    content="Secure checkout for Axiom Peptides orders."
+  />
 
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+    rel="stylesheet"
+  />
 
-<title>Checkout | Axiom Peptides</title>
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+  />
 
-<link rel="stylesheet" href="../css/style.css">
-<link rel="stylesheet" href="../footer/footer.css">
-<link rel="stylesheet" href="checkout.css">
-
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="../footer/footer.css" />
+  <link rel="stylesheet" href="checkout.css" />
+  <link rel="stylesheet" href="checkout-shipping.css" />
+  <link rel="stylesheet" href="checkout-payment.css" />
+  <link rel="stylesheet" href="checkout-terms.css" />
 </head>
 
 <body class="checkout-page">
 
-<header class="checkout-header">
+  <header class="checkout-header">
+    <div class="checkout-header-inner">
+      <a href="../index.html" class="checkout-logo" aria-label="Axiom Peptides home">
+        <img src="../images/axiom-menu-logo.PNG" alt="Axiom Peptides logo" />
+      </a>
 
-<a href="../index.html" class="checkout-logo">
-<img src="../images/axiom-menu-logo.PNG">
-</a>
+      <div class="checkout-header-lock">
+        <i class="fa-solid fa-lock"></i>
+        <span>Secure Checkout</span>
+      </div>
+    </div>
+  </header>
 
-</header>
+  <main class="checkout-main">
+    <div class="checkout-container">
 
+      <div class="checkout-layout">
 
-<main class="checkout-main">
+        <!-- LEFT COLUMN -->
+        <section class="checkout-form-wrap">
+          <div class="checkout-card">
+            <h1 class="checkout-page-title">Checkout</h1>
 
-<div class="checkout-container">
+            <form id="checkoutForm" novalidate>
 
-<!-- LEFT SIDE -->
-<section class="checkout-form">
+              <!-- CONTACT -->
+              <section class="checkout-section">
+                <h2 class="checkout-section-title">Contact</h2>
 
-<h1>Checkout</h1>
+                <div class="checkout-field-group">
+                  <input
+                    class="checkout-input"
+                    type="email"
+                    id="checkoutEmail"
+                    name="email"
+                    placeholder="Email Address"
+                    autocomplete="email"
+                    required
+                  />
+                </div>
+              </section>
 
-<form id="checkoutForm">
+              <!-- SHIPPING ADDRESS -->
+              <section class="checkout-section">
+                <h2 class="checkout-section-title">Shipping Address</h2>
 
-<!-- CONTACT -->
-<div class="checkout-section">
+                <div class="checkout-grid two-col">
+                  <input
+                    class="checkout-input"
+                    type="text"
+                    id="firstName"
+                    name="firstName"
+                    placeholder="First Name"
+                    autocomplete="given-name"
+                    required
+                  />
 
-<h2>Contact</h2>
+                  <input
+                    class="checkout-input"
+                    type="text"
+                    id="lastName"
+                    name="lastName"
+                    placeholder="Last Name"
+                    autocomplete="family-name"
+                    required
+                  />
 
-<input type="email" placeholder="Email Address" required>
+                  <input
+                    class="checkout-input checkout-span-2"
+                    type="text"
+                    id="address1"
+                    name="address1"
+                    placeholder="Street Address"
+                    autocomplete="address-line1"
+                    required
+                  />
 
-</div>
+                  <input
+                    class="checkout-input checkout-span-2"
+                    type="text"
+                    id="address2"
+                    name="address2"
+                    placeholder="Apartment / Suite (Optional)"
+                    autocomplete="address-line2"
+                  />
 
+                  <input
+                    class="checkout-input"
+                    type="text"
+                    id="city"
+                    name="city"
+                    placeholder="City"
+                    autocomplete="address-level2"
+                    required
+                  />
 
-<!-- SHIPPING -->
-<div class="checkout-section">
+                  <input
+                    class="checkout-input"
+                    type="text"
+                    id="state"
+                    name="state"
+                    placeholder="State"
+                    autocomplete="address-level1"
+                    required
+                  />
 
-<h2>Shipping Address</h2>
+                  <input
+                    class="checkout-input"
+                    type="text"
+                    id="zip"
+                    name="zip"
+                    placeholder="ZIP Code"
+                    autocomplete="postal-code"
+                    required
+                  />
 
-<input type="text" placeholder="First Name" required>
-<input type="text" placeholder="Last Name" required>
+                  <input
+                    class="checkout-input"
+                    type="tel"
+                    id="phone"
+                    name="phone"
+                    placeholder="Phone Number"
+                    autocomplete="tel"
+                    required
+                  />
+                </div>
+              </section>
 
-<input type="text" placeholder="Address" required>
-<input type="text" placeholder="Apartment / Suite">
+              <!-- SHIPPING METHOD -->
+              <section class="checkout-section">
+                <h2 class="checkout-section-title">Shipping Method</h2>
 
-<input type="text" placeholder="City" required>
-<input type="text" placeholder="State" required>
-<input type="text" placeholder="ZIP Code" required>
+                <div class="shipping-box">
+                  <button
+                    type="button"
+                    id="getRates"
+                    class="shipping-button"
+                  >
+                    Get Live USPS Rates
+                  </button>
 
-<input type="tel" placeholder="Phone Number" required>
+                  <p class="shipping-help-text">
+                    Enter your shipping address, then choose a shipping method.
+                  </p>
 
-</div>
+                  <div id="shippingRates" class="shipping-rates"></div>
+                </div>
+              </section>
 
+              <!-- PAYMENT SECTION LOADS HERE -->
+              <div id="payment-methods"></div>
 
-<!-- SHIPPING RATES -->
-<div class="checkout-section">
+              <!-- ORDER SUMMARY ABOVE TERMS + BUTTON -->
+              <section class="checkout-section">
+                <div class="checkout-summary-card">
+                  <h2 class="checkout-section-title">Order Summary</h2>
 
-<h2>Shipping Method</h2>
+                  <div id="checkoutItems" class="checkout-items"></div>
 
-<div id="shippingRates">
+                  <div class="checkout-total">
+                    <div class="checkout-total-row">
+                      <span>Subtotal</span>
+                      <strong id="subtotal">$0.00</strong>
+                    </div>
 
-<button type="button" id="getRates">
+                    <div class="checkout-total-row">
+                      <span>Shipping</span>
+                      <strong id="shipping">$0.00</strong>
+                    </div>
 
-Get Live USPS Rates
+                    <div class="checkout-total-row">
+                      <span>Tax</span>
+                      <strong id="tax">$0.00</strong>
+                    </div>
 
-</button>
+                    <div class="checkout-total-row total">
+                      <span>Total</span>
+                      <strong id="total">$0.00</strong>
+                    </div>
+                  </div>
+                </div>
+              </section>
 
-</div>
+              <!-- TERMS SECTION LOADS HERE -->
+              <div id="termsSection"></div>
 
-</div>
+              <!-- PLACE ORDER -->
+              <section class="checkout-section checkout-submit-section">
+                <button type="submit" class="checkout-button">
+                  Place Order
+                </button>
+              </section>
 
+            </form>
+          </div>
+        </section>
 
-<!-- PAYMENT METHODS LOAD HERE -->
-<div id="payment-methods"></div>
+      </div>
+    </div>
+  </main>
 
+  <div id="site-footer"></div>
 
-<button type="submit" class="checkout-button">
-
-Place Order
-
-</button>
-
-</form>
-
-</section>
-
-
-<!-- ORDER SUMMARY -->
-<aside class="checkout-summary">
-
-<h2>Order Summary</h2>
-
-<div id="checkoutItems"></div>
-
-<div class="checkout-total">
-
-<div>
-<span>Subtotal</span>
-<strong id="subtotal">$0.00</strong>
-</div>
-
-<div>
-<span>Shipping</span>
-<strong id="shipping">$0.00</strong>
-</div>
-
-<div class="total">
-<span>Total</span>
-<strong id="total">$0.00</strong>
-</div>
-
-</div>
-
-</aside>
-
-</div>
-
-</main>
-
-
-<div id="site-footer"></div>
-
-<script src="../js/cart.js"></script>
-<script src="../footer/footer-loader.js"></script>
-<script src="checkout.js"></script>
-
+  <script src="../js/cart.js"></script>
+  <script src="../footer/footer-loader.js"></script>
+  <script src="checkout.js"></script>
 </body>
 </html>
