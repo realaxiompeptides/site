@@ -70,6 +70,7 @@
         class="icon-btn cart-btn"
         id="cartToggle"
         aria-label="Open cart"
+        aria-controls="cartDrawer"
         aria-expanded="false"
         type="button"
       >
@@ -112,7 +113,7 @@
     </div>
   </aside>
 
-  <div id="cartMount"></div>
+  <div id="cart-drawer-mount"></div>
   <div class="site-overlay" id="siteOverlay"></div>
 
   <main class="product-main">
@@ -174,7 +175,27 @@
   <script src="../js/product-data.js" defer></script>
   <script src="../js/menu.js" defer></script>
   <script src="../cart/cart.js" defer></script>
-  <script src="../footer/footer-loader.js" defer></script>
   <script src="product.js" defer></script>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const footerTarget = document.getElementById("site-footer");
+      if (!footerTarget) return;
+
+      fetch("../footer/footer.html")
+        .then(function (response) {
+          if (!response.ok) {
+            throw new Error("Could not load ../footer/footer.html");
+          }
+          return response.text();
+        })
+        .then(function (html) {
+          footerTarget.innerHTML = html;
+        })
+        .catch(function (error) {
+          console.error("Footer load failed:", error);
+        });
+    });
+  </script>
 </body>
 </html>
