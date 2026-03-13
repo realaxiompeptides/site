@@ -145,7 +145,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const comparePrice = formatCompareRange(product);
     const price = formatPriceRange(product);
     const badge = product.badge || "SALE";
-    const link = `product.html?slug=${encodeURIComponent(product.slug)}`;
+    const link = `product-page/product.html?slug=${encodeURIComponent(product.slug)}`;
 
     return `
       <article class="catalog-product-card">
