@@ -1,37 +1,31 @@
-<div class="checkout-section">
+<section class="checkout-section">
+  <h2 class="checkout-section-title">Payment Method</h2>
 
-<h2>Payment Method</h2>
+  <div class="payment-box">
 
-<label class="payment-option">
+    <label class="payment-method">
+      <input type="radio" name="payment" checked>
+      <span>Card Payment</span>
+    </label>
 
-<input type="radio" name="payment" checked>
+    <label class="payment-method">
+      <input type="radio" name="payment">
+      <span>Cash App</span>
+    </label>
 
-<span>Crypto (Recommended)</span>
+    <label class="payment-method">
+      <input type="radio" name="payment">
+      <span>Zelle</span>
+    </label>
 
-</label>
+    <label class="payment-method">
+      <input type="radio" name="payment">
+      <span>Crypto</span>
+    </label>
 
-<label class="payment-option">
+    <p class="payment-note">
+      Payment instructions will appear after order submission.
+    </p>
 
-<input type="radio" name="payment">
-
-<span>Cash App</span>
-
-</label>
-
-<label class="payment-option">
-
-<input type="radio" name="payment">
-
-<span>Zelle</span>
-
-</label>
-
-<label class="payment-option">
-
-<input type="radio" name="payment">
-
-<span>Card (Stripe)</span>
-
-</label>
-
-</div>
+  </div>
+</section>
