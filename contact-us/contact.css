@@ -1,0 +1,245 @@
+body.contact-page {
+  background: #f7f9fc;
+}
+
+.contact-main {
+  padding-bottom: 72px;
+}
+
+.contact-hero {
+  position: relative;
+  padding: 44px 0 24px;
+}
+
+.contact-hero-inner {
+  max-width: 1120px;
+}
+
+.contact-kicker {
+  margin: 0 0 10px;
+  font-size: 0.95rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #367ec3;
+}
+
+.contact-hero h1 {
+  margin: 0;
+  font-size: clamp(2.4rem, 7vw, 4.8rem);
+  line-height: 0.98;
+  letter-spacing: -0.05em;
+  color: #0f172a;
+}
+
+.contact-subtext {
+  max-width: 860px;
+  margin: 22px 0 0;
+  font-size: clamp(1.05rem, 2.6vw, 1.35rem);
+  line-height: 1.8;
+  color: #667085;
+}
+
+.contact-primary-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-top: 28px;
+}
+
+.contact-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: 58px;
+  padding: 0 22px;
+  border-radius: 999px;
+  text-decoration: none;
+  font-weight: 800;
+  font-size: 1rem;
+  transition: transform 0.16s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+}
+
+.contact-pill:hover {
+  transform: translateY(-1px);
+}
+
+.contact-pill-whatsapp {
+  background: #25d366;
+  color: #ffffff;
+}
+
+.contact-pill-discord {
+  background: #5865f2;
+  color: #ffffff;
+}
+
+.contact-pill-telegram {
+  background: #229ed9;
+  color: #ffffff;
+}
+
+.contact-content {
+  margin-top: 20px;
+}
+
+.contact-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.8fr);
+  gap: 22px;
+  align-items: start;
+}
+
+.contact-side-stack {
+  display: grid;
+  gap: 22px;
+}
+
+.contact-card {
+  background: #ffffff;
+  border: 1px solid #d9e4f2;
+  border-radius: 30px;
+  padding: 28px 24px;
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.05);
+}
+
+.contact-card-main {
+  padding: 34px 28px;
+}
+
+.contact-card-icon {
+  width: 62px;
+  height: 62px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #367ec3, #2f60d5);
+  color: #ffffff;
+  font-size: 1.45rem;
+  box-shadow: 0 12px 24px rgba(47, 96, 213, 0.18);
+}
+
+.contact-card h2,
+.contact-card h3 {
+  margin: 18px 0 12px;
+  color: #0f172a;
+  letter-spacing: -0.03em;
+}
+
+.contact-card h2 {
+  font-size: clamp(1.8rem, 4vw, 2.5rem);
+}
+
+.contact-card h3 {
+  font-size: 1.5rem;
+}
+
+.contact-card p {
+  margin: 0;
+  font-size: 1.02rem;
+  line-height: 1.85;
+  color: #667085;
+}
+
+.contact-card p + p {
+  margin-top: 8px;
+}
+
+.contact-card-actions {
+  display: grid;
+  gap: 14px;
+  margin-top: 22px;
+}
+
+.contact-cta {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 64px;
+  padding: 0 18px;
+  border-radius: 18px;
+  background: #f8fbff;
+  border: 1px solid #dbe6f3;
+  color: #0f172a;
+  text-decoration: none;
+  font-weight: 700;
+  transition: border-color 0.2s ease, transform 0.16s ease, box-shadow 0.2s ease;
+}
+
+.contact-cta:hover {
+  transform: translateY(-1px);
+  border-color: #b9cde4;
+  box-shadow: 0 12px 26px rgba(15, 23, 42, 0.06);
+}
+
+.contact-cta i {
+  font-size: 1.3rem;
+  color: #367ec3;
+  width: 24px;
+  text-align: center;
+}
+
+.contact-link {
+  display: inline-block;
+  margin-top: 12px;
+  color: #2f60d5;
+  font-weight: 800;
+  text-decoration: none;
+  word-break: break-word;
+}
+
+.contact-link:hover {
+  text-decoration: underline;
+}
+
+.contact-strong {
+  font-weight: 800;
+  color: #0f172a !important;
+}
+
+@media (max-width: 980px) {
+  .contact-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 767px) {
+  .contact-main {
+    padding-bottom: 60px;
+  }
+
+  .contact-hero {
+    padding: 30px 0 16px;
+  }
+
+  .contact-subtext {
+    line-height: 1.7;
+  }
+
+  .contact-primary-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .contact-pill {
+    width: 100%;
+  }
+
+  .contact-card,
+  .contact-card-main {
+    border-radius: 24px;
+    padding: 22px 18px;
+  }
+
+  .contact-card h3 {
+    font-size: 1.35rem;
+  }
+
+  .contact-cta {
+    min-height: 60px;
+    padding: 0 16px;
+  }
+}
