@@ -27,7 +27,7 @@
   <link rel="stylesheet" href="css/style.css" />
   <link rel="stylesheet" href="css/home.css" />
   <link rel="stylesheet" href="css/menu.css" />
-  <link rel="stylesheet" href="css/cart.css" />
+  <link rel="stylesheet" href="cart/cart.css" />
   <link rel="stylesheet" href="css/catalog.css" />
   <link rel="stylesheet" href="footer/footer.css" />
 </head>
@@ -216,7 +216,6 @@
         </div>
 
         <div class="catalog-layout">
-          <!-- Sidebar -->
           <aside class="catalog-sidebar" id="catalogSidebar">
             <div class="catalog-sidebar-card">
               <div class="catalog-sidebar-header">
@@ -234,19 +233,19 @@
               <div class="catalog-filter-group">
                 <h3>Categories</h3>
                 <label class="catalog-check">
-                  <input type="checkbox" value="Peptides" class="catalog-category-filter" />
+                  <input type="checkbox" value="peptides" class="catalog-category-filter" />
                   <span>Peptides</span>
                 </label>
                 <label class="catalog-check">
-                  <input type="checkbox" value="Fat Loss" class="catalog-category-filter" />
+                  <input type="checkbox" value="fat-loss" class="catalog-category-filter" />
                   <span>Fat Loss</span>
                 </label>
                 <label class="catalog-check">
-                  <input type="checkbox" value="Research Compounds" class="catalog-category-filter" />
+                  <input type="checkbox" value="research-compounds" class="catalog-category-filter" />
                   <span>Research Compounds</span>
                 </label>
                 <label class="catalog-check">
-                  <input type="checkbox" value="Supplies" class="catalog-category-filter" />
+                  <input type="checkbox" value="supplies" class="catalog-category-filter" />
                   <span>Supplies</span>
                 </label>
               </div>
@@ -275,7 +274,6 @@
             </div>
           </aside>
 
-          <!-- Products -->
           <div class="catalog-products-area">
             <div class="catalog-results-bar">
               <p id="catalogResultsText">Loading products...</p>
@@ -290,11 +288,11 @@
     </section>
   </main>
 
-    <div id="site-footer"></div>
+  <div id="site-footer"></div>
 
   <script src="js/product-data.js" defer></script>
   <script src="js/menu.js" defer></script>
-  <script src="js/cart.js" defer></script>
+  <script src="cart/cart.js" defer></script>
   <script src="js/app.js" defer></script>
   <script src="footer/footer-loader.js" defer></script>
   <script src="js/catalog.js" defer></script>
