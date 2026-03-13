@@ -51,12 +51,44 @@ document.addEventListener("DOMContentLoaded", async function () {
     return Array.isArray(productObj?.variants) ? productObj.variants : [];
   }
 
-  function getImageForVariant(productObj, variantIndex) {
-    const images = Array.isArray(productObj?.images) ? productObj.images : [];
-    if (!images.length) {
+  function normalizeImagePath(path) {
+    if (!path || typeof path !== "string") {
       return "../images/products/placeholder.PNG";
     }
-    return images[variantIndex] || images[0];
+
+    const cleanPath = path.trim();
+
+    if (
+      cleanPath.startsWith("../") ||
+      cleanPath.startsWith("./") ||
+      cleanPath.startsWith("/") ||
+      cleanPath.startsWith("http://") ||
+      cleanPath.startsWith("https://")
+    ) {
+      return cleanPath;
+    }
+
+    return `../images/products/${cleanPath}`;
+  }
+
+  function getImageForVariant(productObj, variantIndex) {
+    const variants = Array.isArray(productObj?.variants) ? productObj.variants : [];
+    const selectedVariant = variants[variantIndex] || variants[0] || null;
+
+    if (selectedVariant?.image) {
+      return normalizeImagePath(selectedVariant.image);
+    }
+
+    const images = Array.isArray(productObj?.images) ? productObj.images : [];
+    if (images.length) {
+      return normalizeImagePath(images[variantIndex] || images[0]);
+    }
+
+    if (productObj?.image) {
+      return normalizeImagePath(productObj.image);
+    }
+
+    return "../images/products/placeholder.PNG";
   }
 
   function setMainImage(src, alt) {
