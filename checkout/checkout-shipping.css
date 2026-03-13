@@ -1,0 +1,44 @@
+.shipping-box {
+  background: #f9fbff;
+  border: 1px solid #dbe3ee;
+  padding: 20px;
+  border-radius: 18px;
+}
+
+.shipping-button {
+  background: #eef4fb;
+  border: 1px solid #cfe0f1;
+  padding: 14px 22px;
+  border-radius: 999px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.shipping-button:hover {
+  background: #e6f0fa;
+}
+
+.shipping-rates {
+  margin-top: 16px;
+  display: grid;
+  gap: 10px;
+}
+
+.shipping-option {
+  border: 1px solid #dbe3ee;
+  padding: 14px;
+  border-radius: 12px;
+  background: white;
+  display: flex;
+  justify-content: space-between;
+  cursor: pointer;
+}
+
+.shipping-option.active {
+  border-color: #3a8dde;
+  background: #f3f8ff;
+}
+
+.shipping-option:hover {
+  border-color: #3a8dde;
+}
