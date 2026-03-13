@@ -48,7 +48,7 @@ window.HOMEPAGE_COLLECTION_PRODUCTS = [
     name: "CJC-1295 (No DAC)",
     oldPrice: "",
     price: "$20.00",
-    image: "images/products/cjc-1295-nodac-5mg-main.PNG",
+    image: "images/products/cjc-1295-no-dac-5mg-main.PNG",
     badge: "",
     buttonText: "View Product",
     link: "product-page/product.html?slug=cjc-1295-no-dac"
