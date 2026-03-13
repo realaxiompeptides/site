@@ -134,7 +134,37 @@
     </div>
   </aside>
 
-  <div id="cart-drawer-mount"></div>
+  <aside class="cart-drawer" id="cartDrawer" aria-hidden="true">
+    <div class="cart-drawer-inner">
+      <div class="cart-drawer-header">
+        <h2>Your Cart</h2>
+        <button class="drawer-close" id="cartClose" aria-label="Close cart" type="button">
+          &times;
+        </button>
+      </div>
+
+      <div class="cart-body">
+        <div class="cart-empty-state" id="cartEmptyState">
+          <p class="cart-empty-text">Your cart is currently empty.</p>
+          <a href="../catalog.html" class="cart-pill-btn cart-outline-btn">Browse Products</a>
+        </div>
+
+        <div class="cart-items-list" id="cartItemsList" hidden></div>
+      </div>
+
+      <div class="cart-footer">
+        <div class="cart-subtotal-row">
+          <span>Subtotal</span>
+          <strong id="cartSubtotal">$0.00</strong>
+        </div>
+
+        <div class="cart-action-stack">
+          <a href="../cart.html" class="cart-pill-btn cart-muted-btn">View Cart</a>
+          <a href="../checkout.html" class="cart-pill-btn cart-outline-btn">Checkout</a>
+        </div>
+      </div>
+    </div>
+  </aside>
 
   <div class="site-overlay" id="siteOverlay"></div>
 
@@ -179,7 +209,6 @@
   <script src="../js/cart.js" defer></script>
   <script src="../js/app.js" defer></script>
   <script src="../footer/footer-loader.js" defer></script>
-  <script src="../cart/cart-drawer-loader.js" defer></script>
   <script src="track-order.js" defer></script>
 </body>
 </html>
