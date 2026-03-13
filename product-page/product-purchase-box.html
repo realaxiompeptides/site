@@ -1,23 +1,28 @@
 <div class="product-purchase-box">
   <div class="product-option-group">
-    <label for="productVariantSelect">Choose Variant</label>
-    <select id="productVariantSelect"></select>
-  </div>
-
-  <div class="product-option-group">
-    <label>Quantity</label>
-    <div class="product-qty-wrap">
-      <button type="button" class="product-qty-btn" id="qtyMinus">−</button>
-      <input type="number" id="productQty" min="1" value="1" />
-      <button type="button" class="product-qty-btn" id="qtyPlus">+</button>
+    <label class="product-option-label" for="productVariantSelect">Choose Variant</label>
+    <div class="product-select-wrap">
+      <select id="productVariantSelect" class="product-variant-select" aria-label="Choose variant"></select>
+      <span class="product-select-icon">
+        <i class="fa-solid fa-chevron-down"></i>
+      </span>
     </div>
   </div>
 
-  <button class="product-add-btn" id="productAddToCart" type="button">
+  <div class="product-option-group">
+    <label class="product-option-label" for="productQty">Quantity</label>
+    <div class="product-qty-wrap">
+      <button type="button" class="product-qty-btn" id="qtyMinus" aria-label="Decrease quantity">−</button>
+      <input id="productQty" class="product-qty-input" type="number" value="1" min="1" inputmode="numeric" />
+      <button type="button" class="product-qty-btn" id="qtyPlus" aria-label="Increase quantity">+</button>
+    </div>
+  </div>
+
+  <button id="productAddToCart" class="product-add-to-cart-btn" type="button">
     Add To Cart
   </button>
 
-  <div class="product-conversion-note">
+  <div class="product-checkout-note">
     <i class="fa-solid fa-shield-halved"></i>
     <span>Secure checkout and premium storefront support.</span>
   </div>
