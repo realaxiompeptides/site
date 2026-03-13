@@ -1,0 +1,136 @@
+body.track-order-page {
+  background: #f7f9fc;
+}
+
+.track-order-main {
+  padding: 28px 0 72px;
+}
+
+.track-order-wrap {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 0 18px;
+}
+
+.track-order-card {
+  background: #ffffff;
+  border: 1px solid #d8e2f0;
+  border-radius: 30px;
+  padding: 30px 22px;
+  box-shadow: 0 10px 35px rgba(15, 23, 66, 0.05);
+}
+
+.track-order-title {
+  margin: 0 0 16px;
+  font-size: clamp(2.2rem, 7vw, 4rem);
+  line-height: 1.02;
+  font-weight: 300;
+  letter-spacing: -0.04em;
+  color: #111827;
+}
+
+.track-order-text {
+  margin: 0 0 28px;
+  font-size: 1.02rem;
+  line-height: 1.8;
+  color: #667085;
+}
+
+.track-order-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.track-order-label {
+  display: block;
+  margin-bottom: 10px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.track-order-input {
+  width: 100%;
+  height: 62px;
+  border: 1px solid #d9e0ea;
+  border-radius: 16px;
+  background: #f8fafc;
+  padding: 0 18px;
+  font-size: 1.02rem;
+  color: #111827;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.track-order-input::placeholder {
+  color: #98a2b3;
+}
+
+.track-order-input:focus {
+  background: #ffffff;
+  border-color: #2f80c9;
+  box-shadow: 0 0 0 4px rgba(47, 128, 201, 0.12);
+}
+
+.track-order-btn {
+  width: 100%;
+  min-height: 62px;
+  border: none;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #367ec3, #2f60d5);
+  color: #ffffff;
+  font-size: 1.15rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+  box-shadow: 0 10px 24px rgba(47, 96, 213, 0.22);
+}
+
+.track-order-btn:hover {
+  transform: translateY(-1px);
+}
+
+.track-order-btn:active {
+  transform: translateY(0);
+}
+
+.track-order-note {
+  margin-top: 16px;
+  font-size: 0.96rem;
+  line-height: 1.7;
+  color: #667085;
+}
+
+.track-order-error {
+  display: none;
+  margin-top: 10px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #c62828;
+}
+
+.track-order-error.show {
+  display: block;
+}
+
+@media (max-width: 767px) {
+  .track-order-main {
+    padding: 24px 0 60px;
+  }
+
+  .track-order-wrap {
+    padding: 0 14px;
+  }
+
+  .track-order-card {
+    padding: 24px 16px;
+    border-radius: 24px;
+  }
+
+  .track-order-text {
+    font-size: 1rem;
+  }
+}
