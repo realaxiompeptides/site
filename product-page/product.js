@@ -1,101 +1,180 @@
-document.addEventListener("DOMContentLoaded", async () => {
+document.addEventListener("DOMContentLoaded", async function () {
+  const productData = Array.isArray(window.AXIOM_PRODUCTS) ? window.AXIOM_PRODUCTS : [];
+
+  const purchaseMount = document.getElementById("productPurchaseBoxMount");
+  const descriptionMount = document.getElementById("productDescriptionMount");
+
+  async function loadPartial(url, mountEl) {
+    if (!mountEl) return;
+    try {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error(`Failed to load ${url}`);
+      mountEl.innerHTML = await response.text();
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  await Promise.all([
+    loadPartial("product-purchase-box.html", purchaseMount),
+    loadPartial("product-description.html", descriptionMount)
+  ]);
+
   const params = new URLSearchParams(window.location.search);
   const slug = params.get("slug");
 
-  if (!slug) {
-    document.getElementById("productTitle").textContent = "Product not found";
+  const product = productData.find(item => item.slug === slug);
+
+  const breadcrumbName = document.getElementById("productBreadcrumbName");
+  const productBadge = document.getElementById("productBadge");
+  const productName = document.getElementById("productName");
+  const productOldPrice = document.getElementById("productOldPrice");
+  const productPrice = document.getElementById("productPrice");
+  const productShortDescription = document.getElementById("productShortDescription");
+  const productLongDescription = document.getElementById("productLongDescription");
+  const productMainImage = document.getElementById("productMainImage");
+
+  const variantSelect = document.getElementById("productVariantSelect");
+  const qtyInput = document.getElementById("productQty");
+  const qtyMinus = document.getElementById("qtyMinus");
+  const qtyPlus = document.getElementById("qtyPlus");
+  const addToCartBtn = document.getElementById("productAddToCart");
+
+  function formatMoney(value) {
+    return `$${Number(value).toFixed(2)}`;
+  }
+
+  function getImageForVariant(productObj, variantIndex) {
+    if (!productObj || !Array.isArray(productObj.images) || !productObj.images.length) {
+      return "../images/products/placeholder.PNG";
+    }
+
+    return productObj.images[variantIndex] || productObj.images[0];
+  }
+
+  if (!product) {
+    if (productName) productName.textContent = "Product not found";
+    if (breadcrumbName) breadcrumbName.textContent = "Product";
+    if (productShortDescription) {
+      productShortDescription.textContent = "The product slug in the URL does not match your product data file.";
+    }
+    if (productLongDescription) {
+      productLongDescription.textContent = "Check that the product link uses product-page/product.html?slug=your-product-slug and that the slug exists in ../js/product-data.js.";
+    }
+    if (productMainImage) {
+      productMainImage.src = "../images/products/placeholder.PNG";
+      productMainImage.alt = "Product not found";
+    }
+    if (variantSelect) {
+      variantSelect.innerHTML = `<option value="">Unavailable</option>`;
+      variantSelect.disabled = true;
+    }
+    if (addToCartBtn) addToCartBtn.disabled = true;
     return;
   }
 
-  try {
-    const response = await fetch(`products/${slug}.json`);
-    if (!response.ok) throw new Error("Product file not found");
+  if (productBadge) productBadge.textContent = product.badge || "SALE";
+  if (productName) productName.textContent = product.name;
+  if (breadcrumbName) breadcrumbName.textContent = product.name;
+  if (productShortDescription) productShortDescription.textContent = product.description || "";
+  if (productLongDescription) productLongDescription.textContent = product.longDescription || "";
 
-    const product = await response.json();
+  if (variantSelect) {
+    variantSelect.innerHTML = product.variants.map((variant, index) => {
+      return `<option value="${index}">${variant.label}</option>`;
+    }).join("");
+  }
 
-    document.title = `Axiom Peptides | ${product.name}`;
+  function updateVariantDisplay() {
+    if (!variantSelect) return;
 
-    const title = document.getElementById("productTitle");
-    const subtitle = document.getElementById("productSubtitle");
-    const badge = document.getElementById("productBadge");
-    const description = document.getElementById("productDescription");
-    const mainImage = document.getElementById("productMainImage");
-    const thumbs = document.getElementById("productThumbs");
-    const variantSelect = document.getElementById("productVariant");
-    const price = document.getElementById("productPrice");
-    const oldPrice = document.getElementById("productOldPrice");
-    const metaGrid = document.getElementById("productMetaGrid");
+    const selectedIndex = Number(variantSelect.value || 0);
+    const variant = product.variants[selectedIndex] || product.variants[0];
 
-    title.textContent = product.name || "";
-    subtitle.textContent = product.subtitle || "";
-    badge.textContent = product.badge || "SALE";
-    description.textContent = product.description || "";
+    if (!variant) return;
 
-    mainImage.src = product.mainImage || "";
-    mainImage.alt = product.name || "";
-
-    if (Array.isArray(product.gallery)) {
-      thumbs.innerHTML = product.gallery.map((img, index) => `
-        <button class="product-thumb ${index === 0 ? "active" : ""}" type="button" data-image="${img}">
-          <img src="${img}" alt="${product.name} thumbnail ${index + 1}">
-        </button>
-      `).join("");
-
-      thumbs.querySelectorAll(".product-thumb").forEach(btn => {
-        btn.addEventListener("click", () => {
-          thumbs.querySelectorAll(".product-thumb").forEach(t => t.classList.remove("active"));
-          btn.classList.add("active");
-          mainImage.src = btn.dataset.image;
-        });
-      });
+    if (productPrice) {
+      productPrice.textContent = formatMoney(variant.price);
     }
 
-    if (Array.isArray(product.variants) && product.variants.length) {
-      variantSelect.innerHTML = product.variants.map((variant, index) => `
-        <option value="${index}">
-          ${variant.name} - $${Number(variant.price).toFixed(2)}
-        </option>
-      `).join("");
-
-      function updateVariant(index) {
-        const selected = product.variants[index];
-        price.textContent = `$${Number(selected.price).toFixed(2)}`;
-
-        if (selected.oldPrice) {
-          oldPrice.textContent = `$${Number(selected.oldPrice).toFixed(2)}`;
-          oldPrice.style.display = "block";
-        } else {
-          oldPrice.textContent = "";
-          oldPrice.style.display = "none";
-        }
-      }
-
-      updateVariant(0);
-
-      variantSelect.addEventListener("change", () => {
-        updateVariant(Number(variantSelect.value));
-      });
-    } else {
-      price.textContent = `$${Number(product.price || 0).toFixed(2)}`;
-
-      if (product.oldPrice) {
-        oldPrice.textContent = `$${Number(product.oldPrice).toFixed(2)}`;
+    if (productOldPrice) {
+      if (variant.compareAtPrice && Number(variant.compareAtPrice) > Number(variant.price)) {
+        productOldPrice.textContent = formatMoney(variant.compareAtPrice);
+        productOldPrice.style.display = "inline-block";
       } else {
-        oldPrice.style.display = "none";
+        productOldPrice.textContent = "";
+        productOldPrice.style.display = "none";
       }
-
-      variantSelect.innerHTML = `<option value="0">Default</option>`;
     }
 
-    const details = product.details || {};
-    metaGrid.innerHTML = `
-      <div class="product-meta-card"><strong>Purity</strong><span>${details.purity || "-"}</span></div>
-      <div class="product-meta-card"><strong>Usage</strong><span>${details.usage || "-"}</span></div>
-      <div class="product-meta-card"><strong>Shipping</strong><span>${details.shipping || "-"}</span></div>
-      <div class="product-meta-card"><strong>Origin</strong><span>${details.origin || "-"}</span></div>
-    `;
-  } catch (error) {
-    document.getElementById("productTitle").textContent = "Product not found";
-    console.error(error);
+    if (productMainImage) {
+      productMainImage.src = getImageForVariant(product, selectedIndex);
+      productMainImage.alt = `${product.name} ${variant.label}`;
+    }
+  }
+
+  updateVariantDisplay();
+
+  if (variantSelect) {
+    variantSelect.addEventListener("change", updateVariantDisplay);
+  }
+
+  if (qtyMinus && qtyInput) {
+    qtyMinus.addEventListener("click", function () {
+      const current = Number(qtyInput.value) || 1;
+      qtyInput.value = Math.max(1, current - 1);
+    });
+  }
+
+  if (qtyPlus && qtyInput) {
+    qtyPlus.addEventListener("click", function () {
+      const current = Number(qtyInput.value) || 1;
+      qtyInput.value = current + 1;
+    });
+  }
+
+  if (addToCartBtn) {
+    addToCartBtn.addEventListener("click", function () {
+      const selectedIndex = Number(variantSelect ? variantSelect.value : 0);
+      const variant = product.variants[selectedIndex] || product.variants[0];
+      const quantity = Math.max(1, Number(qtyInput ? qtyInput.value : 1) || 1);
+      const image = getImageForVariant(product, selectedIndex);
+
+      const cartItem = {
+        id: variant.id,
+        slug: product.slug,
+        name: product.name,
+        variantLabel: variant.label,
+        price: Number(variant.price),
+        compareAtPrice: Number(variant.compareAtPrice) || null,
+        quantity,
+        image,
+        weightOz: Number(variant.weightOz) || 0
+      };
+
+      let cart = [];
+      try {
+        cart = JSON.parse(localStorage.getItem("axiom_cart")) || [];
+      } catch (e) {
+        cart = [];
+      }
+
+      const existingIndex = cart.findIndex(item => item.id === cartItem.id);
+
+      if (existingIndex > -1) {
+        cart[existingIndex].quantity += quantity;
+      } else {
+        cart.push(cartItem);
+      }
+
+      localStorage.setItem("axiom_cart", JSON.stringify(cart));
+      window.dispatchEvent(new Event("axiom-cart-updated"));
+
+      if (typeof window.openCartDrawer === "function") {
+        window.openCartDrawer();
+      } else {
+        alert("Added to cart");
+      }
+    });
   }
 });
