@@ -1,31 +1,31 @@
 document.addEventListener("DOMContentLoaded", () => {
-  const cartToggle = document.getElementById("cartToggle");
-  const cartClose = document.getElementById("cartClose");
-  const cartDrawer = document.getElementById("cartDrawer");
-  const overlay = document.getElementById("siteOverlay");
+  let cartToggle = document.getElementById("cartToggle");
+  let cartClose = null;
+  let cartDrawer = null;
+  let overlay = document.getElementById("siteOverlay");
 
-  const cartCount = document.getElementById("cartCount");
-  const cartItemsList = document.getElementById("cartItemsList");
-  const cartEmptyState = document.getElementById("cartEmptyState");
+  let cartCount = document.getElementById("cartCount");
+  let cartItemsList = null;
+  let cartEmptyState = null;
 
-  const cartSubtotal = document.getElementById("cartSubtotal");
-  const cartShipping = document.getElementById("cartShipping");
-  const cartTax = document.getElementById("cartTax");
-  const cartTotal = document.getElementById("cartTotal");
+  let cartSubtotal = null;
+  let cartShipping = null;
+  let cartTax = null;
+  let cartTotal = null;
 
-  const cartDiscountCode = document.getElementById("cartDiscountCode");
-  const applyCartDiscount = document.getElementById("applyCartDiscount");
-  const cartDiscountMessage = document.getElementById("cartDiscountMessage");
-  const cartDiscountRow = document.getElementById("cartDiscountRow");
-  const cartDiscountAmount = document.getElementById("cartDiscountAmount");
+  let cartDiscountCode = null;
+  let applyCartDiscount = null;
+  let cartDiscountMessage = null;
+  let cartDiscountRow = null;
+  let cartDiscountAmount = null;
 
-  const cartProgressText = document.getElementById("cartProgressText");
-  const cartProgressFill = document.getElementById("cartProgressFill");
+  let cartProgressText = null;
+  let cartProgressFill = null;
 
-  const cartRecommendSection = document.getElementById("cartRecommendSection");
-  const cartRecommendList = document.getElementById("cartRecommendList");
+  let cartRecommendSection = null;
+  let cartRecommendList = null;
 
-  const cartDrawerItemCount = document.getElementById("cartDrawerItemCount");
+  let cartDrawerItemCount = null;
 
   const FREE_SHIPPING_THRESHOLD = 150;
   const TAX_RATE = 0.08;
@@ -35,17 +35,71 @@ document.addEventListener("DOMContentLoaded", () => {
       id: "bac-water-10ml",
       name: "BAC Water (10ML)",
       price: 10,
-      image: "images/products/bac-water-10ml-main.PNG",
+      image: "../images/products/bac-water-10ml-main.PNG",
       variantLabel: "10ML"
     },
     {
       id: "bpc157-5mg",
       name: "BPC-157",
       price: 25,
-      image: "images/products/bpc-157-5mg-main.PNG",
+      image: "../images/products/bpc-157-5mg-main.PNG",
       variantLabel: "5MG"
     }
   ];
+
+  function bindDrawerElements() {
+    cartDrawer = document.getElementById("cartDrawer");
+    cartClose = document.getElementById("cartClose");
+    cartItemsList = document.getElementById("cartItemsList");
+    cartEmptyState = document.getElementById("cartEmptyState");
+
+    cartSubtotal = document.getElementById("cartSubtotal");
+    cartShipping = document.getElementById("cartShipping");
+    cartTax = document.getElementById("cartTax");
+    cartTotal = document.getElementById("cartTotal");
+
+    cartDiscountCode = document.getElementById("cartDiscountCode");
+    applyCartDiscount = document.getElementById("applyCartDiscount");
+    cartDiscountMessage = document.getElementById("cartDiscountMessage");
+    cartDiscountRow = document.getElementById("cartDiscountRow");
+    cartDiscountAmount = document.getElementById("cartDiscountAmount");
+
+    cartProgressText = document.getElementById("cartProgressText");
+    cartProgressFill = document.getElementById("cartProgressFill");
+
+    cartRecommendSection = document.getElementById("cartRecommendSection");
+    cartRecommendList = document.getElementById("cartRecommendList");
+
+    cartDrawerItemCount = document.getElementById("cartDrawerItemCount");
+
+    if (cartClose) {
+      cartClose.addEventListener("click", closeCart);
+    }
+
+    if (applyCartDiscount) {
+      applyCartDiscount.addEventListener("click", () => {
+        const code = cartDiscountCode ? cartDiscountCode.value.trim().toUpperCase() : "";
+
+        if (code === "SAVE10") {
+          saveDiscount({ code, type: "percent", amount: 10 });
+          if (cartDiscountMessage) cartDiscountMessage.textContent = "10% discount applied.";
+        } else if (code === "SAVE20") {
+          saveDiscount({ code, type: "fixed", amount: 20 });
+          if (cartDiscountMessage) cartDiscountMessage.textContent = "$20 discount applied.";
+        } else if (code === "") {
+          saveDiscount(null);
+          if (cartDiscountMessage) cartDiscountMessage.textContent = "";
+        } else {
+          saveDiscount(null);
+          if (cartDiscountMessage) cartDiscountMessage.textContent = "Invalid code.";
+        }
+
+        renderCart();
+      });
+    }
+
+    renderCart();
+  }
 
   function getCart() {
     try {
@@ -326,30 +380,7 @@ document.addEventListener("DOMContentLoaded", () => {
     renderRecommendations(cart);
   }
 
-  if (applyCartDiscount) {
-    applyCartDiscount.addEventListener("click", () => {
-      const code = cartDiscountCode ? cartDiscountCode.value.trim().toUpperCase() : "";
-
-      if (code === "SAVE10") {
-        saveDiscount({ code, type: "percent", amount: 10 });
-        if (cartDiscountMessage) cartDiscountMessage.textContent = "10% discount applied.";
-      } else if (code === "SAVE20") {
-        saveDiscount({ code, type: "fixed", amount: 20 });
-        if (cartDiscountMessage) cartDiscountMessage.textContent = "$20 discount applied.";
-      } else if (code === "") {
-        saveDiscount(null);
-        if (cartDiscountMessage) cartDiscountMessage.textContent = "";
-      } else {
-        saveDiscount(null);
-        if (cartDiscountMessage) cartDiscountMessage.textContent = "Invalid code.";
-      }
-
-      renderCart();
-    });
-  }
-
   if (cartToggle) cartToggle.addEventListener("click", openCart);
-  if (cartClose) cartClose.addEventListener("click", closeCart);
   if (overlay) overlay.addEventListener("click", closeCart);
 
   window.openCartDrawer = openCart;
@@ -357,7 +388,8 @@ document.addEventListener("DOMContentLoaded", () => {
   window.renderCartDrawer = renderCart;
 
   window.addEventListener("axiom-cart-updated", renderCart);
-  document.addEventListener("axiom-cart-updated", renderCart);
+  document.addEventListener("cartDrawerLoaded", bindDrawerElements);
 
+  bindDrawerElements();
   renderCart();
 });
