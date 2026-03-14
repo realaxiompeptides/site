@@ -2,6 +2,11 @@
   box-sizing: border-box;
 }
 
+html,
+body {
+  height: 100%;
+}
+
 body.axiom-dashboard-page {
   margin: 0;
   font-family: "Inter", sans-serif;
@@ -10,9 +15,10 @@ body.axiom-dashboard-page {
 }
 
 .dashboard-shell {
-  min-height: 100vh;
+  height: 100vh;
   display: grid;
   grid-template-columns: 360px minmax(0, 1fr);
+  overflow: hidden;
 }
 
 .dashboard-sidebar {
@@ -21,6 +27,12 @@ body.axiom-dashboard-page {
   padding: 24px 18px;
   display: flex;
   flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.dashboard-sidebar-top {
+  flex-shrink: 0;
 }
 
 .dashboard-sidebar-top h1 {
@@ -38,6 +50,7 @@ body.axiom-dashboard-page {
 
 .dashboard-search-wrap {
   margin-top: 20px;
+  flex-shrink: 0;
 }
 
 .dashboard-search,
@@ -60,8 +73,29 @@ body.axiom-dashboard-page {
   margin-top: 18px;
   display: grid;
   gap: 10px;
-  overflow: auto;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
   padding-right: 4px;
+  padding-bottom: 8px;
+  align-content: start;
+}
+
+.sessions-list::-webkit-scrollbar,
+.dashboard-main::-webkit-scrollbar {
+  width: 8px;
+}
+
+.sessions-list::-webkit-scrollbar-thumb,
+.dashboard-main::-webkit-scrollbar-thumb {
+  background: #c9d8e8;
+  border-radius: 999px;
+}
+
+.sessions-list::-webkit-scrollbar-track,
+.dashboard-main::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 .dashboard-session-card {
@@ -132,6 +166,9 @@ body.axiom-dashboard-page {
 }
 
 .dashboard-main {
+  height: 100vh;
+  overflow-y: auto;
+  overflow-x: hidden;
   padding: 28px;
 }
 
@@ -306,12 +343,27 @@ body.axiom-dashboard-page {
 
 @media (max-width: 1100px) {
   .dashboard-shell {
+    height: auto;
     grid-template-columns: 1fr;
+    overflow: visible;
   }
 
   .dashboard-sidebar {
+    height: auto;
     border-right: 0;
     border-bottom: 1px solid #dbe5f0;
+    overflow: visible;
+  }
+
+  .sessions-list {
+    flex: none;
+    max-height: 320px;
+    overflow-y: auto;
+  }
+
+  .dashboard-main {
+    height: auto;
+    overflow: visible;
   }
 }
 
