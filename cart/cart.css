@@ -578,3 +578,44 @@
     font-size: 13px;
   }
 }
+
+.cart-discount-box {
+  padding: 16px 16px 14px;
+  border-radius: 20px;
+}
+
+.cart-discount-box label {
+  margin-bottom: 10px;
+  font-size: 16px;
+}
+
+.cart-discount-row {
+  display: grid;
+  grid-template-columns: 1fr 110px;
+  gap: 12px;
+  align-items: center;
+}
+
+.cart-discount-row input {
+  min-height: 52px;
+}
+
+.cart-discount-row button {
+  min-height: 52px;
+}
+
+@media (max-width: 640px) {
+  .cart-discount-box {
+    padding: 14px;
+  }
+
+  .cart-discount-row {
+    grid-template-columns: 1fr 96px;
+    gap: 10px;
+  }
+
+  .cart-discount-row input,
+  .cart-discount-row button {
+    min-height: 48px;
+  }
+}
