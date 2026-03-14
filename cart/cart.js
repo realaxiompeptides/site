@@ -1,4 +1,4 @@
-document.addEventListener("DOMContentLoaded", () => {
+function initCartDrawer() {
   const cartToggle = document.getElementById("cartToggle");
   const cartClose = document.getElementById("cartClose");
   const cartDrawer = document.getElementById("cartDrawer");
@@ -28,6 +28,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const cartDrawerItemCount = document.getElementById("cartDrawerItemCount");
 
   const FREE_SHIPPING_THRESHOLD = 150;
+  const isProductPage = window.location.pathname.includes("/product-page/");
+  const IMAGE_PREFIX = isProductPage ? "../" : "";
 
   const RECOMMENDED_PRODUCTS = [
     {
@@ -35,9 +37,9 @@ document.addEventListener("DOMContentLoaded", () => {
       slug: "bac-water",
       name: "BAC Water (10ML)",
       price: 10,
-      image: "../images/products/bac-water-10ml-main.PNG",
+      image: `${IMAGE_PREFIX}images/products/bac-water-10ml-main.PNG`,
       variantLabel: "10ML",
-      weightOz: 2.0,
+      weightOz: 9.6, // 0.6 lbs = 9.6 oz
       inStock: true
     }
   ];
@@ -83,25 +85,39 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function normalizeImagePath(path) {
     if (!path || typeof path !== "string") {
-      return "../images/products/placeholder.PNG";
+      return `${IMAGE_PREFIX}images/products/placeholder.PNG`;
     }
 
     const cleanPath = path.trim();
 
-    if (
-      cleanPath.startsWith("../") ||
-      cleanPath.startsWith("./") ||
-      cleanPath.startsWith("/") ||
-      cleanPath.startsWith("http://") ||
-      cleanPath.startsWith("https://")
-    ) {
+    if (cleanPath.startsWith("http://") || cleanPath.startsWith("https://")) {
       return cleanPath;
     }
 
-    return `../${cleanPath}`;
+    if (cleanPath.startsWith("/")) {
+      return cleanPath;
+    }
+
+    if (isProductPage) {
+      if (cleanPath.startsWith("../")) return cleanPath;
+      if (cleanPath.startsWith("./")) return cleanPath.replace("./", "../");
+      return `../${cleanPath}`;
+    }
+
+    if (cleanPath.startsWith("../")) {
+      return cleanPath.replace("../", "");
+    }
+
+    if (cleanPath.startsWith("./")) {
+      return cleanPath.replace("./", "");
+    }
+
+    return cleanPath;
   }
 
   function normalizeCartItem(item) {
+    const normalizedQty = getItemQuantity(item);
+
     return {
       id: item.id,
       slug: item.slug || "",
@@ -115,11 +131,40 @@ document.addEventListener("DOMContentLoaded", () => {
             ? Number(item.oldPrice) || null
             : null,
       image: normalizeImagePath(item.image || ""),
-      quantity: getItemQuantity(item),
-      qty: getItemQuantity(item),
-      weightOz: Number(item.weightOz) || 0,
+      quantity: normalizedQty,
+      qty: normalizedQty,
+      weightOz:
+        item.weightOz !== undefined && item.weightOz !== null
+          ? Number(item.weightOz) || 0
+          : item.id === "bacwater-10ml"
+            ? 9.6
+            : 0.188,
       inStock: item.inStock !== false
     };
+  }
+
+  function getPageLink(pathFromRoot) {
+    return isProductPage ? `../${pathFromRoot}` : pathFromRoot;
+  }
+
+  function bindStaticLinks() {
+    const browseProductsLinks = document.querySelectorAll('.cart-empty-state a[href], .cart-outline-btn[href*="catalog"]');
+    const viewCartLinks = document.querySelectorAll('.cart-action-stack a[href*="cart-page"]');
+    const checkoutLinks = document.querySelectorAll('.cart-action-stack a[href*="checkout"]');
+
+    browseProductsLinks.forEach(link => {
+      if (link.closest(".cart-empty-state")) {
+        link.setAttribute("href", getPageLink("catalog.html"));
+      }
+    });
+
+    viewCartLinks.forEach(link => {
+      link.setAttribute("href", getPageLink("cart/cart-page.html"));
+    });
+
+    checkoutLinks.forEach(link => {
+      link.setAttribute("href", getPageLink("checkout/checkout.html"));
+    });
   }
 
   function openCart() {
@@ -128,7 +173,7 @@ document.addEventListener("DOMContentLoaded", () => {
     cartDrawer.classList.add("active");
     overlay.classList.add("active");
     document.body.style.overflow = "hidden";
-    cartToggle?.setAttribute("aria-expanded", "true");
+    if (cartToggle) cartToggle.setAttribute("aria-expanded", "true");
     cartDrawer.setAttribute("aria-hidden", "false");
   }
 
@@ -137,7 +182,7 @@ document.addEventListener("DOMContentLoaded", () => {
     cartDrawer.classList.remove("active");
     overlay.classList.remove("active");
     document.body.style.overflow = "";
-    cartToggle?.setAttribute("aria-expanded", "false");
+    if (cartToggle) cartToggle.setAttribute("aria-expanded", "false");
     cartDrawer.setAttribute("aria-hidden", "true");
   }
 
@@ -165,7 +210,7 @@ document.addEventListener("DOMContentLoaded", () => {
     cartRecommendSection.hidden = false;
     cartRecommendList.innerHTML = `
       <div class="cart-recommend-item">
-        <img src="${item.image}" alt="${item.name}">
+        <img src="${item.image}" alt="${item.name}" onerror="this.onerror=null;this.src='${IMAGE_PREFIX}images/products/placeholder.PNG';">
         <div>
           <p class="cart-recommend-title">${item.name}</p>
           <div class="cart-recommend-price">${formatMoney(item.price)}</div>
@@ -176,7 +221,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const addButton = cartRecommendList.querySelector("[data-add-recommend]");
     if (addButton) {
-      addButton.addEventListener("click", () => {
+      addButton.onclick = function () {
         const updatedCart = getCart().map(normalizeCartItem);
         const existing = updatedCart.find(entry => entry.id === item.id);
 
@@ -201,7 +246,7 @@ document.addEventListener("DOMContentLoaded", () => {
         saveCart(updatedCart);
         renderCart();
         window.dispatchEvent(new Event("axiom-cart-updated"));
-      });
+      };
     }
   }
 
@@ -213,7 +258,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const discountValue = getDiscountValue(subtotalValue);
     const discountedSubtotal = Math.max(subtotalValue - discountValue, 0);
 
-    // TEMP: no fake tax, no fake shipping
     const shippingValue = 0;
     const taxValue = 0;
     const totalValue = discountedSubtotal + shippingValue + taxValue;
@@ -229,13 +273,17 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     } else {
       if (cartEmptyState) cartEmptyState.hidden = true;
+
       if (cartItemsList) {
         cartItemsList.hidden = false;
-
         cartItemsList.innerHTML = cart.map((item, index) => `
           <div class="cart-item-card">
             <div class="cart-item-image-wrap">
-              <img src="${item.image}" alt="${item.name}" onerror="this.onerror=null;this.src='../images/products/placeholder.PNG';">
+              <img
+                src="${item.image}"
+                alt="${item.name}"
+                onerror="this.onerror=null;this.src='${IMAGE_PREFIX}images/products/placeholder.PNG';"
+              >
             </div>
 
             <div class="cart-item-content">
@@ -267,29 +315,30 @@ document.addEventListener("DOMContentLoaded", () => {
         `).join("");
 
         cartItemsList.querySelectorAll("[data-remove-index]").forEach(button => {
-          button.addEventListener("click", () => {
+          button.onclick = function () {
             const updatedCart = getCart().map(normalizeCartItem);
             updatedCart.splice(Number(button.dataset.removeIndex), 1);
             saveCart(updatedCart);
             renderCart();
             window.dispatchEvent(new Event("axiom-cart-updated"));
-          });
+          };
         });
 
         cartItemsList.querySelectorAll("[data-increase-index]").forEach(button => {
-          button.addEventListener("click", () => {
+          button.onclick = function () {
             const updatedCart = getCart().map(normalizeCartItem);
             const item = updatedCart[Number(button.dataset.increaseIndex)];
             if (!item) return;
+
             setItemQuantity(item, getItemQuantity(item) + 1);
             saveCart(updatedCart);
             renderCart();
             window.dispatchEvent(new Event("axiom-cart-updated"));
-          });
+          };
         });
 
         cartItemsList.querySelectorAll("[data-decrease-index]").forEach(button => {
-          button.addEventListener("click", () => {
+          button.onclick = function () {
             const updatedCart = getCart().map(normalizeCartItem);
             const item = updatedCart[Number(button.dataset.decreaseIndex)];
             if (!item) return;
@@ -305,7 +354,7 @@ document.addEventListener("DOMContentLoaded", () => {
             saveCart(updatedCart);
             renderCart();
             window.dispatchEvent(new Event("axiom-cart-updated"));
-          });
+          };
         });
       }
     }
@@ -338,11 +387,12 @@ document.addEventListener("DOMContentLoaded", () => {
       cartProgressFill.style.width = `${progress}%`;
     }
 
+    bindStaticLinks();
     renderRecommendations(cart);
   }
 
-  if (applyCartDiscount) {
-    applyCartDiscount.addEventListener("click", () => {
+  if (!window.__axiomCartDiscountBound && applyCartDiscount) {
+    applyCartDiscount.addEventListener("click", function () {
       const code = cartDiscountCode ? cartDiscountCode.value.trim().toUpperCase() : "";
 
       if (code === "SAVE10") {
@@ -361,17 +411,41 @@ document.addEventListener("DOMContentLoaded", () => {
 
       renderCart();
     });
+
+    window.__axiomCartDiscountBound = true;
   }
 
-  if (cartToggle) cartToggle.addEventListener("click", openCart);
-  if (cartClose) cartClose.addEventListener("click", closeCart);
-  if (overlay) overlay.addEventListener("click", closeCart);
+  if (cartToggle && !cartToggle.dataset.cartBound) {
+    cartToggle.addEventListener("click", openCart);
+    cartToggle.dataset.cartBound = "true";
+  }
+
+  if (cartClose && !cartClose.dataset.cartBound) {
+    cartClose.addEventListener("click", closeCart);
+    cartClose.dataset.cartBound = "true";
+  }
+
+  if (overlay && !overlay.dataset.cartBound) {
+    overlay.addEventListener("click", closeCart);
+    overlay.dataset.cartBound = "true";
+  }
 
   window.openCartDrawer = openCart;
   window.closeCartDrawer = closeCart;
   window.renderCartDrawer = renderCart;
 
-  window.addEventListener("axiom-cart-updated", renderCart);
+  if (!window.__axiomCartUpdatedBound) {
+    window.addEventListener("axiom-cart-updated", renderCart);
+    window.__axiomCartUpdatedBound = true;
+  }
 
   renderCart();
+}
+
+document.addEventListener("DOMContentLoaded", function () {
+  initCartDrawer();
+});
+
+document.addEventListener("cartDrawerLoaded", function () {
+  initCartDrawer();
 });
