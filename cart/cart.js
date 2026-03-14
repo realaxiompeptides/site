@@ -1,105 +1,46 @@
 document.addEventListener("DOMContentLoaded", () => {
-  let cartToggle = document.getElementById("cartToggle");
-  let cartClose = null;
-  let cartDrawer = null;
-  let overlay = document.getElementById("siteOverlay");
+  const cartToggle = document.getElementById("cartToggle");
+  const cartClose = document.getElementById("cartClose");
+  const cartDrawer = document.getElementById("cartDrawer");
+  const overlay = document.getElementById("siteOverlay");
 
-  let cartCount = document.getElementById("cartCount");
-  let cartItemsList = null;
-  let cartEmptyState = null;
+  const cartCount = document.getElementById("cartCount");
+  const cartItemsList = document.getElementById("cartItemsList");
+  const cartEmptyState = document.getElementById("cartEmptyState");
 
-  let cartSubtotal = null;
-  let cartShipping = null;
-  let cartTax = null;
-  let cartTotal = null;
+  const cartSubtotal = document.getElementById("cartSubtotal");
+  const cartShipping = document.getElementById("cartShipping");
+  const cartTax = document.getElementById("cartTax");
+  const cartTotal = document.getElementById("cartTotal");
 
-  let cartDiscountCode = null;
-  let applyCartDiscount = null;
-  let cartDiscountMessage = null;
-  let cartDiscountRow = null;
-  let cartDiscountAmount = null;
+  const cartDiscountCode = document.getElementById("cartDiscountCode");
+  const applyCartDiscount = document.getElementById("applyCartDiscount");
+  const cartDiscountMessage = document.getElementById("cartDiscountMessage");
+  const cartDiscountRow = document.getElementById("cartDiscountRow");
+  const cartDiscountAmount = document.getElementById("cartDiscountAmount");
 
-  let cartProgressText = null;
-  let cartProgressFill = null;
+  const cartProgressText = document.getElementById("cartProgressText");
+  const cartProgressFill = document.getElementById("cartProgressFill");
 
-  let cartRecommendSection = null;
-  let cartRecommendList = null;
+  const cartRecommendSection = document.getElementById("cartRecommendSection");
+  const cartRecommendList = document.getElementById("cartRecommendList");
 
-  let cartDrawerItemCount = null;
+  const cartDrawerItemCount = document.getElementById("cartDrawerItemCount");
 
   const FREE_SHIPPING_THRESHOLD = 150;
-  const TAX_RATE = 0.08;
 
   const RECOMMENDED_PRODUCTS = [
     {
-      id: "bac-water-10ml",
+      id: "bacwater-10ml",
+      slug: "bac-water",
       name: "BAC Water (10ML)",
       price: 10,
       image: "../images/products/bac-water-10ml-main.PNG",
-      variantLabel: "10ML"
-    },
-    {
-      id: "bpc157-5mg",
-      name: "BPC-157",
-      price: 25,
-      image: "../images/products/bpc-157-5mg-main.PNG",
-      variantLabel: "5MG"
+      variantLabel: "10ML",
+      weightOz: 2.0,
+      inStock: true
     }
   ];
-
-  function bindDrawerElements() {
-    cartDrawer = document.getElementById("cartDrawer");
-    cartClose = document.getElementById("cartClose");
-    cartItemsList = document.getElementById("cartItemsList");
-    cartEmptyState = document.getElementById("cartEmptyState");
-
-    cartSubtotal = document.getElementById("cartSubtotal");
-    cartShipping = document.getElementById("cartShipping");
-    cartTax = document.getElementById("cartTax");
-    cartTotal = document.getElementById("cartTotal");
-
-    cartDiscountCode = document.getElementById("cartDiscountCode");
-    applyCartDiscount = document.getElementById("applyCartDiscount");
-    cartDiscountMessage = document.getElementById("cartDiscountMessage");
-    cartDiscountRow = document.getElementById("cartDiscountRow");
-    cartDiscountAmount = document.getElementById("cartDiscountAmount");
-
-    cartProgressText = document.getElementById("cartProgressText");
-    cartProgressFill = document.getElementById("cartProgressFill");
-
-    cartRecommendSection = document.getElementById("cartRecommendSection");
-    cartRecommendList = document.getElementById("cartRecommendList");
-
-    cartDrawerItemCount = document.getElementById("cartDrawerItemCount");
-
-    if (cartClose) {
-      cartClose.addEventListener("click", closeCart);
-    }
-
-    if (applyCartDiscount) {
-      applyCartDiscount.addEventListener("click", () => {
-        const code = cartDiscountCode ? cartDiscountCode.value.trim().toUpperCase() : "";
-
-        if (code === "SAVE10") {
-          saveDiscount({ code, type: "percent", amount: 10 });
-          if (cartDiscountMessage) cartDiscountMessage.textContent = "10% discount applied.";
-        } else if (code === "SAVE20") {
-          saveDiscount({ code, type: "fixed", amount: 20 });
-          if (cartDiscountMessage) cartDiscountMessage.textContent = "$20 discount applied.";
-        } else if (code === "") {
-          saveDiscount(null);
-          if (cartDiscountMessage) cartDiscountMessage.textContent = "";
-        } else {
-          saveDiscount(null);
-          if (cartDiscountMessage) cartDiscountMessage.textContent = "Invalid code.";
-        }
-
-        renderCart();
-      });
-    }
-
-    renderCart();
-  }
 
   function getCart() {
     try {
@@ -140,6 +81,26 @@ document.addEventListener("DOMContentLoaded", () => {
     item.qty = quantity;
   }
 
+  function normalizeImagePath(path) {
+    if (!path || typeof path !== "string") {
+      return "../images/products/placeholder.PNG";
+    }
+
+    const cleanPath = path.trim();
+
+    if (
+      cleanPath.startsWith("../") ||
+      cleanPath.startsWith("./") ||
+      cleanPath.startsWith("/") ||
+      cleanPath.startsWith("http://") ||
+      cleanPath.startsWith("https://")
+    ) {
+      return cleanPath;
+    }
+
+    return `../${cleanPath}`;
+  }
+
   function normalizeCartItem(item) {
     return {
       id: item.id,
@@ -153,7 +114,7 @@ document.addEventListener("DOMContentLoaded", () => {
           : item.oldPrice !== undefined && item.oldPrice !== null
             ? Number(item.oldPrice) || null
             : null,
-      image: item.image || "",
+      image: normalizeImagePath(item.image || ""),
       quantity: getItemQuantity(item),
       qty: getItemQuantity(item),
       weightOz: Number(item.weightOz) || 0,
@@ -191,17 +152,18 @@ document.addEventListener("DOMContentLoaded", () => {
   function renderRecommendations(cart) {
     if (!cartRecommendList || !cartRecommendSection) return;
 
-    const cartIds = cart.map(item => item.id);
-    const items = RECOMMENDED_PRODUCTS.filter(product => !cartIds.includes(product.id));
+    const hasBacWater = cart.some(item => item.id === "bacwater-10ml");
 
-    if (!items.length) {
+    if (hasBacWater) {
       cartRecommendSection.hidden = true;
       cartRecommendList.innerHTML = "";
       return;
     }
 
+    const item = RECOMMENDED_PRODUCTS[0];
+
     cartRecommendSection.hidden = false;
-    cartRecommendList.innerHTML = items.map(item => `
+    cartRecommendList.innerHTML = `
       <div class="cart-recommend-item">
         <img src="${item.image}" alt="${item.name}">
         <div>
@@ -210,31 +172,28 @@ document.addEventListener("DOMContentLoaded", () => {
         </div>
         <button class="cart-add-small" data-add-recommend="${item.id}">Add</button>
       </div>
-    `).join("");
+    `;
 
-    cartRecommendList.querySelectorAll("[data-add-recommend]").forEach(button => {
-      button.addEventListener("click", () => {
-        const id = button.getAttribute("data-add-recommend");
-        const product = RECOMMENDED_PRODUCTS.find(item => item.id === id);
-        if (!product) return;
-
+    const addButton = cartRecommendList.querySelector("[data-add-recommend]");
+    if (addButton) {
+      addButton.addEventListener("click", () => {
         const updatedCart = getCart().map(normalizeCartItem);
-        const existing = updatedCart.find(item => item.id === product.id);
+        const existing = updatedCart.find(entry => entry.id === item.id);
 
         if (existing) {
           setItemQuantity(existing, getItemQuantity(existing) + 1);
         } else {
           updatedCart.push({
-            id: product.id,
-            slug: "",
-            name: product.name,
-            variantLabel: product.variantLabel,
-            price: product.price,
+            id: item.id,
+            slug: item.slug,
+            name: item.name,
+            variantLabel: item.variantLabel,
+            price: item.price,
             compareAtPrice: null,
-            image: product.image,
+            image: item.image,
             quantity: 1,
             qty: 1,
-            weightOz: 0,
+            weightOz: item.weightOz,
             inStock: true
           });
         }
@@ -243,7 +202,7 @@ document.addEventListener("DOMContentLoaded", () => {
         renderCart();
         window.dispatchEvent(new Event("axiom-cart-updated"));
       });
-    });
+    }
   }
 
   function renderCart() {
@@ -253,8 +212,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const subtotalValue = cart.reduce((sum, item) => sum + (item.price * getItemQuantity(item)), 0);
     const discountValue = getDiscountValue(subtotalValue);
     const discountedSubtotal = Math.max(subtotalValue - discountValue, 0);
-    const shippingValue = discountedSubtotal >= FREE_SHIPPING_THRESHOLD || discountedSubtotal === 0 ? 0 : 9.95;
-    const taxValue = discountedSubtotal * TAX_RATE;
+
+    // TEMP: no fake tax, no fake shipping
+    const shippingValue = 0;
+    const taxValue = 0;
     const totalValue = discountedSubtotal + shippingValue + taxValue;
 
     if (cartCount) cartCount.textContent = String(itemCount);
@@ -274,7 +235,7 @@ document.addEventListener("DOMContentLoaded", () => {
         cartItemsList.innerHTML = cart.map((item, index) => `
           <div class="cart-item-card">
             <div class="cart-item-image-wrap">
-              <img src="${item.image}" alt="${item.name}">
+              <img src="${item.image}" alt="${item.name}" onerror="this.onerror=null;this.src='../images/products/placeholder.PNG';">
             </div>
 
             <div class="cart-item-content">
@@ -350,8 +311,8 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     if (cartSubtotal) cartSubtotal.textContent = formatMoney(subtotalValue);
-    if (cartShipping) cartShipping.textContent = shippingValue === 0 ? "Free" : formatMoney(shippingValue);
-    if (cartTax) cartTax.textContent = formatMoney(taxValue);
+    if (cartShipping) cartShipping.textContent = "Calculated at checkout";
+    if (cartTax) cartTax.textContent = "Calculated at checkout";
     if (cartTotal) cartTotal.textContent = formatMoney(totalValue);
 
     if (cartDiscountRow && cartDiscountAmount) {
@@ -380,7 +341,30 @@ document.addEventListener("DOMContentLoaded", () => {
     renderRecommendations(cart);
   }
 
+  if (applyCartDiscount) {
+    applyCartDiscount.addEventListener("click", () => {
+      const code = cartDiscountCode ? cartDiscountCode.value.trim().toUpperCase() : "";
+
+      if (code === "SAVE10") {
+        saveDiscount({ code, type: "percent", amount: 10 });
+        if (cartDiscountMessage) cartDiscountMessage.textContent = "10% discount applied.";
+      } else if (code === "SAVE20") {
+        saveDiscount({ code, type: "fixed", amount: 20 });
+        if (cartDiscountMessage) cartDiscountMessage.textContent = "$20 discount applied.";
+      } else if (code === "") {
+        saveDiscount(null);
+        if (cartDiscountMessage) cartDiscountMessage.textContent = "";
+      } else {
+        saveDiscount(null);
+        if (cartDiscountMessage) cartDiscountMessage.textContent = "Invalid code.";
+      }
+
+      renderCart();
+    });
+  }
+
   if (cartToggle) cartToggle.addEventListener("click", openCart);
+  if (cartClose) cartClose.addEventListener("click", closeCart);
   if (overlay) overlay.addEventListener("click", closeCart);
 
   window.openCartDrawer = openCart;
@@ -388,8 +372,6 @@ document.addEventListener("DOMContentLoaded", () => {
   window.renderCartDrawer = renderCart;
 
   window.addEventListener("axiom-cart-updated", renderCart);
-  document.addEventListener("cartDrawerLoaded", bindDrawerElements);
 
-  bindDrawerElements();
   renderCart();
 });
