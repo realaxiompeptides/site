@@ -40,7 +40,7 @@
         <img src="../images/axiom-menu-logo.PNG" alt="Axiom Peptides logo" />
       </a>
 
-      <a href="../cart.html" class="checkout-cart-link" aria-label="Go to cart">
+      <a href="../cart/cart-page.html" class="checkout-cart-link" aria-label="Go to cart">
         <span class="checkout-cart-icon-wrap">
           <i class="fa-solid fa-cart-shopping"></i>
           <span class="checkout-cart-count" id="checkoutCartCount">0</span>
@@ -61,7 +61,6 @@
           <div class="checkout-card">
             <form id="checkoutForm" novalidate>
 
-              <!-- CONTACT -->
               <section class="checkout-section">
                 <h2 class="checkout-section-title">Contact</h2>
 
@@ -78,7 +77,6 @@
                 </div>
               </section>
 
-              <!-- SHIPPING ADDRESS -->
               <section class="checkout-section">
                 <h2 class="checkout-section-title">Shipping Address</h2>
 
@@ -164,7 +162,6 @@
                 </div>
               </section>
 
-              <!-- SHIPPING METHOD -->
               <section class="checkout-section">
                 <h2 class="checkout-section-title">Shipping Method</h2>
 
@@ -185,10 +182,8 @@
                 </div>
               </section>
 
-              <!-- PAYMENT METHODS LOAD HERE -->
               <div id="payment-methods"></div>
 
-              <!-- ORDER SUMMARY -->
               <section class="checkout-section">
                 <div class="checkout-summary-card">
                   <h2 class="checkout-section-title">Order Summary</h2>
@@ -219,10 +214,8 @@
                 </div>
               </section>
 
-              <!-- TERMS LOAD HERE -->
               <div id="termsSection"></div>
 
-              <!-- SUBMIT -->
               <section class="checkout-section checkout-submit-section">
                 <button type="submit" class="checkout-button">
                   Place Order
@@ -238,8 +231,27 @@
 
   <div id="site-footer"></div>
 
-  <script src="../js/cart.js" defer></script>
-  <script src="../footer/footer-loader.js" defer></script>
   <script src="checkout.js" defer></script>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const footerTarget = document.getElementById("site-footer");
+      if (!footerTarget) return;
+
+      fetch("../footer/footer.html")
+        .then(function (response) {
+          if (!response.ok) {
+            throw new Error("Could not load ../footer/footer.html");
+          }
+          return response.text();
+        })
+        .then(function (html) {
+          footerTarget.innerHTML = html;
+        })
+        .catch(function (error) {
+          console.error("Footer load failed:", error);
+        });
+    });
+  </script>
 </body>
 </html>
