@@ -25,6 +25,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const cartRecommendSection = document.getElementById("cartRecommendSection");
   const cartRecommendList = document.getElementById("cartRecommendList");
 
+  const cartDrawerItemCount = document.getElementById("cartDrawerItemCount");
+
   const FREE_SHIPPING_THRESHOLD = 150;
   const TAX_RATE = 0.08;
 
@@ -34,27 +36,37 @@ document.addEventListener("DOMContentLoaded", () => {
       name: "BAC Water (10ML)",
       price: 10,
       image: "images/products/bac-water-10ml-main.PNG",
-      variant: "10ML"
+      variantLabel: "10ML"
     },
     {
-      id: "bpc-157-5mg",
+      id: "bpc157-5mg",
       name: "BPC-157",
       price: 25,
       image: "images/products/bpc-157-5mg-main.PNG",
-      variant: "5MG"
+      variantLabel: "5MG"
     }
   ];
 
   function getCart() {
-    return JSON.parse(localStorage.getItem("axiomCart") || "[]");
+    try {
+      return JSON.parse(localStorage.getItem("axiom_cart") || "[]");
+    } catch (error) {
+      console.error("Failed to read cart from localStorage", error);
+      return [];
+    }
   }
 
   function saveCart(cart) {
-    localStorage.setItem("axiomCart", JSON.stringify(cart));
+    localStorage.setItem("axiom_cart", JSON.stringify(cart));
   }
 
   function getDiscount() {
-    return JSON.parse(localStorage.getItem("axiomDiscount") || "null");
+    try {
+      return JSON.parse(localStorage.getItem("axiomDiscount") || "null");
+    } catch (error) {
+      console.error("Failed to read discount from localStorage", error);
+      return null;
+    }
   }
 
   function saveDiscount(discount) {
@@ -62,11 +74,42 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function formatMoney(value) {
-    return `$${value.toFixed(2)}`;
+    return `$${Number(value || 0).toFixed(2)}`;
+  }
+
+  function getItemQuantity(item) {
+    return Number(item.quantity || item.qty || 0);
+  }
+
+  function setItemQuantity(item, quantity) {
+    item.quantity = quantity;
+    item.qty = quantity;
+  }
+
+  function normalizeCartItem(item) {
+    return {
+      id: item.id,
+      slug: item.slug || "",
+      name: item.name || "Product",
+      variantLabel: item.variantLabel || item.variant || "",
+      price: Number(item.price) || 0,
+      compareAtPrice:
+        item.compareAtPrice !== undefined && item.compareAtPrice !== null
+          ? Number(item.compareAtPrice) || null
+          : item.oldPrice !== undefined && item.oldPrice !== null
+            ? Number(item.oldPrice) || null
+            : null,
+      image: item.image || "",
+      quantity: getItemQuantity(item),
+      qty: getItemQuantity(item),
+      weightOz: Number(item.weightOz) || 0,
+      inStock: item.inStock !== false
+    };
   }
 
   function openCart() {
     if (!cartDrawer || !overlay) return;
+    renderCart();
     cartDrawer.classList.add("active");
     overlay.classList.add("active");
     document.body.style.overflow = "hidden";
@@ -121,115 +164,135 @@ document.addEventListener("DOMContentLoaded", () => {
         const product = RECOMMENDED_PRODUCTS.find(item => item.id === id);
         if (!product) return;
 
-        const updatedCart = getCart();
+        const updatedCart = getCart().map(normalizeCartItem);
         const existing = updatedCart.find(item => item.id === product.id);
 
         if (existing) {
-          existing.qty += 1;
+          setItemQuantity(existing, getItemQuantity(existing) + 1);
         } else {
           updatedCart.push({
             id: product.id,
+            slug: "",
             name: product.name,
-            variant: product.variant,
+            variantLabel: product.variantLabel,
             price: product.price,
-            oldPrice: null,
+            compareAtPrice: null,
             image: product.image,
-            qty: 1
+            quantity: 1,
+            qty: 1,
+            weightOz: 0,
+            inStock: true
           });
         }
 
         saveCart(updatedCart);
         renderCart();
+        window.dispatchEvent(new Event("axiom-cart-updated"));
       });
     });
   }
 
   function renderCart() {
-    const cart = getCart();
-    const itemCount = cart.reduce((sum, item) => sum + item.qty, 0);
-    const subtotalValue = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+    const cart = getCart().map(normalizeCartItem);
+
+    const itemCount = cart.reduce((sum, item) => sum + getItemQuantity(item), 0);
+    const subtotalValue = cart.reduce((sum, item) => sum + (item.price * getItemQuantity(item)), 0);
     const discountValue = getDiscountValue(subtotalValue);
     const discountedSubtotal = Math.max(subtotalValue - discountValue, 0);
     const shippingValue = discountedSubtotal >= FREE_SHIPPING_THRESHOLD || discountedSubtotal === 0 ? 0 : 9.95;
     const taxValue = discountedSubtotal * TAX_RATE;
     const totalValue = discountedSubtotal + shippingValue + taxValue;
 
-    if (cartCount) cartCount.textContent = itemCount;
+    if (cartCount) cartCount.textContent = String(itemCount);
+    if (cartDrawerItemCount) cartDrawerItemCount.textContent = String(itemCount);
 
     if (!cart.length) {
-      cartEmptyState.hidden = false;
-      cartItemsList.hidden = true;
-      cartItemsList.innerHTML = "";
+      if (cartEmptyState) cartEmptyState.hidden = false;
+      if (cartItemsList) {
+        cartItemsList.hidden = true;
+        cartItemsList.innerHTML = "";
+      }
     } else {
-      cartEmptyState.hidden = true;
-      cartItemsList.hidden = false;
+      if (cartEmptyState) cartEmptyState.hidden = true;
+      if (cartItemsList) {
+        cartItemsList.hidden = false;
 
-      cartItemsList.innerHTML = cart.map((item, index) => `
-        <div class="cart-item-card">
-          <div class="cart-item-image-wrap">
-            <img src="${item.image}" alt="${item.name}">
-          </div>
-
-          <div class="cart-item-content">
-            <div class="cart-item-top">
-              <div>
-                <h3 class="cart-item-name">${item.name}</h3>
-                ${item.variant ? `<p class="cart-item-variant">${item.variant}</p>` : ""}
-              </div>
-
-              <button class="cart-item-remove" data-remove-index="${index}" aria-label="Remove item">
-                <i class="fa-solid fa-trash"></i>
-              </button>
+        cartItemsList.innerHTML = cart.map((item, index) => `
+          <div class="cart-item-card">
+            <div class="cart-item-image-wrap">
+              <img src="${item.image}" alt="${item.name}">
             </div>
 
-            <div class="cart-item-bottom">
-              <div class="cart-qty">
-                <button type="button" data-decrease-index="${index}">−</button>
-                <span>${item.qty}</span>
-                <button type="button" data-increase-index="${index}">+</button>
+            <div class="cart-item-content">
+              <div class="cart-item-top">
+                <div>
+                  <h3 class="cart-item-name">${item.name}</h3>
+                  ${item.variantLabel ? `<p class="cart-item-variant">${item.variantLabel}</p>` : ""}
+                </div>
+
+                <button class="cart-item-remove" data-remove-index="${index}" aria-label="Remove item">
+                  <i class="fa-solid fa-trash"></i>
+                </button>
               </div>
 
-              <div class="cart-item-price-wrap">
-                ${item.oldPrice ? `<span class="cart-item-old-price">${formatMoney(item.oldPrice * item.qty)}</span>` : ""}
-                <span class="cart-item-price">${formatMoney(item.price * item.qty)}</span>
+              <div class="cart-item-bottom">
+                <div class="cart-qty">
+                  <button type="button" data-decrease-index="${index}">−</button>
+                  <span>${getItemQuantity(item)}</span>
+                  <button type="button" data-increase-index="${index}">+</button>
+                </div>
+
+                <div class="cart-item-price-wrap">
+                  ${item.compareAtPrice ? `<span class="cart-item-old-price">${formatMoney(item.compareAtPrice * getItemQuantity(item))}</span>` : ""}
+                  <span class="cart-item-price">${formatMoney(item.price * getItemQuantity(item))}</span>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      `).join("");
+        `).join("");
 
-      cartItemsList.querySelectorAll("[data-remove-index]").forEach(button => {
-        button.addEventListener("click", () => {
-          const updatedCart = getCart();
-          updatedCart.splice(Number(button.dataset.removeIndex), 1);
-          saveCart(updatedCart);
-          renderCart();
+        cartItemsList.querySelectorAll("[data-remove-index]").forEach(button => {
+          button.addEventListener("click", () => {
+            const updatedCart = getCart().map(normalizeCartItem);
+            updatedCart.splice(Number(button.dataset.removeIndex), 1);
+            saveCart(updatedCart);
+            renderCart();
+            window.dispatchEvent(new Event("axiom-cart-updated"));
+          });
         });
-      });
 
-      cartItemsList.querySelectorAll("[data-increase-index]").forEach(button => {
-        button.addEventListener("click", () => {
-          const updatedCart = getCart();
-          updatedCart[Number(button.dataset.increaseIndex)].qty += 1;
-          saveCart(updatedCart);
-          renderCart();
+        cartItemsList.querySelectorAll("[data-increase-index]").forEach(button => {
+          button.addEventListener("click", () => {
+            const updatedCart = getCart().map(normalizeCartItem);
+            const item = updatedCart[Number(button.dataset.increaseIndex)];
+            if (!item) return;
+            setItemQuantity(item, getItemQuantity(item) + 1);
+            saveCart(updatedCart);
+            renderCart();
+            window.dispatchEvent(new Event("axiom-cart-updated"));
+          });
         });
-      });
 
-      cartItemsList.querySelectorAll("[data-decrease-index]").forEach(button => {
-        button.addEventListener("click", () => {
-          const updatedCart = getCart();
-          const item = updatedCart[Number(button.dataset.decreaseIndex)];
-          item.qty -= 1;
+        cartItemsList.querySelectorAll("[data-decrease-index]").forEach(button => {
+          button.addEventListener("click", () => {
+            const updatedCart = getCart().map(normalizeCartItem);
+            const item = updatedCart[Number(button.dataset.decreaseIndex)];
+            if (!item) return;
 
-          if (item.qty <= 0) {
-            updatedCart.splice(Number(button.dataset.decreaseIndex), 1);
-          }
+            const nextQty = getItemQuantity(item) - 1;
 
-          saveCart(updatedCart);
-          renderCart();
+            if (nextQty <= 0) {
+              updatedCart.splice(Number(button.dataset.decreaseIndex), 1);
+            } else {
+              setItemQuantity(item, nextQty);
+            }
+
+            saveCart(updatedCart);
+            renderCart();
+            window.dispatchEvent(new Event("axiom-cart-updated"));
+          });
         });
-      });
+      }
     }
 
     if (cartSubtotal) cartSubtotal.textContent = formatMoney(subtotalValue);
@@ -265,20 +328,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (applyCartDiscount) {
     applyCartDiscount.addEventListener("click", () => {
-      const code = cartDiscountCode.value.trim().toUpperCase();
+      const code = cartDiscountCode ? cartDiscountCode.value.trim().toUpperCase() : "";
 
       if (code === "SAVE10") {
         saveDiscount({ code, type: "percent", amount: 10 });
-        cartDiscountMessage.textContent = "10% discount applied.";
+        if (cartDiscountMessage) cartDiscountMessage.textContent = "10% discount applied.";
       } else if (code === "SAVE20") {
         saveDiscount({ code, type: "fixed", amount: 20 });
-        cartDiscountMessage.textContent = "$20 discount applied.";
+        if (cartDiscountMessage) cartDiscountMessage.textContent = "$20 discount applied.";
       } else if (code === "") {
         saveDiscount(null);
-        cartDiscountMessage.textContent = "";
+        if (cartDiscountMessage) cartDiscountMessage.textContent = "";
       } else {
         saveDiscount(null);
-        cartDiscountMessage.textContent = "Invalid code.";
+        if (cartDiscountMessage) cartDiscountMessage.textContent = "Invalid code.";
       }
 
       renderCart();
@@ -292,6 +355,9 @@ document.addEventListener("DOMContentLoaded", () => {
   window.openCartDrawer = openCart;
   window.closeCartDrawer = closeCart;
   window.renderCartDrawer = renderCart;
+
+  window.addEventListener("axiom-cart-updated", renderCart);
+  document.addEventListener("axiom-cart-updated", renderCart);
 
   renderCart();
 });
