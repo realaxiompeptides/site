@@ -3,6 +3,8 @@ document.addEventListener("DOMContentLoaded", async function () {
 
   const purchaseMount = document.getElementById("productPurchaseBoxMount");
   const descriptionMount = document.getElementById("productDescriptionMount");
+  const iconBenefitsMount = document.getElementById("productIconBenefitsMount");
+  const whyChooseUsMount = document.getElementById("productWhyChooseUsMount");
 
   async function loadPartial(url, mountEl) {
     if (!mountEl) return false;
@@ -20,7 +22,9 @@ document.addEventListener("DOMContentLoaded", async function () {
 
   await Promise.all([
     loadPartial("product-purchase-box.html", purchaseMount),
-    loadPartial("product-description.html", descriptionMount)
+    loadPartial("product-description.html", descriptionMount),
+    loadPartial("icon-benefits.html", iconBenefitsMount),
+    loadPartial("why-choose-us.html", whyChooseUsMount)
   ]);
 
   const params = new URLSearchParams(window.location.search);
