@@ -27,6 +27,8 @@
   <link rel="stylesheet" href="../cart/cart.css" />
   <link rel="stylesheet" href="../footer/footer.css" />
   <link rel="stylesheet" href="product.css" />
+  <link rel="stylesheet" href="icon-benefits.css" />
+  <link rel="stylesheet" href="why-choose-us.css" />
 </head>
 <body class="product-page">
 
@@ -113,104 +115,7 @@
     </div>
   </aside>
 
-  <aside class="cart-drawer" id="cartDrawer" aria-hidden="true">
-    <div class="cart-drawer-inner">
-      <div class="cart-drawer-header">
-        <div class="cart-drawer-title-group">
-          <div class="cart-drawer-title-icon">
-            <i class="fa-solid fa-cart-shopping"></i>
-          </div>
-
-          <div class="cart-drawer-title-copy">
-            <h2>Your Cart</h2>
-            <p><span id="cartDrawerItemCount">0</span> item(s) in your cart</p>
-          </div>
-        </div>
-
-        <button class="drawer-close" id="cartClose" aria-label="Close cart" type="button">
-          &times;
-        </button>
-      </div>
-
-      <div class="cart-progress-wrap">
-        <div class="cart-progress-text" id="cartProgressText">
-          Add <strong>$150.00</strong> more to unlock free shipping
-        </div>
-        <div class="cart-progress-bar">
-          <span id="cartProgressFill"></span>
-        </div>
-      </div>
-
-      <div class="cart-body">
-        <div class="cart-empty-state" id="cartEmptyState">
-          <div class="cart-empty-icon">
-            <i class="fa-solid fa-cart-shopping"></i>
-          </div>
-          <p class="cart-empty-text">Your cart is currently empty.</p>
-          <p class="cart-empty-subtext">
-            Add premium research products to your cart and check out when you're ready.
-          </p>
-          <a href="../catalog.html" class="cart-pill-btn cart-outline-btn">Browse Products</a>
-        </div>
-
-        <div class="cart-items-list" id="cartItemsList" hidden></div>
-
-        <div class="cart-recommend-section" id="cartRecommendSection" hidden>
-          <h3>You May Also Like</h3>
-          <div class="cart-recommend-list" id="cartRecommendList"></div>
-        </div>
-      </div>
-
-      <div class="cart-footer">
-        <div class="cart-discount-box">
-          <label for="cartDiscountCode">Gift or Discount Code</label>
-          <div class="cart-discount-row">
-            <input
-              type="text"
-              id="cartDiscountCode"
-              placeholder="Enter code"
-              autocomplete="off"
-            />
-            <button type="button" id="applyCartDiscount">Apply</button>
-          </div>
-          <p class="cart-discount-message" id="cartDiscountMessage"></p>
-        </div>
-
-        <div class="cart-summary">
-          <div class="cart-summary-row">
-            <span>Subtotal</span>
-            <strong id="cartSubtotal">$0.00</strong>
-          </div>
-
-          <div class="cart-summary-row">
-            <span>Estimated Shipping</span>
-            <strong id="cartShipping">$0.00</strong>
-          </div>
-
-          <div class="cart-summary-row">
-            <span>Estimated Tax</span>
-            <strong id="cartTax">$0.00</strong>
-          </div>
-
-          <div class="cart-summary-row cart-summary-discount" id="cartDiscountRow" hidden>
-            <span>Discount</span>
-            <strong id="cartDiscountAmount">-$0.00</strong>
-          </div>
-
-          <div class="cart-summary-row cart-summary-total">
-            <span>Total</span>
-            <strong id="cartTotal">$0.00</strong>
-          </div>
-        </div>
-
-        <div class="cart-action-stack">
-          <a href="/cart/cart-page.html" class="cart-pill-btn cart-muted-btn">View Cart</a>
-          <a href="../checkout.html" class="cart-pill-btn cart-primary-btn">Checkout</a>
-        </div>
-      </div>
-    </div>
-  </aside>
-
+  <div id="cart-drawer-mount"></div>
   <div class="site-overlay" id="siteOverlay"></div>
 
   <main class="product-main">
@@ -242,8 +147,8 @@
 
             <p class="product-short-description" id="productShortDescription"></p>
 
-            <div id="productPurchaseBoxMount"></div>
             <div id="productIconBenefitsMount"></div>
+            <div id="productPurchaseBoxMount"></div>
           </div>
         </div>
 
@@ -257,6 +162,7 @@
 
   <script src="../js/product-data.js" defer></script>
   <script src="../js/menu.js" defer></script>
+  <script src="../cart/cart-loader.js" defer></script>
   <script src="../cart/cart.js" defer></script>
   <script src="product.js" defer></script>
 
