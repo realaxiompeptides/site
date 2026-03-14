@@ -1,50 +1,51 @@
 .product-why-choose {
-  margin-top: 34px;
+  margin-top: 38px;
   padding: 0;
+  background: #ffffff;
 }
 
 .product-why-choose-copy {
-  text-align: center;
+  max-width: 980px;
   margin: 0 auto 34px;
-  max-width: 920px;
+  text-align: center;
 }
 
 .product-why-choose-topline {
   width: min(100%, 760px);
   height: 4px;
-  background: #111111;
-  margin: 0 auto 30px;
+  margin: 0 auto 26px;
   border-radius: 999px;
+  background: #111111;
 }
 
 .product-why-choose-copy h2 {
-  margin: 0 0 22px;
-  color: #111111;
-  font-size: clamp(2.2rem, 6vw, 4rem);
-  line-height: 1;
-  font-weight: 900;
+  margin: 0 0 18px;
+  color: #0f172a;
+  font-size: clamp(2.3rem, 5vw, 4rem);
+  line-height: 1.02;
   letter-spacing: -0.04em;
+  font-weight: 900;
 }
 
 .product-why-choose-text {
   margin: 0 auto;
-  max-width: 960px;
-  color: #222222;
-  font-size: clamp(1.1rem, 2.6vw, 1.45rem);
-  line-height: 1.95;
-  font-weight: 400;
+  max-width: 980px;
+  color: #334155;
+  font-size: clamp(1rem, 2vw, 1.22rem);
+  line-height: 1.9;
+  font-weight: 500;
 }
 
 .product-compare-section {
-  margin-top: 26px;
+  margin-top: 30px;
 }
 
 .product-compare-head {
   display: grid;
-  grid-template-columns: 1.6fr 0.8fr 0.7fr;
+  grid-template-columns: 1.45fr 0.72fr 0.65fr;
   align-items: end;
   gap: 0;
-  margin-bottom: 0;
+  margin-bottom: 14px;
 }
 
 .product-compare-head-empty {
@@ -56,42 +57,44 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding-bottom: 18px;
 }
 
 .product-compare-brand-col img {
-  width: 120px;
-  max-width: 100%;
-  height: auto;
+  width: 96px;
+  height: 96px;
   object-fit: contain;
+  border-radius: 999px;
+  background: #ffffff;
 }
 
 .product-compare-other-col span {
-  color: #111111;
-  font-size: clamp(1.8rem, 4vw, 3rem);
-  line-height: 1;
+  color: #111827;
+  font-size: clamp(1.8rem, 3vw, 2.8rem);
   font-weight: 900;
+  line-height: 1;
   letter-spacing: -0.03em;
 }
 
 .product-compare-grid {
   display: grid;
-  grid-template-columns: 1.6fr 0.8fr 0.7fr;
-  border-radius: 34px;
+  grid-template-columns: 1.45fr 0.72fr 0.65fr;
   overflow: hidden;
-  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
+  border-radius: 30px;
+  border: 1px solid #dbe5f0;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.06);
+  background: #ffffff;
 }
 
 .product-compare-feature,
 .product-compare-brand,
 .product-compare-other {
-  min-height: 180px;
+  min-height: 178px;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 26px 22px;
-  border-right: 1px solid #dcdcdc;
-  border-top: 1px solid #dcdcdc;
+  padding: 24px 20px;
+  border-top: 1px solid #dbe5f0;
+  border-right: 1px solid #dbe5f0;
 }
 
 .product-compare-grid > :nth-child(1),
@@ -105,10 +108,10 @@
 }
 
 .product-compare-feature {
-  background: #000000;
+  background: linear-gradient(135deg, #0f172a 0%, #111827 100%);
   color: #ffffff;
   text-align: center;
-  font-size: clamp(1.35rem, 3vw, 2.3rem);
+  font-size: clamp(1.2rem, 2.2vw, 2rem);
   line-height: 1.08;
   font-weight: 900;
   letter-spacing: -0.03em;
@@ -121,8 +124,8 @@
 
 .product-compare-check,
 .product-compare-x {
-  width: 108px;
-  height: 108px;
+  width: 110px;
+  height: 110px;
   border-radius: 28px;
   display: flex;
   align-items: center;
@@ -131,7 +134,7 @@
 
 .product-compare-check {
   background: #dff1e4;
-  color: #1fb655;
+  color: #22b35b;
 }
 
 .product-compare-x {
@@ -145,29 +148,29 @@
   line-height: 1;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 980px) {
   .product-compare-head,
   .product-compare-grid {
-    grid-template-columns: 1.35fr 0.8fr 0.65fr;
+    grid-template-columns: 1.25fr 0.75fr 0.62fr;
   }
 
   .product-compare-feature,
   .product-compare-brand,
   .product-compare-other {
     min-height: 150px;
-    padding: 20px 16px;
+    padding: 18px 14px;
   }
 
   .product-compare-check,
   .product-compare-x {
-    width: 86px;
-    height: 86px;
-    border-radius: 24px;
+    width: 88px;
+    height: 88px;
+    border-radius: 22px;
   }
 
   .product-compare-check i,
   .product-compare-x i {
-    font-size: 42px;
+    font-size: 40px;
   }
 }
 
@@ -186,7 +189,7 @@
   }
 
   .product-why-choose-copy h2 {
-    margin-bottom: 18px;
+    margin-bottom: 16px;
     font-size: 2.05rem;
   }
 
@@ -196,11 +199,13 @@
   }
 
   .product-compare-head {
-    grid-template-columns: 1.15fr 0.75fr 0.55fr;
+    grid-template-columns: 1.05fr 0.68fr 0.52fr;
+    margin-bottom: 10px;
   }
 
   .product-compare-brand-col img {
-    width: 78px;
+    width: 74px;
+    height: 74px;
   }
 
   .product-compare-other-col span {
@@ -208,26 +213,26 @@
   }
 
   .product-compare-grid {
-    grid-template-columns: 1.15fr 0.75fr 0.55fr;
+    grid-template-columns: 1.05fr 0.68fr 0.52fr;
     border-radius: 24px;
   }
 
   .product-compare-feature,
   .product-compare-brand,
   .product-compare-other {
-    min-height: 120px;
-    padding: 16px 10px;
+    min-height: 114px;
+    padding: 14px 10px;
   }
 
   .product-compare-feature {
-    font-size: 1rem;
-    line-height: 1.1;
+    font-size: 0.98rem;
+    line-height: 1.08;
   }
 
   .product-compare-check,
   .product-compare-x {
-    width: 62px;
-    height: 62px;
+    width: 64px;
+    height: 64px;
     border-radius: 18px;
   }
 
