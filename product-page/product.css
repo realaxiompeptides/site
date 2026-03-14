@@ -365,3 +365,164 @@
     font-size: 18px;
   }
 }
+
+.product-icon-benefits {
+  display: grid;
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.product-icon-benefit {
+  display: grid;
+  grid-template-columns: 56px 1fr;
+  gap: 14px;
+  align-items: start;
+  padding: 18px;
+  border: 1px solid #d7e2ef;
+  border-radius: 22px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.04);
+}
+
+.product-icon-benefit-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #4fa2dc, #2f60d5);
+  color: #ffffff;
+  font-size: 22px;
+}
+
+.product-icon-benefit-text h3 {
+  margin: 0 0 6px;
+  color: #0f172a;
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.product-icon-benefit-text p {
+  margin: 0;
+  color: #627084;
+  font-size: 15px;
+  line-height: 1.7;
+}
+
+.product-why-choose {
+  margin-top: 34px;
+  padding: 28px 22px;
+  border: 1px solid #d7e2ef;
+  border-radius: 32px;
+  background: linear-gradient(135deg, #f8fbff 0%, #edf5ff 100%);
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.06);
+}
+
+.product-why-choose-header {
+  text-align: center;
+  max-width: 840px;
+  margin: 0 auto 26px;
+}
+
+.product-why-choose-kicker {
+  margin: 0 0 10px;
+  color: #4fa2dc;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.product-why-choose-header h2 {
+  margin: 0 0 12px;
+  color: #0f172a;
+  font-size: clamp(2rem, 4vw, 3rem);
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+}
+
+.product-why-choose-header p {
+  margin: 0 auto;
+  max-width: 760px;
+  color: #627084;
+  font-size: 17px;
+  line-height: 1.8;
+}
+
+.product-why-choose-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.product-why-card {
+  padding: 22px;
+  border-radius: 24px;
+  border: 1px solid #d6e2ef;
+  background: #ffffff;
+  box-shadow: 0 12px 26px rgba(15, 23, 42, 0.05);
+}
+
+.product-why-card-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #4fa2dc, #2f60d5);
+  color: #ffffff;
+  font-size: 24px;
+  margin-bottom: 16px;
+}
+
+.product-why-card h3 {
+  margin: 0 0 10px;
+  color: #0f172a;
+  font-size: 22px;
+  font-weight: 900;
+  line-height: 1.15;
+}
+
+.product-why-card p {
+  margin: 0;
+  color: #627084;
+  font-size: 15px;
+  line-height: 1.75;
+}
+
+@media (max-width: 640px) {
+  .product-icon-benefit {
+    grid-template-columns: 50px 1fr;
+    padding: 16px;
+    border-radius: 20px;
+  }
+
+  .product-icon-benefit-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 16px;
+    font-size: 20px;
+  }
+
+  .product-why-choose {
+    margin-top: 26px;
+    padding: 22px 16px;
+    border-radius: 26px;
+  }
+
+  .product-why-choose-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .product-why-card {
+    padding: 18px;
+    border-radius: 20px;
+  }
+
+  .product-why-card h3 {
+    font-size: 20px;
+  }
+}
