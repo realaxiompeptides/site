@@ -26,6 +26,12 @@ document.addEventListener("DOMContentLoaded", async () => {
   renderCheckoutSummary();
   setupRateButton();
 
+  if (window.AXIOM_CHECKOUT_SESSION) {
+    window.AXIOM_CHECKOUT_SESSION.syncCartIntoSession();
+    window.AXIOM_CHECKOUT_SESSION.updateSessionStatus("active");
+    window.AXIOM_CHECKOUT_SESSION.bindCheckoutTracking();
+  }
+
   window.addEventListener("axiom-cart-updated", renderCheckoutSummary);
   window.addEventListener("storage", renderCheckoutSummary);
 });
@@ -168,6 +174,11 @@ function renderCheckoutSummary() {
     shippingEl.textContent = "$0.00";
     taxEl.textContent = "$0.00";
     totalEl.textContent = "$0.00";
+
+    if (window.AXIOM_CHECKOUT_SESSION) {
+      window.AXIOM_CHECKOUT_SESSION.syncCartIntoSession();
+    }
+
     return;
   }
 
@@ -212,6 +223,28 @@ function renderCheckoutSummary() {
   shippingEl.textContent = selectedShipping > 0 ? formatMoney(selectedShipping) : "$0.00";
   taxEl.textContent = formatMoney(tax);
   totalEl.textContent = formatMoney(total);
+
+  if (window.AXIOM_CHECKOUT_SESSION) {
+    window.AXIOM_CHECKOUT_SESSION.syncCartIntoSession();
+    window.AXIOM_CHECKOUT_SESSION.updateShippingSelection({
+      method_name:
+        document.querySelector('input[name="shippingMethod"]:checked')
+          ?.closest(".shipping-option")
+          ?.querySelector("span")
+          ?.textContent
+          ?.trim() || "",
+      method_code:
+        document.querySelector('input[name="shippingMethod"]:checked')
+          ?.closest(".shipping-option")
+          ?.querySelector("span")
+          ?.textContent
+          ?.trim()
+          ?.toLowerCase()
+          ?.replace(/\s+/g, "_") || "",
+      amount: selectedShipping
+    });
+    window.AXIOM_CHECKOUT_SESSION.updateTax(tax);
+  }
 }
 
 function setupRateButton() {
@@ -302,5 +335,11 @@ document.addEventListener("submit", function (e) {
   if (!selectedShipping) {
     e.preventDefault();
     alert("Please choose a shipping method.");
+    return;
+  }
+
+  if (window.AXIOM_CHECKOUT_SESSION) {
+    window.AXIOM_CHECKOUT_SESSION.updateFromCheckoutForm();
+    window.AXIOM_CHECKOUT_SESSION.updateSessionStatus("pending_payment");
   }
 });
