@@ -1,0 +1,4 @@
+window.AXIOM_DASHBOARD_CONFIG = {
+  supabaseUrl: "https://gnwlirvybatgccvchwir.supabase.co",
+  supabaseAnonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imdud2xpcnZ5YmF0Z2NjdmNod2lyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM0NTczNDUsImV4cCI6MjA4OTAzMzM0NX0.wYkJaLJJx_GOcoxwrHo5JENpQHDoeymc99h4lO9jVIk"
+};
