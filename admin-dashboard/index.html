@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+  />
+  <title>Axiom Admin Dashboard</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+    rel="stylesheet"
+  />
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <link rel="stylesheet" href="dashboard.css" />
+</head>
+<body class="axiom-dashboard-page">
+
+  <div class="dashboard-shell">
+    <aside class="dashboard-sidebar">
+      <div class="dashboard-sidebar-top">
+        <h1>Axiom Dashboard</h1>
+        <p>Checkout Sessions</p>
+      </div>
+
+      <div class="dashboard-search-wrap">
+        <input
+          type="text"
+          id="sessionSearch"
+          class="dashboard-search"
+          placeholder="Search by email, phone, or session ID"
+        />
+      </div>
+
+      <div class="dashboard-filter-row">
+        <select id="statusFilter" class="dashboard-filter">
+          <option value="">All Statuses</option>
+          <option value="active">Active</option>
+          <option value="pending_payment">Pending Payment</option>
+          <option value="abandoned">Abandoned</option>
+          <option value="converted">Converted</option>
+          <option value="expired">Expired</option>
+        </select>
+      </div>
+
+      <div id="sessionsList" class="sessions-list">
+        <div class="dashboard-loading">Loading sessions...</div>
+      </div>
+    </aside>
+
+    <main class="dashboard-main">
+      <div class="dashboard-main-header">
+        <div>
+          <p class="dashboard-kicker">Checkout Session Details</p>
+          <h2 id="dashboardSessionTitle">Select a session</h2>
+        </div>
+
+        <div class="dashboard-header-actions">
+          <button id="refreshSessionsBtn" class="dashboard-btn dashboard-btn-secondary" type="button">
+            Refresh
+          </button>
+        </div>
+      </div>
+
+      <div class="dashboard-details-grid">
+        <div id="sessionOverviewMount"></div>
+        <div id="paymentInfoMount"></div>
+        <div id="shippingInfoMount"></div>
+        <div id="billingInfoMount"></div>
+        <div id="cartItemsMount" class="dashboard-span-2"></div>
+      </div>
+    </main>
+  </div>
+
+  <script src="dashboard-config.js"></script>
+  <script src="supabase-client.js"></script>
+  <script src="dashboard.js"></script>
+</body>
+</html>
