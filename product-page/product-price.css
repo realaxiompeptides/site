@@ -1,0 +1,77 @@
+.product-price-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin: 10px 0 18px;
+  font-family: "Inter", sans-serif;
+}
+
+.product-price-current {
+  color: #000000;
+  font-size: clamp(2.15rem, 5vw, 3.1rem);
+  line-height: 1;
+  font-weight: 900;
+  letter-spacing: -0.04em;
+}
+
+.product-price-old {
+  color: #8f98a8;
+  font-size: clamp(1.15rem, 2.2vw, 1.8rem);
+  line-height: 1;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  text-decoration: line-through;
+  text-decoration-thickness: 2px;
+  text-decoration-color: rgba(143, 152, 168, 0.9);
+}
+
+.product-price-save {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 52px;
+  padding: 0 20px;
+  border-radius: 999px;
+  background: rgba(56, 126, 182, 0.14);
+  color: #387eb6;
+  font-size: 1.1rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+.product-price-save i {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.product-price-save span {
+  line-height: 1;
+}
+
+@media (max-width: 640px) {
+  .product-price-row {
+    gap: 12px;
+    margin: 8px 0 16px;
+  }
+
+  .product-price-current {
+    font-size: 2.6rem;
+  }
+
+  .product-price-old {
+    font-size: 1.1rem;
+  }
+
+  .product-price-save {
+    min-height: 44px;
+    padding: 0 16px;
+    font-size: 0.98rem;
+    gap: 8px;
+  }
+
+  .product-price-save i {
+    font-size: 0.92rem;
+  }
+}
