@@ -2,7 +2,7 @@
   <div class="cart-drawer-inner">
     <div class="cart-drawer-header">
       <div class="cart-drawer-title-group">
-        <div class="cart-drawer-title-icon">
+        <div class="cart-drawer-title-icon" aria-hidden="true">
           <i class="fa-solid fa-cart-shopping"></i>
         </div>
 
@@ -28,7 +28,7 @@
 
     <div class="cart-body">
       <div class="cart-empty-state" id="cartEmptyState">
-        <div class="cart-empty-icon">
+        <div class="cart-empty-icon" aria-hidden="true">
           <i class="fa-solid fa-cart-shopping"></i>
         </div>
         <p class="cart-empty-text">Your cart is currently empty.</p>
@@ -69,12 +69,12 @@
 
         <div class="cart-summary-row">
           <span>Estimated Shipping</span>
-          <strong id="cartShipping">$0.00</strong>
+          <strong id="cartShipping">Calculated at checkout</strong>
         </div>
 
         <div class="cart-summary-row">
           <span>Estimated Tax</span>
-          <strong id="cartTax">$0.00</strong>
+          <strong id="cartTax">Calculated at checkout</strong>
         </div>
 
         <div class="cart-summary-row cart-summary-discount" id="cartDiscountRow" hidden>
