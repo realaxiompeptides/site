@@ -1,0 +1,125 @@
+/* =========================================
+   AXIOM PRODUCT PAGE — ICON BENEFITS
+   Clean compliance bullet style
+========================================= */
+
+.product-icon-benefits {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 22px 0 26px;
+  width: 100%;
+  font-family: "Inter", sans-serif;
+}
+
+/* Individual item */
+.product-icon-benefit {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  min-height: 0;
+}
+
+/* Icon container */
+.product-icon-benefit-icon {
+  width: 22px;
+  min-width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  margin-top: 3px;
+  color: #111111;
+  background: transparent;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* Font Awesome icon */
+.product-icon-benefit-icon i {
+  font-size: 18px;
+  line-height: 1;
+}
+
+/* Text container */
+.product-icon-benefit-text {
+  flex: 1;
+}
+
+/* Hide old card headings */
+.product-icon-benefit-text h3 {
+  display: none;
+}
+
+/* Main compliance text */
+.product-icon-benefit-text p {
+  margin: 0;
+  color: #111111;
+  font-size: clamp(0.98rem, 1.8vw, 1.08rem);
+  line-height: 1.35;
+  font-weight: 500;
+  font-family: "Inter", sans-serif;
+}
+
+/* Remove legacy card styles */
+.product-icon-benefit {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+}
+
+.product-icon-benefit-icon {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* =========================================
+   MOBILE OPTIMIZATION
+========================================= */
+
+@media (max-width: 640px) {
+
+  .product-icon-benefits {
+    gap: 10px;
+    margin: 18px 0 22px;
+  }
+
+  .product-icon-benefit {
+    gap: 10px;
+  }
+
+  .product-icon-benefit-icon {
+    width: 20px;
+    min-width: 20px;
+    height: 20px;
+    margin-top: 2px;
+  }
+
+  .product-icon-benefit-icon i {
+    font-size: 16px;
+  }
+
+  .product-icon-benefit-text p {
+    font-size: 0.96rem;
+    line-height: 1.32;
+  }
+
+}
+
+/* =========================================
+   DARK MODE SAFETY (future proof)
+========================================= */
+
+@media (prefers-color-scheme: dark) {
+
+  .product-icon-benefit-text p {
+    color: #111111;
+  }
+
+}
