@@ -2,9 +2,14 @@ document.addEventListener("DOMContentLoaded", async function () {
   const cartTriggerMount = document.getElementById("cartTriggerMount");
   if (!cartTriggerMount) return;
 
+  const isProductPage = window.location.pathname.includes("/product-page/");
+  const iconPath = isProductPage
+    ? "../cart/cart-drawer-icon.html"
+    : "cart/cart-drawer-icon.html";
+
   async function loadCartDrawerIcon() {
     try {
-      const response = await fetch("../cart/cart-drawer-icon.html", { cache: "no-store" });
+      const response = await fetch(iconPath, { cache: "no-store" });
       if (!response.ok) {
         throw new Error(`Failed to load cart drawer icon: ${response.status}`);
       }
