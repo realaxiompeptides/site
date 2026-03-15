@@ -2,15 +2,6 @@
   margin-top: 38px;
   padding: 0;
   background: #ffffff;
-  font-family: "Inter", sans-serif;
-  color: #0f172a;
-}
-
-.product-why-choose *,
-.product-why-choose *::before,
-.product-why-choose *::after {
-  box-sizing: border-box;
-  font-family: inherit;
 }
 
 .product-why-choose-copy {
@@ -30,21 +21,19 @@
 .product-why-choose-copy h2 {
   margin: 0 0 18px;
   color: #0f172a;
-  font-size: clamp(2rem, 4vw, 3.2rem);
-  line-height: 1.05;
-  letter-spacing: -0.03em;
+  font-size: clamp(2.3rem, 5vw, 4rem);
+  line-height: 1.02;
+  letter-spacing: -0.04em;
   font-weight: 900;
-  font-family: "Inter", sans-serif;
 }
 
 .product-why-choose-text {
   margin: 0 auto;
   max-width: 980px;
-  color: #556274;
-  font-size: 1.05rem;
-  line-height: 1.7;
+  color: #334155;
+  font-size: clamp(1rem, 2vw, 1.22rem);
+  line-height: 1.9;
   font-weight: 500;
-  font-family: "Inter", sans-serif;
 }
 
 .product-compare-section {
@@ -79,12 +68,11 @@
 }
 
 .product-compare-other-col span {
-  color: #0f172a;
+  color: #111827;
   font-size: clamp(1.8rem, 3vw, 2.8rem);
   font-weight: 900;
   line-height: 1;
   letter-spacing: -0.03em;
-  font-family: "Inter", sans-serif;
 }
 
 .product-compare-grid {
@@ -120,14 +108,13 @@
 }
 
 .product-compare-feature {
-  background: linear-gradient(135deg, #07152d 0%, #0f1f46 100%);
+  background: linear-gradient(135deg, #0f172a 0%, #111827 100%);
   color: #ffffff;
   text-align: center;
-  font-size: clamp(1.15rem, 2vw, 1.95rem);
+  font-size: clamp(1.2rem, 2.2vw, 2rem);
   line-height: 1.08;
   font-weight: 900;
   letter-spacing: -0.03em;
-  font-family: "Inter", sans-serif;
 }
 
 .product-compare-brand,
@@ -204,12 +191,11 @@
   .product-why-choose-copy h2 {
     margin-bottom: 16px;
     font-size: 2.05rem;
-    line-height: 1.08;
   }
 
   .product-why-choose-text {
     font-size: 1rem;
-    line-height: 1.75;
+    line-height: 1.85;
   }
 
   .product-compare-head {
