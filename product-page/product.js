@@ -5,6 +5,7 @@ document.addEventListener("DOMContentLoaded", async function () {
   const descriptionMount = document.getElementById("productDescriptionMount");
   const iconBenefitsMount = document.getElementById("productIconBenefitsMount");
   const whyChooseUsMount = document.getElementById("productWhyChooseUsMount");
+  const productPriceMount = document.getElementById("productPriceMount");
 
   async function loadPartial(url, mountEl) {
     if (!mountEl) return false;
@@ -21,6 +22,7 @@ document.addEventListener("DOMContentLoaded", async function () {
   }
 
   await Promise.all([
+    loadPartial("product-price.html", productPriceMount),
     loadPartial("product-purchase-box.html", purchaseMount),
     loadPartial("product-description.html", descriptionMount),
     loadPartial("icon-benefits.html", iconBenefitsMount),
@@ -35,8 +37,10 @@ document.addEventListener("DOMContentLoaded", async function () {
   const breadcrumbName = document.getElementById("productBreadcrumbName");
   const productBadge = document.getElementById("productBadge");
   const productName = document.getElementById("productName");
-  const productOldPrice = document.getElementById("productOldPrice");
   const productPrice = document.getElementById("productPrice");
+  const productOldPrice = document.getElementById("productOldPrice");
+  const productSaveBadge = document.getElementById("productSaveBadge");
+  const productSaveText = document.getElementById("productSaveText");
   const productShortDescription = document.getElementById("productShortDescription");
   const productLongDescription = document.getElementById("productLongDescription");
   const productMainImage = document.getElementById("productMainImage");
@@ -124,24 +128,59 @@ document.addEventListener("DOMContentLoaded", async function () {
     cartCount.textContent = String(totalItems);
   }
 
+  function hidePriceSection() {
+    if (productPrice) productPrice.textContent = "";
+    if (productOldPrice) {
+      productOldPrice.textContent = "";
+      productOldPrice.hidden = true;
+    }
+    if (productSaveText) productSaveText.textContent = "";
+    if (productSaveBadge) productSaveBadge.hidden = true;
+  }
+
+  function renderVariantPrice(variant) {
+    if (!productPrice) return;
+
+    const currentPrice = Number(variant?.price || 0);
+    const oldPrice = Number(variant?.compareAtPrice || 0);
+
+    productPrice.textContent = formatMoney(currentPrice);
+
+    if (productOldPrice && productSaveBadge && productSaveText && oldPrice > currentPrice) {
+      const savingsPercent = Math.round(((oldPrice - currentPrice) / oldPrice) * 100);
+
+      productOldPrice.textContent = formatMoney(oldPrice);
+      productOldPrice.hidden = false;
+
+      productSaveText.textContent = `SAVE ${savingsPercent}%`;
+      productSaveBadge.hidden = false;
+    } else {
+      if (productOldPrice) {
+        productOldPrice.textContent = "";
+        productOldPrice.hidden = true;
+      }
+
+      if (productSaveText) productSaveText.textContent = "";
+      if (productSaveBadge) productSaveBadge.hidden = true;
+    }
+  }
+
   function showNotFoundState() {
     if (productBadge) productBadge.textContent = "SALE";
     if (productName) productName.textContent = "Product not found";
     if (breadcrumbName) breadcrumbName.textContent = "Product";
+
     if (productShortDescription) {
       productShortDescription.textContent =
         "The product slug in the URL does not match your product data file.";
     }
+
     if (productLongDescription) {
       productLongDescription.textContent =
         "Check that the product link uses product-page/product.html?slug=your-product-slug and that the slug exists in ../js/product-data.js.";
     }
-    if (productPrice) productPrice.textContent = "";
-    if (productOldPrice) {
-      productOldPrice.textContent = "";
-      productOldPrice.style.display = "none";
-    }
 
+    hidePriceSection();
     setMainImage("../images/products/placeholder.PNG", "Product not found");
 
     if (variantSelect) {
@@ -169,11 +208,7 @@ document.addEventListener("DOMContentLoaded", async function () {
   if (productLongDescription) productLongDescription.textContent = product.longDescription || "";
 
   if (!variants.length) {
-    if (productPrice) productPrice.textContent = "";
-    if (productOldPrice) {
-      productOldPrice.textContent = "";
-      productOldPrice.style.display = "none";
-    }
+    hidePriceSection();
 
     setMainImage(getImageForVariant(product, 0), product.name || "Product");
 
@@ -218,23 +253,7 @@ document.addEventListener("DOMContentLoaded", async function () {
     const variant = getSelectedVariant();
     if (!variant) return;
 
-    if (productPrice) {
-      productPrice.textContent = formatMoney(variant.price);
-    }
-
-    if (productOldPrice) {
-      if (
-        variant.compareAtPrice !== undefined &&
-        variant.compareAtPrice !== null &&
-        Number(variant.compareAtPrice) > Number(variant.price)
-      ) {
-        productOldPrice.textContent = formatMoney(variant.compareAtPrice);
-        productOldPrice.style.display = "inline-block";
-      } else {
-        productOldPrice.textContent = "";
-        productOldPrice.style.display = "none";
-      }
-    }
+    renderVariantPrice(variant);
 
     const imageSrc = getImageForVariant(product, getSelectedVariantIndex());
     setMainImage(imageSrc, `${product.name} ${variant.label}`);
