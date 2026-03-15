@@ -1,8 +1,7 @@
 function initCartDrawer() {
-  const cartToggle = document.getElementById("cartToggle");
-  const cartClose = document.getElementById("cartClose");
   const cartDrawer = document.getElementById("cartDrawer");
   const overlay = document.getElementById("siteOverlay");
+  const cartClose = document.getElementById("cartClose");
 
   const cartCount = document.getElementById("cartCount");
   const cartItemsList = document.getElementById("cartItemsList");
@@ -39,10 +38,14 @@ function initCartDrawer() {
       price: 10,
       image: `${IMAGE_PREFIX}images/products/bac-water-10ml-main.PNG`,
       variantLabel: "10ML",
-      weightOz: 9.6, // 0.6 lbs = 9.6 oz
+      weightOz: 9.6,
       inStock: true
     }
   ];
+
+  function getCartToggle() {
+    return document.getElementById("cartToggle");
+  }
 
   function getCart() {
     try {
@@ -167,13 +170,20 @@ function initCartDrawer() {
     });
   }
 
+  function updateToggleAria(expanded) {
+    const cartToggle = getCartToggle();
+    if (cartToggle) {
+      cartToggle.setAttribute("aria-expanded", expanded ? "true" : "false");
+    }
+  }
+
   function openCart() {
     if (!cartDrawer || !overlay) return;
     renderCart();
     cartDrawer.classList.add("active");
     overlay.classList.add("active");
     document.body.style.overflow = "hidden";
-    if (cartToggle) cartToggle.setAttribute("aria-expanded", "true");
+    updateToggleAria(true);
     cartDrawer.setAttribute("aria-hidden", "false");
   }
 
@@ -182,7 +192,7 @@ function initCartDrawer() {
     cartDrawer.classList.remove("active");
     overlay.classList.remove("active");
     document.body.style.overflow = "";
-    if (cartToggle) cartToggle.setAttribute("aria-expanded", "false");
+    updateToggleAria(false);
     cartDrawer.setAttribute("aria-hidden", "true");
   }
 
@@ -262,7 +272,8 @@ function initCartDrawer() {
     const taxValue = 0;
     const totalValue = discountedSubtotal + shippingValue + taxValue;
 
-    if (cartCount) cartCount.textContent = String(itemCount);
+    const liveCartCount = document.getElementById("cartCount");
+    if (liveCartCount) liveCartCount.textContent = String(itemCount);
     if (cartDrawerItemCount) cartDrawerItemCount.textContent = String(itemCount);
 
     if (!cart.length) {
@@ -306,7 +317,7 @@ function initCartDrawer() {
                 </div>
 
                 <div class="cart-item-price-wrap">
-                  ${item.compareAtPrice ? `<span class="cart-item-old-price">${formatMoney(item.compareAtPrice * getItemQuantity(item))}</span>` : ""}
+                  ${item.compareAtPrice && item.compareAtPrice > item.price ? `<span class="cart-item-old-price">${formatMoney(item.compareAtPrice * getItemQuantity(item))}</span>` : ""}
                   <span class="cart-item-price">${formatMoney(item.price * getItemQuantity(item))}</span>
                 </div>
               </div>
@@ -415,9 +426,16 @@ function initCartDrawer() {
     window.__axiomCartDiscountBound = true;
   }
 
-  if (cartToggle && !cartToggle.dataset.cartBound) {
-    cartToggle.addEventListener("click", openCart);
-    cartToggle.dataset.cartBound = "true";
+  if (!window.__axiomCartDelegatedToggleBound) {
+    document.addEventListener("click", function (event) {
+      const cartToggle = event.target.closest("#cartToggle");
+      if (!cartToggle) return;
+
+      event.preventDefault();
+      openCart();
+    });
+
+    window.__axiomCartDelegatedToggleBound = true;
   }
 
   if (cartClose && !cartClose.dataset.cartBound) {
@@ -430,12 +448,23 @@ function initCartDrawer() {
     overlay.dataset.cartBound = "true";
   }
 
+  if (!window.__axiomCartEscapeBound) {
+    document.addEventListener("keydown", function (event) {
+      if (event.key === "Escape") {
+        closeCart();
+      }
+    });
+
+    window.__axiomCartEscapeBound = true;
+  }
+
   window.openCartDrawer = openCart;
   window.closeCartDrawer = closeCart;
   window.renderCartDrawer = renderCart;
 
   if (!window.__axiomCartUpdatedBound) {
     window.addEventListener("axiom-cart-updated", renderCart);
+    window.addEventListener("storage", renderCart);
     window.__axiomCartUpdatedBound = true;
   }
 
