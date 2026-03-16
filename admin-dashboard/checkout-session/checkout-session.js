@@ -1,94 +1,81 @@
-window.AXIOM_CHECKOUT_SESSION = {
-  async ensureSession() {
-    if (!window.axiomSupabase || !window.AXIOM_HELPERS) return null;
-
-    const supabase = window.axiomSupabase;
-    const helpers = window.AXIOM_HELPERS;
-
-    const existingSessionId = helpers.getCheckoutSessionId();
-
-    if (existingSessionId) {
-      const { data: existing, error } = await supabase
-        .from("checkout_sessions")
-        .select("session_id")
-        .eq("session_id", existingSessionId)
-        .maybeSingle();
-
-      if (!error && existing) {
-        return existing.session_id;
-      }
-    }
-
-    const sessionId = helpers.uuid();
-
-    const { error: insertError } = await supabase.from("checkout_sessions").insert({
-      session_id: sessionId,
-      session_status: "active",
-      customer_email: null,
-      customer_phone: null,
-      cart_items: [],
-      subtotal: 0,
-      shipping_selection: null,
-      shipping_amount: 0,
-      tax_amount: 0,
-      total_amount: 0,
-      shipping_address: null,
-      billing_address: null,
-      payment_method: null,
-      notes: null,
-      created_at: helpers.nowIso(),
-      updated_at: helpers.nowIso(),
-      last_activity_at: helpers.nowIso()
-    });
-
-    if (insertError) {
-      console.error("Failed to create checkout session:", insertError);
-      return null;
-    }
-
-    helpers.setCheckoutSessionId(sessionId);
-    return sessionId;
+window.AXIOM_CHECKOUT_TRACKING = {
+  getShippingAddress() {
+    return {
+      first_name: document.getElementById("firstName")?.value.trim() || "",
+      last_name: document.getElementById("lastName")?.value.trim() || "",
+      address1: document.getElementById("address1")?.value.trim() || "",
+      address2: document.getElementById("address2")?.value.trim() || "",
+      city: document.getElementById("city")?.value.trim() || "",
+      state: document.getElementById("state")?.value.trim() || "",
+      zip: document.getElementById("zip")?.value.trim() || "",
+      phone: document.getElementById("phone")?.value.trim() || "",
+      country: "US"
+    };
   },
 
-  async patchSession(payload) {
-    if (!window.axiomSupabase || !window.AXIOM_HELPERS) return;
-
-    const supabase = window.axiomSupabase;
-    const helpers = window.AXIOM_HELPERS;
-    const sessionId = await window.AXIOM_CHECKOUT_SESSION.ensureSession();
-
-    if (!sessionId) return;
-
-    const updatePayload = Object.assign({}, payload, {
-      updated_at: helpers.nowIso(),
-      last_activity_at: helpers.nowIso()
-    });
-
-    const { error } = await supabase
-      .from("checkout_sessions")
-      .update(updatePayload)
-      .eq("session_id", sessionId);
-
-    if (error) {
-      console.error("Failed to update checkout session:", error);
-    }
+  getBillingAddress() {
+    return this.getShippingAddress();
   },
 
-  async markAbandoned() {
+  getPaymentMethod() {
+    const checked = document.querySelector('input[name="paymentMethod"]:checked');
+    return checked ? checked.value : null;
+  },
+
+  getShippingSelection() {
+    const checked = document.querySelector('input[name="shippingMethod"]:checked');
+    if (!checked) return null;
+
+    const label = checked.closest(".shipping-option")?.querySelector("span")?.textContent?.trim() || "";
+    const price = Number(checked.value || 0);
+
+    return {
+      label,
+      amount: price,
+      code: checked.dataset.code || ""
+    };
+  },
+
+  async syncAll() {
+    if (!window.AXIOM_CHECKOUT_SESSION || !window.AXIOM_CART_SESSION) return;
+
+    const email = document.getElementById("checkoutEmail")?.value.trim() || null;
+    const phone = document.getElementById("phone")?.value.trim() || null;
+    const shippingSelection = this.getShippingSelection();
+    const paymentMethod = this.getPaymentMethod();
+
+    const cartTotals = window.AXIOM_CART_SESSION.getCartTotals();
+    const shippingAmount = Number(shippingSelection?.amount || 0);
+    const taxAmount = 0;
+
     await window.AXIOM_CHECKOUT_SESSION.patchSession({
-      session_status: "abandoned"
+      customer_email: email,
+      customer_phone: phone,
+      shipping_address: this.getShippingAddress(),
+      billing_address: this.getBillingAddress(),
+      payment_method: paymentMethod,
+      shipping_selection: shippingSelection,
+      subtotal: cartTotals.subtotal,
+      shipping_amount: shippingAmount,
+      tax_amount: taxAmount,
+      total_amount: cartTotals.subtotal + shippingAmount + taxAmount
     });
   },
 
-  async markPendingPayment() {
-    await window.AXIOM_CHECKOUT_SESSION.patchSession({
-      session_status: "pending_payment"
-    });
-  },
+  init() {
+    const form = document.getElementById("checkoutForm");
+    if (!form) return;
 
-  async markConverted() {
-    await window.AXIOM_CHECKOUT_SESSION.patchSession({
-      session_status: "converted"
+    const inputs = form.querySelectorAll("input, select, textarea");
+    inputs.forEach((input) => {
+      input.addEventListener("input", () => this.syncAll());
+      input.addEventListener("change", () => this.syncAll());
     });
+
+    this.syncAll();
   }
 };
+
+document.addEventListener("DOMContentLoaded", function () {
+  window.AXIOM_CHECKOUT_TRACKING.init();
+});
