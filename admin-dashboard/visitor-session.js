@@ -11,6 +11,7 @@ document.addEventListener("DOMContentLoaded", async function () {
   const language = navigator.language || "";
   const screenWidth = window.innerWidth || null;
   const screenHeight = window.innerHeight || null;
+  const now = helpers.nowIso();
 
   try {
     const { data: existing, error: lookupError } = await supabase
@@ -25,18 +26,21 @@ document.addEventListener("DOMContentLoaded", async function () {
     }
 
     if (!existing) {
-      const { error: insertError } = await supabase.from("visitor_sessions").insert({
-        visitor_id: visitorId,
-        first_seen_at: helpers.nowIso(),
-        last_seen_at: helpers.nowIso(),
-        visit_count: 1,
-        referrer,
-        landing_path: pathname,
-        user_agent: userAgent,
-        language,
-        screen_width: screenWidth,
-        screen_height: screenHeight
-      });
+      const { error: insertError } = await supabase
+        .from("visitor_sessions")
+        .insert({
+          visitor_id: visitorId,
+          first_seen_at: now,
+          last_seen_at: now,
+          visit_count: 1,
+          referrer: referrer,
+          landing_path: pathname,
+          user_agent: userAgent,
+          language: language,
+          screen_width: screenWidth,
+          screen_height: screenHeight,
+          updated_at: now
+        });
 
       if (insertError) {
         console.error("Visitor insert failed:", insertError);
@@ -45,12 +49,14 @@ document.addEventListener("DOMContentLoaded", async function () {
       const { error: updateError } = await supabase
         .from("visitor_sessions")
         .update({
-          last_seen_at: helpers.nowIso(),
+          last_seen_at: now,
           visit_count: Number(existing.visit_count || 0) + 1,
+          referrer: referrer,
           user_agent: userAgent,
-          language,
+          language: language,
           screen_width: screenWidth,
-          screen_height: screenHeight
+          screen_height: screenHeight,
+          updated_at: now
         })
         .eq("id", existing.id);
 
@@ -59,12 +65,15 @@ document.addEventListener("DOMContentLoaded", async function () {
       }
     }
 
-    const { error: pageViewError } = await supabase.from("page_views").insert({
-      visitor_id: visitorId,
-      path: pathname,
-      referrer,
-      viewed_at: helpers.nowIso()
-    });
+    const { error: pageViewError } = await supabase
+      .from("page_views")
+      .insert({
+        visitor_id: visitorId,
+        path: pathname,
+        referrer: referrer,
+        viewed_at: now,
+        created_at: now
+      });
 
     if (pageViewError) {
       console.error("Page view insert failed:", pageViewError);
