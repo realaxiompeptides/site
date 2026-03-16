@@ -52,6 +52,8 @@ document.addEventListener("DOMContentLoaded", async function () {
   const addToCartBtn = document.getElementById("productAddToCart");
   const cartCount = document.getElementById("cartCount");
 
+  const CART_STORAGE_KEY = "axiom_cart";
+
   function formatMoney(value) {
     return `$${Number(value || 0).toFixed(2)}`;
   }
@@ -110,34 +112,84 @@ document.addEventListener("DOMContentLoaded", async function () {
     };
   }
 
-  async function fetchCurrentCheckoutSession() {
-    if (!window.axiomSupabase || !window.AXIOM_CHECKOUT_SESSION) return null;
-
-    const sessionId = await window.AXIOM_CHECKOUT_SESSION.ensureSession();
-    if (!sessionId) return null;
-
-    const { data, error } = await window.axiomSupabase
-      .from("checkout_sessions")
-      .select("*")
-      .eq("session_id", sessionId)
-      .maybeSingle();
-
-    if (error) {
-      console.error("Failed to fetch checkout session:", error);
-      return null;
+  function getLocalCart() {
+    try {
+      const cart = JSON.parse(localStorage.getItem(CART_STORAGE_KEY) || "[]");
+      return Array.isArray(cart) ? cart : [];
+    } catch (error) {
+      console.error("Failed to read cart from localStorage", error);
+      return [];
     }
-
-    return data || null;
   }
 
-  async function updateCartCountDisplay() {
+  function saveLocalCart(cart) {
+    localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(cart));
+  }
+
+  function getCartItemQty(item) {
+    return Number(item.quantity || item.qty || 0);
+  }
+
+  async function syncLocalCartToSupabase() {
+    if (!window.axiomSupabase || !window.AXIOM_CHECKOUT_SESSION) return;
+
+    try {
+      const sessionId = await window.AXIOM_CHECKOUT_SESSION.ensureSession();
+      if (!sessionId) return;
+
+      const localCart = getLocalCart();
+
+      const subtotal = localCart.reduce(function (sum, item) {
+        return sum + (Number(item.price || 0) * getCartItemQty(item));
+      }, 0);
+
+      const cartItemsForSession = localCart.map(function (item) {
+        return {
+          id: item.id || "",
+          slug: item.slug || "",
+          name: item.name || "Product",
+          variantLabel: item.variantLabel || item.variant || "",
+          variant_label: item.variantLabel || item.variant || "",
+          price: Number(item.price || 0),
+          compareAtPrice:
+            item.compareAtPrice !== undefined && item.compareAtPrice !== null
+              ? Number(item.compareAtPrice) || null
+              : item.oldPrice !== undefined && item.oldPrice !== null
+                ? Number(item.oldPrice) || null
+                : null,
+          compare_at_price:
+            item.compareAtPrice !== undefined && item.compareAtPrice !== null
+              ? Number(item.compareAtPrice) || null
+              : item.oldPrice !== undefined && item.oldPrice !== null
+                ? Number(item.oldPrice) || null
+                : null,
+          quantity: getCartItemQty(item),
+          qty: getCartItemQty(item),
+          image: item.image || "",
+          weightOz: Number(item.weightOz || 0),
+          weight_oz: Number(item.weightOz || 0),
+          inStock: item.inStock !== false,
+          in_stock: item.inStock !== false
+        };
+      });
+
+      await window.AXIOM_CHECKOUT_SESSION.patchSession({
+        cart_items: cartItemsForSession,
+        subtotal: subtotal,
+        total_amount: subtotal,
+        session_status: "active"
+      });
+    } catch (error) {
+      console.error("Failed to sync cart to Supabase:", error);
+    }
+  }
+
+  function updateCartCountDisplay() {
     if (!cartCount) return;
 
-    const session = await fetchCurrentCheckoutSession();
-
-    const cartItems = Array.isArray(session?.cart_items) ? session.cart_items : [];
-    const totalItems = cartItems.reduce(function (sum, item) {
-      return sum + Number(item.quantity || 0);
+    const cart = getLocalCart();
+    const totalItems = cart.reduce(function (sum, item) {
+      return sum + getCartItemQty(item);
     }, 0);
 
     cartCount.textContent = String(totalItems);
@@ -281,7 +333,7 @@ document.addEventListener("DOMContentLoaded", async function () {
   }
 
   updateVariantDisplay();
-  await updateCartCountDisplay();
+  updateCartCountDisplay();
 
   if (variantSelect) {
     variantSelect.addEventListener("change", updateVariantDisplay);
@@ -314,10 +366,6 @@ document.addEventListener("DOMContentLoaded", async function () {
     addToCartBtn.addEventListener("click", async function () {
       const variant = getSelectedVariant();
       if (!variant || variant.inStock === false) return;
-      if (!window.axiomSupabase || !window.AXIOM_CHECKOUT_SESSION) {
-        console.error("Supabase checkout dependencies are missing.");
-        return;
-      }
 
       const quantity = Math.max(1, Number(qtyInput ? qtyInput.value : 1) || 1);
       const selectedIndex = getSelectedVariantIndex();
@@ -327,65 +375,42 @@ document.addEventListener("DOMContentLoaded", async function () {
         id: variant.id,
         slug: product.slug,
         name: product.name,
-        variant_label: variant.label,
+        variantLabel: variant.label,
+        variant: variant.label,
         price: Number(variant.price) || 0,
-        compare_at_price:
+        compareAtPrice:
           variant.compareAtPrice !== undefined && variant.compareAtPrice !== null
             ? Number(variant.compareAtPrice) || null
             : null,
-        quantity,
-        image,
-        weight_oz: Number(variant.weightOz) || 0,
-        in_stock: variant.inStock !== false
+        oldPrice:
+          variant.compareAtPrice !== undefined && variant.compareAtPrice !== null
+            ? Number(variant.compareAtPrice) || null
+            : null,
+        quantity: quantity,
+        qty: quantity,
+        image: image,
+        weightOz: Number(variant.weightOz) || 0,
+        inStock: variant.inStock !== false
       };
 
-      const sessionId = await window.AXIOM_CHECKOUT_SESSION.ensureSession();
-      if (!sessionId) {
-        console.error("No checkout session found.");
-        return;
-      }
-
-      const { data: existingSession, error: fetchError } = await window.axiomSupabase
-        .from("checkout_sessions")
-        .select("*")
-        .eq("session_id", sessionId)
-        .maybeSingle();
-
-      if (fetchError) {
-        console.error("Failed to fetch checkout session before add to cart:", fetchError);
-        return;
-      }
-
-      const cartItems = Array.isArray(existingSession?.cart_items) ? existingSession.cart_items : [];
-
-      const existingIndex = cartItems.findIndex(item => item.id === cartItem.id);
+      const cart = getLocalCart();
+      const existingIndex = cart.findIndex(item => item.id === cartItem.id);
 
       if (existingIndex > -1) {
-        cartItems[existingIndex].quantity =
-          Number(cartItems[existingIndex].quantity || 0) + quantity;
+        const currentQty = getCartItemQty(cart[existingIndex]);
+        cart[existingIndex].quantity = currentQty + quantity;
+        cart[existingIndex].qty = currentQty + quantity;
       } else {
-        cartItems.push(cartItem);
+        cart.push(cartItem);
       }
 
-      const subtotal = cartItems.reduce(function (sum, item) {
-        return sum + (Number(item.price || 0) * Number(item.quantity || 0));
-      }, 0);
-
-      const shippingAmount = Number(existingSession?.shipping_amount || 0);
-      const taxAmount = Number(existingSession?.tax_amount || 0);
-      const totalAmount = subtotal + shippingAmount + taxAmount;
-
-      await window.AXIOM_CHECKOUT_SESSION.patchSession({
-        cart_items: cartItems,
-        subtotal,
-        total_amount: totalAmount,
-        session_status: "active"
-      });
-
-      await updateCartCountDisplay();
+      saveLocalCart(cart);
+      updateCartCountDisplay();
 
       window.dispatchEvent(new Event("axiom-cart-updated"));
       document.dispatchEvent(new CustomEvent("axiom-cart-updated"));
+
+      await syncLocalCartToSupabase();
 
       if (typeof window.renderCartDrawer === "function") {
         window.renderCartDrawer();
@@ -407,4 +432,9 @@ document.addEventListener("DOMContentLoaded", async function () {
   window.addEventListener("axiom-cart-updated", function () {
     updateCartCountDisplay();
   });
+
+  window.addEventListener("storage", function () {
+    updateCartCountDisplay();
+  });
 });
+Fix product.js fully and tell me if there’s any other files that need to be changed because it needs to actually show in the cart. It doesn’t update on the homepage anymore either when I click on the cart icon. make it fully work.
