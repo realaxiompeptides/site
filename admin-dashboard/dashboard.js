@@ -3,7 +3,8 @@ const DASHBOARD_PARTIALS = [
   { mountId: "paymentInfoMount", file: "payment-info/payment.html" },
   { mountId: "shippingInfoMount", file: "shipping-info/shipping.html" },
   { mountId: "billingInfoMount", file: "billing-info/billing.html" },
-  { mountId: "cartItemsMount", file: "cart-items/cart-items.html" }
+  { mountId: "cartItemsMount", file: "cart-items/cart-items.html" },
+  { mountId: "analyticsMount", file: "analytics/analytics.html" }
 ];
 
 let allSessions = [];
