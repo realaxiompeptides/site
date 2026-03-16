@@ -28,15 +28,67 @@ function safeObject(value) {
   return value && typeof value === "object" && !Array.isArray(value) ? value : {};
 }
 
+function setText(id, value) {
+  const el = document.getElementById(id);
+  if (!el) return;
+
+  if (value === undefined || value === null || value === "") {
+    el.textContent = "—";
+    return;
+  }
+
+  el.textContent = String(value);
+}
+
+function normalizeImagePath(path) {
+  if (!path || typeof path !== "string") {
+    return "../images/products/placeholder.PNG";
+  }
+
+  const cleanPath = path.trim();
+
+  if (
+    cleanPath.startsWith("../") ||
+    cleanPath.startsWith("./") ||
+    cleanPath.startsWith("/") ||
+    cleanPath.startsWith("http://") ||
+    cleanPath.startsWith("https://")
+  ) {
+    return cleanPath;
+  }
+
+  return `../${cleanPath}`;
+}
+
+function getAddressField(address, keys) {
+  for (const key of keys) {
+    if (address[key] !== undefined && address[key] !== null && String(address[key]).trim() !== "") {
+      return String(address[key]).trim();
+    }
+  }
+  return "";
+}
+
 function renderAddress(addressObj) {
   const address = safeObject(addressObj);
 
+  const firstName = getAddressField(address, ["first_name", "firstName"]);
+  const lastName = getAddressField(address, ["last_name", "lastName"]);
+  const address1 = getAddressField(address, ["address1", "line1", "street", "street_address"]);
+  const address2 = getAddressField(address, ["address2", "line2", "apartment", "suite"]);
+  const city = getAddressField(address, ["city"]);
+  const state = getAddressField(address, ["state", "province", "region"]);
+  const zip = getAddressField(address, ["zip", "postal_code", "postalCode"]);
+  const country = getAddressField(address, ["country", "country_code", "countryCode"]);
+
+  const cityStateZip = [city, state, zip].filter(Boolean).join(", ");
+
   const lines = [
-    [address.first_name, address.last_name].filter(Boolean).join(" ").trim(),
-    address.address1 || "",
-    address.address2 || "",
-    [address.city, address.state, address.zip].filter(Boolean).join(", "),
-    address.country || ""
+    [firstName, lastName].filter(Boolean).join(" ").trim(),
+    address1,
+    address2,
+    cityStateZip,
+    country
   ].filter(Boolean);
 
   if (!lines.length) {
@@ -44,6 +96,81 @@ function renderAddress(addressObj) {
   }
 
   return `<p>${lines.join("<br>")}</p>`;
+}
+
+function getCartItemName(item) {
+  return item.product_name || item.name || "Product";
+}
+
+function getCartItemVariant(item) {
+  return item.variant_label || item.variantLabel || item.variant || item.option || "—";
+}
+
+function getCartItemQty(item) {
+  return Number(item.quantity || item.qty || 0);
+}
+
+function getCartItemUnitPrice(item) {
+  return Number(
+    item.unit_price !== undefined && item.unit_price !== null
+      ? item.unit_price
+      : item.price !== undefined && item.price !== null
+        ? item.price
+        : 0
+  );
+}
+
+function getCartItemLineTotal(item) {
+  if (item.line_total !== undefined && item.line_total !== null) {
+    return Number(item.line_total || 0);
+  }
+
+  return getCartItemQty(item) * getCartItemUnitPrice(item);
+}
+
+function getCartItemImage(item) {
+  return normalizeImagePath(item.image || "");
+}
+
+function getShippingMethodName(session, shippingSelection) {
+  return (
+    session.shipping_method_name ||
+    shippingSelection.method_name ||
+    shippingSelection.label ||
+    "—"
+  );
+}
+
+function getShippingMethodCode(session, shippingSelection) {
+  return (
+    session.shipping_method_code ||
+    shippingSelection.method_code ||
+    shippingSelection.code ||
+    "—"
+  );
+}
+
+function getSessionDisplayTitle(session) {
+  const firstName = session.customer_first_name || "";
+  const lastName = session.customer_last_name || "";
+  const fullName = [firstName, lastName].filter(Boolean).join(" ").trim();
+
+  return (
+    fullName ||
+    session.customer_email ||
+    session.session_id ||
+    "Checkout Session"
+  );
+}
+
+function getSessionDisplayPhone(session) {
+  return session.customer_phone || "No phone";
+}
+
+function getSessionBadgeClass(status) {
+  return String(status || "active")
+    .toLowerCase()
+    .replace(/\s+/g, "_");
 }
 
 async function loadPartials() {
@@ -89,23 +216,24 @@ function getFilteredSessions() {
     const email = String(session.customer_email || "").toLowerCase();
     const phone = String(session.customer_phone || "").toLowerCase();
     const sessionId = String(session.session_id || "").toLowerCase();
+    const firstName = String(session.customer_first_name || "").toLowerCase();
+    const lastName = String(session.customer_last_name || "").toLowerCase();
+    const fullName = `${firstName} ${lastName}`.trim();
     const status = String(session.session_status || "").toLowerCase();
 
     const matchesSearch =
       !searchValue ||
       email.includes(searchValue) ||
       phone.includes(searchValue) ||
-      sessionId.includes(searchValue);
+      sessionId.includes(searchValue) ||
+      firstName.includes(searchValue) ||
+      lastName.includes(searchValue) ||
+      fullName.includes(searchValue);
 
     const matchesStatus = !statusValue || status === statusValue;
 
     return matchesSearch && matchesStatus;
   });
-}
-
-function setText(id, value) {
-  const el = document.getElementById(id);
-  if (el) el.textContent = value || "—";
 }
 
 function clearSelectedSessionDisplay() {
@@ -155,12 +283,14 @@ function renderSessionsList() {
 
   list.innerHTML = sessions.map((session) => {
     const isActive = session.id === selectedSessionId;
+    const badgeClass = getSessionBadgeClass(session.session_status);
+
     return `
       <div class="dashboard-session-card ${isActive ? "active" : ""}" data-session-id="${session.id}">
-        <h4>${session.customer_email || session.session_id || "Unknown Session"}</h4>
-        <p>${session.customer_phone || "No phone"}</p>
+        <h4>${getSessionDisplayTitle(session)}</h4>
+        <p>${getSessionDisplayPhone(session)}</p>
         <p>${formatDateTime(session.created_at)}</p>
-        <span class="dashboard-badge ${session.session_status}">${session.session_status || "active"}</span>
+        <span class="dashboard-badge ${badgeClass}">${session.session_status || "active"}</span>
       </div>
     `;
   }).join("");
@@ -182,10 +312,7 @@ function renderSelectedSession() {
     return;
   }
 
-  setText(
-    "dashboardSessionTitle",
-    session.customer_email || session.session_id || "Checkout Session"
-  );
+  setText("dashboardSessionTitle", getSessionDisplayTitle(session));
 
   const shippingSelection = safeObject(session.shipping_selection);
   const cartItems = safeArray(session.cart_items);
@@ -195,15 +322,15 @@ function renderSelectedSession() {
   setText("overviewEmail", session.customer_email || "—");
   setText("overviewPhone", session.customer_phone || "—");
   setText("overviewCreated", formatDateTime(session.created_at));
-  setText("overviewLastActivity", formatDateTime(session.last_activity_at));
+  setText("overviewLastActivity", formatDateTime(session.last_activity_at || session.updated_at));
   setText("overviewSubtotal", formatMoney(session.subtotal));
   setText("overviewShipping", formatMoney(session.shipping_amount));
   setText("overviewTax", formatMoney(session.tax_amount));
   setText("overviewTotal", formatMoney(session.total_amount));
 
   setText("paymentMethodValue", session.payment_method || "—");
-  setText("paymentShippingMethodValue", shippingSelection.method_name || shippingSelection.label || "—");
-  setText("paymentShippingCodeValue", shippingSelection.method_code || shippingSelection.code || "—");
+  setText("paymentShippingMethodValue", getShippingMethodName(session, shippingSelection));
+  setText("paymentShippingCodeValue", getShippingMethodCode(session, shippingSelection));
 
   const shippingInfoBlock = document.getElementById("shippingInfoBlock");
   if (shippingInfoBlock) {
@@ -221,20 +348,19 @@ function renderSelectedSession() {
       cartItemsTableWrap.innerHTML = `<div class="dashboard-empty">No cart items saved.</div>`;
     } else {
       cartItemsTableWrap.innerHTML = cartItems.map((item) => {
-        const qty = Number(item.quantity || item.qty || 0);
-        const price = Number(item.price || 0);
-        const lineTotal = qty * price;
-        const image = item.image || "../images/products/placeholder.PNG";
+        const qty = getCartItemQty(item);
+        const lineTotal = getCartItemLineTotal(item);
+        const image = getCartItemImage(item);
 
         return `
           <div class="dashboard-item-row">
             <div class="dashboard-item-image">
-              <img src="${image}" alt="${item.name || "Product"}" onerror="this.onerror=null;this.src='../images/products/placeholder.PNG';">
+              <img src="${image}" alt="${getCartItemName(item)}" onerror="this.onerror=null;this.src='../images/products/placeholder.PNG';">
             </div>
 
             <div class="dashboard-item-info">
-              <h4>${item.name || "Product"}</h4>
-              <p>${item.variantLabel || item.variant || "—"}</p>
+              <h4>${getCartItemName(item)}</h4>
+              <p>${getCartItemVariant(item)}</p>
               <p>Qty: ${qty}</p>
             </div>
 
@@ -258,6 +384,10 @@ async function refreshDashboard() {
 
   if (!selectedSessionId && allSessions.length) {
     selectedSessionId = allSessions[0].id;
+  }
+
+  if (selectedSessionId && !allSessions.some((entry) => entry.id === selectedSessionId)) {
+    selectedSessionId = allSessions.length ? allSessions[0].id : null;
   }
 
   renderSessionsList();
