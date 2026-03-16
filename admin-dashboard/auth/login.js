@@ -11,6 +11,9 @@ document.addEventListener("DOMContentLoaded", async function () {
   const submitBtn = document.getElementById("adminLoginSubmit");
   const messageEl = document.getElementById("adminLoginMessage");
 
+  const LOGIN_PATH = "/site/admin-dashboard/login.html";
+  const DASHBOARD_PATH = "/site/admin-dashboard/index.html";
+
   function setMessage(message) {
     if (messageEl) {
       messageEl.textContent = message || "";
@@ -23,7 +26,7 @@ document.addEventListener("DOMContentLoaded", async function () {
     } = await supabase.auth.getSession();
 
     if (session && session.user) {
-      window.location.href = "/admin-dashboard/index.html";
+      window.location.href = DASHBOARD_PATH;
       return;
     }
   } catch (error) {
@@ -59,7 +62,7 @@ document.addEventListener("DOMContentLoaded", async function () {
         return;
       }
 
-      window.location.href = "/admin-dashboard/index.html";
+      window.location.href = DASHBOARD_PATH;
     } catch (error) {
       console.error("Unexpected login error:", error);
       setMessage("Something went wrong while signing in.");
