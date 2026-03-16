@@ -35,7 +35,7 @@ function renderAddress(addressObj) {
     [address.first_name, address.last_name].filter(Boolean).join(" ").trim(),
     address.address1 || "",
     address.address2 || "",
-    [address.city, address.state, address.zip].filter(Boolean).join(", ").replace(", ,", ","),
+    [address.city, address.state, address.zip].filter(Boolean).join(", "),
     address.country || ""
   ].filter(Boolean);
 
@@ -103,6 +103,45 @@ function getFilteredSessions() {
   });
 }
 
+function setText(id, value) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = value || "—";
+}
+
+function clearSelectedSessionDisplay() {
+  setText("dashboardSessionTitle", "Select a session");
+
+  setText("overviewSessionId", "—");
+  setText("overviewStatus", "—");
+  setText("overviewEmail", "—");
+  setText("overviewPhone", "—");
+  setText("overviewCreated", "—");
+  setText("overviewLastActivity", "—");
+  setText("overviewSubtotal", "—");
+  setText("overviewShipping", "—");
+  setText("overviewTax", "—");
+  setText("overviewTotal", "—");
+
+  setText("paymentMethodValue", "—");
+  setText("paymentShippingMethodValue", "—");
+  setText("paymentShippingCodeValue", "—");
+
+  const shippingInfoBlock = document.getElementById("shippingInfoBlock");
+  if (shippingInfoBlock) {
+    shippingInfoBlock.innerHTML = `<p>—</p>`;
+  }
+
+  const billingInfoBlock = document.getElementById("billingInfoBlock");
+  if (billingInfoBlock) {
+    billingInfoBlock.innerHTML = `<p>—</p>`;
+  }
+
+  const cartItemsTableWrap = document.getElementById("cartItemsTableWrap");
+  if (cartItemsTableWrap) {
+    cartItemsTableWrap.innerHTML = `<div class="dashboard-empty">No cart items saved.</div>`;
+  }
+}
+
 function renderSessionsList() {
   const list = document.getElementById("sessionsList");
   if (!list) return;
@@ -138,24 +177,18 @@ function renderSessionsList() {
 function renderSelectedSession() {
   const session = allSessions.find((entry) => entry.id === selectedSessionId);
 
-  const title = document.getElementById("dashboardSessionTitle");
-  if (title) {
-    title.textContent = session
-      ? (session.customer_email || session.session_id || "Checkout Session")
-      : "Select a session";
-  }
-
   if (!session) {
+    clearSelectedSessionDisplay();
     return;
   }
 
+  setText(
+    "dashboardSessionTitle",
+    session.customer_email || session.session_id || "Checkout Session"
+  );
+
   const shippingSelection = safeObject(session.shipping_selection);
   const cartItems = safeArray(session.cart_items);
-
-  const setText = (id, value) => {
-    const el = document.getElementById(id);
-    if (el) el.textContent = value || "—";
-  };
 
   setText("overviewSessionId", session.session_id || "—");
   setText("overviewStatus", session.session_status || "—");
@@ -169,8 +202,8 @@ function renderSelectedSession() {
   setText("overviewTotal", formatMoney(session.total_amount));
 
   setText("paymentMethodValue", session.payment_method || "—");
-  setText("paymentShippingMethodValue", shippingSelection.method_name || "—");
-  setText("paymentShippingCodeValue", shippingSelection.method_code || "—");
+  setText("paymentShippingMethodValue", shippingSelection.method_name || shippingSelection.label || "—");
+  setText("paymentShippingCodeValue", shippingSelection.method_code || shippingSelection.code || "—");
 
   const shippingInfoBlock = document.getElementById("shippingInfoBlock");
   if (shippingInfoBlock) {
@@ -188,7 +221,7 @@ function renderSelectedSession() {
       cartItemsTableWrap.innerHTML = `<div class="dashboard-empty">No cart items saved.</div>`;
     } else {
       cartItemsTableWrap.innerHTML = cartItems.map((item) => {
-        const qty = Number(item.quantity || 0);
+        const qty = Number(item.quantity || item.qty || 0);
         const price = Number(item.price || 0);
         const lineTotal = qty * price;
         const image = item.image || "../images/products/placeholder.PNG";
@@ -201,7 +234,7 @@ function renderSelectedSession() {
 
             <div class="dashboard-item-info">
               <h4>${item.name || "Product"}</h4>
-              <p>${item.variantLabel || "—"}</p>
+              <p>${item.variantLabel || item.variant || "—"}</p>
               <p>Qty: ${qty}</p>
             </div>
 
