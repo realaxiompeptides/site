@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+  />
+  <title>Order Received | Axiom Peptides</title>
+  <meta
+    name="description"
+    content="View your Axiom Peptides order number, payment instructions, and shipping estimate."
+  />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+    rel="stylesheet"
+  />
+
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+  />
+
+  <link rel="stylesheet" href="../css/style.css" />
+  <link rel="stylesheet" href="../footer/footer.css" />
+  <link rel="stylesheet" href="thank-you.css" />
+</head>
+<body class="thank-you-page">
+
+  <header class="thank-you-header">
+    <div class="thank-you-header-inner">
+      <a href="../index.html" class="thank-you-logo" aria-label="Axiom Peptides home">
+        <img src="../images/axiom-menu-logo.PNG" alt="Axiom Peptides logo" />
+      </a>
+    </div>
+  </header>
+
+  <main class="thank-you-main">
+    <div class="thank-you-container">
+      <section class="thank-you-hero">
+        <p class="thank-you-kicker">Order Submitted</p>
+        <h1>Thank You For Your Order</h1>
+        <p class="thank-you-subtext">
+          Your order has been created successfully. Please use the payment instructions below and include your order number with your payment.
+        </p>
+      </section>
+
+      <section class="thank-you-grid">
+        <div class="thank-you-card thank-you-card-primary">
+          <div class="thank-you-status">
+            <div class="thank-you-status-icon">
+              <i class="fa-solid fa-circle-check"></i>
+            </div>
+
+            <div>
+              <p class="thank-you-status-label">Order Number</p>
+              <h2 id="thankYouOrderNumber">#----</h2>
+            </div>
+          </div>
+
+          <div class="thank-you-summary">
+            <div class="thank-you-summary-row">
+              <span>Status</span>
+              <strong id="thankYouOrderStatus">Pending Payment</strong>
+            </div>
+
+            <div class="thank-you-summary-row">
+              <span>Subtotal</span>
+              <strong id="thankYouSubtotal">$0.00</strong>
+            </div>
+
+            <div class="thank-you-summary-row">
+              <span>Shipping</span>
+              <strong id="thankYouShipping">$0.00</strong>
+            </div>
+
+            <div class="thank-you-summary-row">
+              <span>Tax</span>
+              <strong id="thankYouTax">$0.00</strong>
+            </div>
+
+            <div class="thank-you-summary-row thank-you-summary-row-total">
+              <span>Total</span>
+              <strong id="thankYouTotal">$0.00</strong>
+            </div>
+          </div>
+
+          <div class="thank-you-estimates">
+            <div class="thank-you-estimate-box">
+              <p class="thank-you-estimate-label">Estimated Ship Date</p>
+              <strong id="thankYouShipEstimate">Calculating...</strong>
+              <span>We do not ship on Saturday or Sunday.</span>
+            </div>
+
+            <div class="thank-you-estimate-box">
+              <p class="thank-you-estimate-label">Estimated Delivery</p>
+              <strong id="thankYouDeliveryEstimate">Calculating...</strong>
+              <span id="thankYouDeliveryMethod">Delivery estimate depends on the shipping method selected.</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="thank-you-side-stack">
+          <div class="thank-you-card">
+            <h3>Payment Instructions</h3>
+            <p class="thank-you-muted">
+              Send payment using one of the methods below. Include your order number in the payment note when possible.
+            </p>
+
+            <div class="thank-you-payment-list">
+              <div class="thank-you-payment-item">
+                <div class="thank-you-payment-top">
+                  <i class="fa-solid fa-dollar-sign"></i>
+                  <strong>Cash App</strong>
+                </div>
+                <p>$axiompeptides</p>
+              </div>
+
+              <div class="thank-you-payment-item">
+                <div class="thank-you-payment-top">
+                  <i class="fa-brands fa-apple-pay"></i>
+                  <strong>Apple Pay</strong>
+                </div>
+                <p>530-701-9349</p>
+              </div>
+
+              <div class="thank-you-payment-item">
+                <div class="thank-you-payment-top">
+                  <i class="fa-brands fa-bitcoin"></i>
+                  <strong>Crypto</strong>
+                </div>
+                <p>BTC Address: bc1qexampleplaceholderaddress1234567890</p>
+                <p>ETH Address: 0xExamplePlaceholderAddress1234567890</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="thank-you-card">
+            <h3>Your Selected Payment Method</h3>
+            <p class="thank-you-selected-method" id="thankYouPaymentMethod">Not selected</p>
+          </div>
+
+          <div class="thank-you-card">
+            <h3>Shipping Details</h3>
+            <div class="thank-you-shipping-info">
+              <div class="thank-you-summary-row">
+                <span>Shipping Method</span>
+                <strong id="thankYouShippingMethod">Not selected</strong>
+              </div>
+
+              <div class="thank-you-summary-row">
+                <span>Email</span>
+                <strong id="thankYouEmail">—</strong>
+              </div>
+
+              <div class="thank-you-summary-row">
+                <span>Phone</span>
+                <strong id="thankYouPhone">—</strong>
+              </div>
+            </div>
+          </div>
+
+          <div class="thank-you-card">
+            <h3>What Happens Next</h3>
+            <ul class="thank-you-steps">
+              <li>Submit payment using one of the payment methods above.</li>
+              <li>Your order will remain marked as pending until payment is confirmed.</li>
+              <li>After payment is confirmed, your order will move into processing.</li>
+              <li>Tracking will be added after your label is created.</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <section class="thank-you-card thank-you-items-card">
+        <h3>Order Items</h3>
+        <div id="thankYouItems" class="thank-you-items"></div>
+      </section>
+    </div>
+  </main>
+
+  <div id="site-footer"></div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const footerTarget = document.getElementById("site-footer");
+      if (!footerTarget) return;
+
+      fetch("../footer/footer.html")
+        .then(function (response) {
+          if (!response.ok) {
+            throw new Error("Could not load ../footer/footer.html");
+          }
+          return response.text();
+        })
+        .then(function (html) {
+          footerTarget.innerHTML = html;
+        })
+        .catch(function (error) {
+          console.error("Footer load failed:", error);
+        });
+    });
+  </script>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../admin-dashboard/dashboard-config.js"></script>
+  <script src="../admin-dashboard/shared/tracking-config.js"></script>
+  <script src="../admin-dashboard/shared/helpers.js"></script>
+  <script src="../admin-dashboard/supabase-client.js"></script>
+  <script src="../admin-dashboard/visitor-session.js"></script>
+  <script src="thank-you.js"></script>
+</body>
+</html>
