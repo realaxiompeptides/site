@@ -7,6 +7,7 @@
     content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
   />
   <title>Axiom Dashboard</title>
+
   <meta
     name="description"
     content="Axiom Peptides admin dashboard for orders, checkout sessions, analytics, and tracking."
@@ -14,6 +15,7 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
   <link
     href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
     rel="stylesheet"
@@ -26,177 +28,258 @@
 
   <link rel="stylesheet" href="dashboard.css" />
 </head>
+
 <body class="axiom-dashboard-page">
 
-  <div class="dashboard-shell">
+<div class="dashboard-shell">
 
-    <aside class="dashboard-sidebar">
-      <div class="dashboard-sidebar-top">
-        <h1>Axiom Dashboard</h1>
-        <p>Store admin, checkout tracking, visitor analytics, and order operations</p>
-      </div>
+  <aside class="dashboard-sidebar">
 
-      <div class="dashboard-search-wrap">
-        <nav class="dashboard-nav">
-          <a href="index.html" class="dashboard-nav-link active">
-            <i class="fa-solid fa-table-columns"></i>
-            <span>Dashboard Home</span>
-          </a>
+    <div class="dashboard-sidebar-top">
+      <h1>Axiom Dashboard</h1>
+      <p>Store admin, checkout tracking, visitor analytics, and order operations</p>
+    </div>
 
-          <a href="orders/orders.html" class="dashboard-nav-link">
-            <i class="fa-solid fa-box-open"></i>
-            <span>Orders</span>
-          </a>
+    <div class="dashboard-search-wrap">
 
-          <a href="sessions/sessions.html" class="dashboard-nav-link">
-            <i class="fa-solid fa-cart-shopping"></i>
-            <span>Checkout Sessions</span>
-          </a>
+      <nav class="dashboard-nav">
 
-          <a href="analytics/analytics-page.html" class="dashboard-nav-link">
-            <i class="fa-solid fa-chart-line"></i>
-            <span>Analytics</span>
-          </a>
-        </nav>
-      </div>
+        <a href="index.html" class="dashboard-nav-link active">
+          <i class="fa-solid fa-table-columns"></i>
+          <span>Dashboard Home</span>
+        </a>
 
-      <div class="dashboard-search-wrap">
-        <div class="dashboard-admin-box">
-          <p class="dashboard-admin-label">Admin</p>
-          <strong id="dashboardAdminEmail">Loading...</strong>
-          <button type="button" class="dashboard-btn dashboard-btn-secondary" id="dashboardLogoutBtn">
-            Log Out
-          </button>
-        </div>
-      </div>
-    </aside>
+        <a href="orders/orders.html" class="dashboard-nav-link">
+          <i class="fa-solid fa-box-open"></i>
+          <span>Orders</span>
+        </a>
 
-    <main class="dashboard-main">
+        <a href="sessions/sessions.html" class="dashboard-nav-link">
+          <i class="fa-solid fa-cart-shopping"></i>
+          <span>Checkout Sessions</span>
+        </a>
 
-      <section class="dashboard-main-header">
-        <div>
-          <p class="dashboard-kicker">Dashboard Home</p>
-          <h2>Store Overview</h2>
-        </div>
+        <a href="analytics/analytics-page.html" class="dashboard-nav-link">
+          <i class="fa-solid fa-chart-line"></i>
+          <span>Analytics</span>
+        </a>
 
-        <button type="button" class="dashboard-btn dashboard-btn-secondary" id="refreshHomeDashboardBtn">
-          Refresh
+      </nav>
+
+    </div>
+
+    <div class="dashboard-search-wrap">
+
+      <div class="dashboard-admin-box">
+
+        <p class="dashboard-admin-label">Admin</p>
+
+        <strong id="dashboardAdminEmail">
+          Loading...
+        </strong>
+
+        <button
+          type="button"
+          class="dashboard-btn dashboard-btn-secondary"
+          id="dashboardLogoutBtn"
+        >
+          Log Out
         </button>
-      </section>
 
-      <section class="dashboard-details-grid">
+      </div>
 
-        <div class="dashboard-card">
-          <div class="dashboard-card-header">
-            <h3>Orders To Fulfill</h3>
+    </div>
+
+  </aside>
+
+
+  <main class="dashboard-main">
+
+    <section class="dashboard-main-header">
+
+      <div>
+        <p class="dashboard-kicker">
+          Dashboard Home
+        </p>
+
+        <h2>
+          Store Overview
+        </h2>
+      </div>
+
+      <button
+        type="button"
+        class="dashboard-btn dashboard-btn-secondary"
+        id="refreshHomeDashboardBtn"
+      >
+        Refresh
+      </button>
+
+    </section>
+
+
+    <section class="dashboard-details-grid">
+
+      <div class="dashboard-card">
+
+        <div class="dashboard-card-header">
+          <h3>Orders To Fulfill</h3>
+        </div>
+
+        <div class="dashboard-info-list">
+
+          <div class="dashboard-info-row">
+            <span>Unfulfilled Orders</span>
+            <strong id="homeUnfulfilledOrders">—</strong>
           </div>
-          <div class="dashboard-info-list">
-            <div class="dashboard-info-row">
-              <span>Unfulfilled Orders</span>
-              <strong id="homeUnfulfilledOrders">—</strong>
-            </div>
-            <div class="dashboard-info-row">
-              <span>Pending Payment</span>
-              <strong id="homePendingPaymentOrders">—</strong>
-            </div>
-            <div class="dashboard-info-row">
-              <span>Paid / Processing</span>
-              <strong id="homePaidOrders">—</strong>
-            </div>
+
+          <div class="dashboard-info-row">
+            <span>Pending Payment</span>
+            <strong id="homePendingPaymentOrders">—</strong>
+          </div>
+
+          <div class="dashboard-info-row">
+            <span>Paid / Processing</span>
+            <strong id="homePaidOrders">—</strong>
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <div class="dashboard-card">
+
+        <div class="dashboard-card-header">
+          <h3>Checkout Sessions</h3>
+        </div>
+
+        <div class="dashboard-info-list">
+
+          <div class="dashboard-info-row">
+            <span>Active Sessions</span>
+            <strong id="homeActiveSessions">—</strong>
+          </div>
+
+          <div class="dashboard-info-row">
+            <span>Pending Payment Sessions</span>
+            <strong id="homePendingSessions">—</strong>
+          </div>
+
+          <div class="dashboard-info-row">
+            <span>Abandoned Sessions</span>
+            <strong id="homeAbandonedSessions">—</strong>
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <div class="dashboard-card">
+
+        <div class="dashboard-card-header">
+          <h3>Traffic Today</h3>
+        </div>
+
+        <div class="dashboard-info-list">
+
+          <div class="dashboard-info-row">
+            <span>Page Views</span>
+            <strong id="homePageViewsToday">—</strong>
+          </div>
+
+          <div class="dashboard-info-row">
+            <span>Unique Visitors</span>
+            <strong id="homeVisitorsToday">—</strong>
+          </div>
+
+          <div class="dashboard-info-row">
+            <span>Last 7 Days Views</span>
+            <strong id="homePageViews7Days">—</strong>
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <div class="dashboard-card">
+
+        <div class="dashboard-card-header">
+          <h3>Quick Actions</h3>
+        </div>
+
+        <div class="dashboard-action-list">
+
+          <a href="orders/orders.html" class="dashboard-quick-link">
+            <i class="fa-solid fa-box-open"></i>
+            <span>Open Orders</span>
+          </a>
+
+          <a href="sessions/sessions.html" class="dashboard-quick-link">
+            <i class="fa-solid fa-cart-shopping"></i>
+            <span>Open Sessions</span>
+          </a>
+
+          <a href="analytics/analytics-page.html" class="dashboard-quick-link">
+            <i class="fa-solid fa-chart-line"></i>
+            <span>Open Analytics</span>
+          </a>
+
+        </div>
+
+      </div>
+
+
+      <div class="dashboard-card dashboard-span-2">
+
+        <div class="dashboard-card-header">
+          <h3>Recent Orders</h3>
+        </div>
+
+        <div id="homeRecentOrders" class="dashboard-items-wrap">
+          <div class="dashboard-loading">
+            Loading recent orders...
           </div>
         </div>
 
-        <div class="dashboard-card">
-          <div class="dashboard-card-header">
-            <h3>Checkout Sessions</h3>
-          </div>
-          <div class="dashboard-info-list">
-            <div class="dashboard-info-row">
-              <span>Active Sessions</span>
-              <strong id="homeActiveSessions">—</strong>
-            </div>
-            <div class="dashboard-info-row">
-              <span>Pending Payment Sessions</span>
-              <strong id="homePendingSessions">—</strong>
-            </div>
-            <div class="dashboard-info-row">
-              <span>Abandoned Sessions</span>
-              <strong id="homeAbandonedSessions">—</strong>
-            </div>
+      </div>
+
+
+      <div class="dashboard-card dashboard-span-2">
+
+        <div class="dashboard-card-header">
+          <h3>Recent Checkout Sessions</h3>
+        </div>
+
+        <div id="homeRecentSessions" class="dashboard-items-wrap">
+          <div class="dashboard-loading">
+            Loading recent checkout sessions...
           </div>
         </div>
 
-        <div class="dashboard-card">
-          <div class="dashboard-card-header">
-            <h3>Traffic Today</h3>
-          </div>
-          <div class="dashboard-info-list">
-            <div class="dashboard-info-row">
-              <span>Page Views</span>
-              <strong id="homePageViewsToday">—</strong>
-            </div>
-            <div class="dashboard-info-row">
-              <span>Unique Visitors</span>
-              <strong id="homeVisitorsToday">—</strong>
-            </div>
-            <div class="dashboard-info-row">
-              <span>Last 7 Days Views</span>
-              <strong id="homePageViews7Days">—</strong>
-            </div>
-          </div>
-        </div>
+      </div>
 
-        <div class="dashboard-card">
-          <div class="dashboard-card-header">
-            <h3>Quick Actions</h3>
-          </div>
-          <div class="dashboard-action-list">
-            <a href="orders/orders.html" class="dashboard-quick-link">
-              <i class="fa-solid fa-box-open"></i>
-              <span>Open Orders</span>
-            </a>
+    </section>
 
-            <a href="sessions/sessions.html" class="dashboard-quick-link">
-              <i class="fa-solid fa-cart-shopping"></i>
-              <span>Open Sessions</span>
-            </a>
+  </main>
 
-            <a href="analytics/analytics-page.html" class="dashboard-quick-link">
-              <i class="fa-solid fa-chart-line"></i>
-              <span>Open Analytics</span>
-            </a>
-          </div>
-        </div>
+</div>
 
-        <div class="dashboard-card dashboard-span-2">
-          <div class="dashboard-card-header">
-            <h3>Recent Orders</h3>
-          </div>
-          <div id="homeRecentOrders" class="dashboard-items-wrap">
-            <div class="dashboard-loading">Loading recent orders...</div>
-          </div>
-        </div>
 
-        <div class="dashboard-card dashboard-span-2">
-          <div class="dashboard-card-header">
-            <h3>Recent Checkout Sessions</h3>
-          </div>
-          <div id="homeRecentSessions" class="dashboard-items-wrap">
-            <div class="dashboard-loading">Loading recent checkout sessions...</div>
-          </div>
-        </div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-      </section>
+<script src="dashboard-config.js"></script>
+<script src="shared/tracking-config.js"></script>
+<script src="shared/helpers.js"></script>
+<script src="supabase-client.js"></script>
 
-    </main>
-  </div>
+<!-- ADMIN AUTH GUARD -->
+<script src="auth/admin-auth.js"></script>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="dashboard-config.js"></script>
-  <script src="shared/tracking-config.js"></script>
-  <script src="shared/helpers.js"></script>
-  <script src="supabase-client.js"></script>
-  <script src="auth/admin-auth.js"></script>
-  <script src="home/home-dashboard.js"></script>
+<!-- DASHBOARD DATA -->
+<script src="home/home-dashboard.js"></script>
+
 </body>
 </html>
