@@ -9,7 +9,7 @@
   <title>Admin Login | Axiom Dashboard</title>
   <meta
     name="description"
-    content="Admin login for Axiom Dashboard."
+    content="Admin login for the Axiom Dashboard."
   />
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -20,48 +20,64 @@
   />
 
   <link rel="stylesheet" href="dashboard.css" />
+  <link rel="stylesheet" href="auth/login.css" />
 </head>
 <body class="axiom-dashboard-page">
 
-  <div class="dashboard-auth-page">
-    <div class="dashboard-auth-card">
-      <p class="dashboard-kicker">Admin Access</p>
-      <h1>Axiom Dashboard Login</h1>
-      <p class="dashboard-auth-subtext">
-        Sign in with your admin email and password.
-      </p>
+  <main class="dashboard-login-page">
+    <section class="dashboard-login-card">
 
-      <form id="adminLoginForm" class="dashboard-auth-form" novalidate>
-        <input
-          type="email"
-          id="adminLoginEmail"
-          class="dashboard-search"
-          placeholder="Admin Email"
-          autocomplete="email"
-          required
+      <div class="dashboard-login-brand">
+        <img
+          src="../images/axiom-logo.PNG"
+          alt="Axiom Peptides logo"
+          class="dashboard-login-logo"
         />
+        <p class="dashboard-login-kicker">Admin Access</p>
+        <h1>Axiom Dashboard</h1>
+        <p class="dashboard-login-subtext">
+          Sign in to manage orders, sessions, analytics, and fulfillment.
+        </p>
+      </div>
 
-        <input
-          type="password"
-          id="adminLoginPassword"
-          class="dashboard-search"
-          placeholder="Password"
-          autocomplete="current-password"
-          required
-        />
+      <form id="adminLoginForm" class="dashboard-login-form" novalidate>
+        <div class="dashboard-login-field">
+          <label for="adminLoginEmail">Admin Email</label>
+          <input
+            type="email"
+            id="adminLoginEmail"
+            class="dashboard-login-input"
+            placeholder="Enter your admin email"
+            autocomplete="email"
+            required
+          />
+        </div>
+
+        <div class="dashboard-login-field">
+          <label for="adminLoginPassword">Password</label>
+          <input
+            type="password"
+            id="adminLoginPassword"
+            class="dashboard-login-input"
+            placeholder="Enter your password"
+            autocomplete="current-password"
+            required
+          />
+        </div>
 
         <button
           type="submit"
-          class="dashboard-btn dashboard-btn-primary"
+          class="dashboard-login-btn"
           id="adminLoginSubmit"
         >
           Log In
         </button>
 
-        <p id="adminLoginMessage" class="dashboard-loading"></p>
+        <p id="adminLoginMessage" class="dashboard-login-message"></p>
       </form>
-    </div>
-  </div>
+
+    </section>
+  </main>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="dashboard-config.js"></script>
