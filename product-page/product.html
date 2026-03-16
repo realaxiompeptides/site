@@ -171,7 +171,16 @@
   <script src="../admin-dashboard/cart-session/cart-session.js" defer></script>
 
   <script src="../cart/cart-loader.js" defer></script>
-  <script src="../cart/cart.js" defer></script>
+
+  <script>
+    document.addEventListener("cartDrawerLoaded", function () {
+      const cartScript = document.createElement("script");
+      cartScript.src = "../cart/cart.js";
+      cartScript.defer = true;
+      document.body.appendChild(cartScript);
+    }, { once: true });
+  </script>
+
   <script src="product.js" defer></script>
 
   <script>
