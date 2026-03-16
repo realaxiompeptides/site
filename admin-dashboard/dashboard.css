@@ -389,3 +389,27 @@ body.axiom-dashboard-page {
     text-align: left;
   }
 }
+
+.dashboard-tab-switch {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.dashboard-tab-btn {
+  min-height: 48px;
+  border: 1px solid #d7e2ef;
+  border-radius: 16px;
+  background: #ffffff;
+  color: #0f172a;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: 0.18s ease;
+}
+
+.dashboard-tab-btn.active {
+  background: #eef7ff;
+  border-color: #4fa2dc;
+  color: #0f172a;
+}
