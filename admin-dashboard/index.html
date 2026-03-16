@@ -6,7 +6,11 @@
     name="viewport"
     content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
   />
-  <title>Axiom Admin Dashboard</title>
+  <title>Axiom Dashboard</title>
+  <meta
+    name="description"
+    content="Axiom Peptides admin dashboard for checkout sessions, visitor analytics, and tracking."
+  />
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -15,70 +19,131 @@
     rel="stylesheet"
   />
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+  />
 
   <link rel="stylesheet" href="dashboard.css" />
 </head>
 <body class="axiom-dashboard-page">
 
   <div class="dashboard-shell">
+
     <aside class="dashboard-sidebar">
       <div class="dashboard-sidebar-top">
         <h1>Axiom Dashboard</h1>
-        <p>Checkout Sessions</p>
+        <p>Store admin, checkout tracking, and visitor analytics</p>
       </div>
 
       <div class="dashboard-search-wrap">
-        <input
-          type="text"
-          id="sessionSearch"
-          class="dashboard-search"
-          placeholder="Search by email, phone, or session ID"
-        />
-      </div>
+        <div class="dashboard-tab-switch">
+          <button
+            type="button"
+            class="dashboard-tab-btn active"
+            id="showSessionsTab"
+            data-dashboard-tab="sessions"
+          >
+            Checkout Sessions
+          </button>
 
-      <div class="dashboard-filter-row">
-        <select id="statusFilter" class="dashboard-filter">
-          <option value="">All Statuses</option>
-          <option value="active">Active</option>
-          <option value="pending_payment">Pending Payment</option>
-          <option value="abandoned">Abandoned</option>
-          <option value="converted">Converted</option>
-          <option value="expired">Expired</option>
-        </select>
-      </div>
-
-      <div id="sessionsList" class="sessions-list">
-        <div class="dashboard-loading">Loading sessions...</div>
-      </div>
-    </aside>
-
-    <main class="dashboard-main">
-      <div class="dashboard-main-header">
-        <div>
-          <p class="dashboard-kicker">Checkout Session Details</p>
-          <h2 id="dashboardSessionTitle">Select a session</h2>
-        </div>
-
-        <div class="dashboard-header-actions">
-          <button id="refreshSessionsBtn" class="dashboard-btn dashboard-btn-secondary" type="button">
-            Refresh
+          <button
+            type="button"
+            class="dashboard-tab-btn"
+            id="showAnalyticsTab"
+            data-dashboard-tab="analytics"
+          >
+            Analytics
           </button>
         </div>
       </div>
 
-      <div class="dashboard-details-grid">
-        <div id="sessionOverviewMount"></div>
-        <div id="paymentInfoMount"></div>
-        <div id="shippingInfoMount"></div>
-        <div id="billingInfoMount"></div>
-        <div id="cartItemsMount" class="dashboard-span-2"></div>
+      <div id="dashboardSessionsSidebar">
+        <div class="dashboard-search-wrap">
+          <input
+            type="text"
+            id="sessionSearch"
+            class="dashboard-search"
+            placeholder="Search by email, phone, or session ID"
+          />
+        </div>
+
+        <div class="dashboard-filter-row">
+          <select id="statusFilter" class="dashboard-filter">
+            <option value="">All Statuses</option>
+            <option value="active">Active</option>
+            <option value="pending_payment">Pending Payment</option>
+            <option value="abandoned">Abandoned</option>
+            <option value="converted">Converted</option>
+            <option value="expired">Expired</option>
+          </select>
+        </div>
+
+        <div class="sessions-list" id="sessionsList">
+          <div class="dashboard-loading">Loading sessions...</div>
+        </div>
       </div>
+
+      <div id="dashboardAnalyticsSidebar" hidden>
+        <div class="dashboard-search-wrap">
+          <button type="button" class="dashboard-btn dashboard-btn-secondary" id="refreshAnalyticsBtn">
+            Refresh Analytics
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <main class="dashboard-main">
+
+      <!-- CHECKOUT SESSIONS VIEW -->
+      <section id="dashboardSessionsView">
+        <div class="dashboard-main-header">
+          <div>
+            <p class="dashboard-kicker">Checkout Session Details</p>
+            <h2 id="dashboardSessionTitle">Select a session</h2>
+          </div>
+
+          <button type="button" class="dashboard-btn dashboard-btn-secondary" id="refreshSessionsBtn">
+            Refresh
+          </button>
+        </div>
+
+        <div class="dashboard-details-grid">
+          <div class="dashboard-card" id="sessionOverviewMount"></div>
+          <div class="dashboard-card" id="paymentInfoMount"></div>
+          <div class="dashboard-card" id="shippingInfoMount"></div>
+          <div class="dashboard-card" id="billingInfoMount"></div>
+          <div class="dashboard-card dashboard-span-2" id="cartItemsMount"></div>
+        </div>
+      </section>
+
+      <!-- ANALYTICS VIEW -->
+      <section id="dashboardAnalyticsView" hidden>
+        <div class="dashboard-main-header">
+          <div>
+            <p class="dashboard-kicker">Visitor Analytics</p>
+            <h2>Traffic & Tracking</h2>
+          </div>
+
+          <button type="button" class="dashboard-btn dashboard-btn-secondary" id="refreshAnalyticsBtnTop">
+            Refresh
+          </button>
+        </div>
+
+        <div class="dashboard-details-grid">
+          <div class="dashboard-card dashboard-span-2" id="analyticsMount"></div>
+        </div>
+      </section>
+
     </main>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="dashboard-config.js"></script>
+  <script src="shared/tracking-config.js"></script>
+  <script src="shared/helpers.js"></script>
   <script src="supabase-client.js"></script>
+  <script src="analytics/analytics.js"></script>
   <script src="dashboard.js"></script>
 </body>
 </html>
