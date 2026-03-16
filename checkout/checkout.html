@@ -241,9 +241,6 @@
 
   <div id="site-footer"></div>
 
-  <script src="checkout-session.js" defer></script>
-  <script src="checkout.js" defer></script>
-
   <script>
     document.addEventListener("DOMContentLoaded", function () {
       const footerTarget = document.getElementById("site-footer");
@@ -265,7 +262,7 @@
     });
   </script>
 
-  <!-- Tracking -->
+  <!-- Tracking + Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="../admin-dashboard/dashboard-config.js" defer></script>
   <script src="../admin-dashboard/shared/tracking-config.js" defer></script>
@@ -273,7 +270,14 @@
   <script src="../admin-dashboard/supabase-client.js" defer></script>
   <script src="../admin-dashboard/visitor-session.js" defer></script>
   <script src="../admin-dashboard/cart-session/cart-session.js" defer></script>
+
+  <!-- Checkout session + order creation -->
+  <script src="checkout-session.js" defer></script>
   <script src="../admin-dashboard/checkout-session/checkout-tracking.js" defer></script>
+  <script src="../admin-dashboard/orders/order-submit.js" defer></script>
   <script src="../admin-dashboard/orders/checkout-order-submit.js" defer></script>
+
+  <!-- Checkout UI -->
+  <script src="checkout.js" defer></script>
 </body>
 </html>
