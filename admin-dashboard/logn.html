@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+  />
+  <title>Admin Login | Axiom Dashboard</title>
+  <meta
+    name="description"
+    content="Admin login for Axiom Dashboard."
+  />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+    rel="stylesheet"
+  />
+
+  <link rel="stylesheet" href="dashboard.css" />
+</head>
+<body class="axiom-dashboard-page">
+
+  <div class="dashboard-auth-page">
+    <div class="dashboard-auth-card">
+      <p class="dashboard-kicker">Admin Access</p>
+      <h1>Axiom Dashboard Login</h1>
+      <p class="dashboard-auth-subtext">
+        Sign in with your admin email and password.
+      </p>
+
+      <form id="adminLoginForm" class="dashboard-auth-form" novalidate>
+        <input
+          type="email"
+          id="adminLoginEmail"
+          class="dashboard-search"
+          placeholder="Admin Email"
+          autocomplete="email"
+          required
+        />
+
+        <input
+          type="password"
+          id="adminLoginPassword"
+          class="dashboard-search"
+          placeholder="Password"
+          autocomplete="current-password"
+          required
+        />
+
+        <button
+          type="submit"
+          class="dashboard-btn dashboard-btn-primary"
+          id="adminLoginSubmit"
+        >
+          Log In
+        </button>
+
+        <p id="adminLoginMessage" class="dashboard-loading"></p>
+      </form>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="dashboard-config.js"></script>
+  <script src="shared/tracking-config.js"></script>
+  <script src="shared/helpers.js"></script>
+  <script src="supabase-client.js"></script>
+  <script src="auth/login.js"></script>
+</body>
+</html>
