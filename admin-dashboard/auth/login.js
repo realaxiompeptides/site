@@ -5,6 +5,17 @@ document.addEventListener("DOMContentLoaded", async function () {
   }
 
   const supabase = window.axiomSupabase;
+  const form = document.getElementById("adminLoginForm");
+  const emailInput = document.getElementById("adminLoginEmail");
+  const passwordInput = document.getElementById("adminLoginPassword");
+  const submitBtn = document.getElementById("adminLoginSubmit");
+  const messageEl = document.getElementById("adminLoginMessage");
+
+  function setMessage(message) {
+    if (messageEl) {
+      messageEl.textContent = message || "";
+    }
+  }
 
   try {
     const {
@@ -12,26 +23,14 @@ document.addEventListener("DOMContentLoaded", async function () {
     } = await supabase.auth.getSession();
 
     if (session && session.user) {
-      window.location.href = "index.html";
+      window.location.href = "/admin-dashboard/index.html";
       return;
     }
   } catch (error) {
-    console.error("Initial session check failed:", error);
+    console.error("Initial login session check failed:", error);
   }
-
-  const form = document.getElementById("adminLoginForm");
-  const emailInput = document.getElementById("adminLoginEmail");
-  const passwordInput = document.getElementById("adminLoginPassword");
-  const messageEl = document.getElementById("adminLoginMessage");
-  const submitBtn = document.getElementById("adminLoginSubmit");
 
   if (!form) return;
-
-  function setMessage(message) {
-    if (messageEl) {
-      messageEl.textContent = message || "";
-    }
-  }
 
   form.addEventListener("submit", async function (event) {
     event.preventDefault();
@@ -49,8 +48,8 @@ document.addEventListener("DOMContentLoaded", async function () {
 
     try {
       const { error } = await supabase.auth.signInWithPassword({
-        email: email,
-        password: password
+        email,
+        password
       });
 
       if (error) {
@@ -60,7 +59,7 @@ document.addEventListener("DOMContentLoaded", async function () {
         return;
       }
 
-      window.location.href = "index.html";
+      window.location.href = "/admin-dashboard/index.html";
     } catch (error) {
       console.error("Unexpected login error:", error);
       setMessage("Something went wrong while signing in.");
