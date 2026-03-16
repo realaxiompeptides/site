@@ -375,6 +375,37 @@ function renderSelectedSession() {
   }
 }
 
+function switchDashboardTab(tabName) {
+  const sessionsView = document.getElementById("dashboardSessionsView");
+  const analyticsView = document.getElementById("dashboardAnalyticsView");
+  const sessionsSidebar = document.getElementById("dashboardSessionsSidebar");
+  const analyticsSidebar = document.getElementById("dashboardAnalyticsSidebar");
+  const sessionsBtn = document.getElementById("showSessionsTab");
+  const analyticsBtn = document.getElementById("showAnalyticsTab");
+
+  if (tabName === "analytics") {
+    if (sessionsView) sessionsView.hidden = true;
+    if (analyticsView) analyticsView.hidden = false;
+    if (sessionsSidebar) sessionsSidebar.hidden = true;
+    if (analyticsSidebar) analyticsSidebar.hidden = false;
+
+    sessionsBtn?.classList.remove("active");
+    analyticsBtn?.classList.add("active");
+
+    if (window.AXIOM_ANALYTICS && typeof window.AXIOM_ANALYTICS.load === "function") {
+      window.AXIOM_ANALYTICS.load();
+    }
+  } else {
+    if (sessionsView) sessionsView.hidden = false;
+    if (analyticsView) analyticsView.hidden = true;
+    if (sessionsSidebar) sessionsSidebar.hidden = false;
+    if (analyticsSidebar) analyticsSidebar.hidden = true;
+
+    sessionsBtn?.classList.add("active");
+    analyticsBtn?.classList.remove("active");
+  }
+}
+
 async function refreshDashboard() {
   const list = document.getElementById("sessionsList");
   if (list) {
@@ -395,6 +426,12 @@ async function refreshDashboard() {
   renderSelectedSession();
 }
 
+function refreshAnalytics() {
+  if (window.AXIOM_ANALYTICS && typeof window.AXIOM_ANALYTICS.load === "function") {
+    window.AXIOM_ANALYTICS.load();
+  }
+}
+
 document.addEventListener("DOMContentLoaded", async () => {
   try {
     await loadPartials();
@@ -403,6 +440,19 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("sessionSearch")?.addEventListener("input", renderSessionsList);
     document.getElementById("statusFilter")?.addEventListener("change", renderSessionsList);
     document.getElementById("refreshSessionsBtn")?.addEventListener("click", refreshDashboard);
+
+    document.getElementById("showSessionsTab")?.addEventListener("click", function () {
+      switchDashboardTab("sessions");
+    });
+
+    document.getElementById("showAnalyticsTab")?.addEventListener("click", function () {
+      switchDashboardTab("analytics");
+    });
+
+    document.getElementById("refreshAnalyticsBtn")?.addEventListener("click", refreshAnalytics);
+    document.getElementById("refreshAnalyticsBtnTop")?.addEventListener("click", refreshAnalytics);
+
+    switchDashboardTab("sessions");
   } catch (error) {
     console.error("Dashboard failed to initialize:", error);
   }
