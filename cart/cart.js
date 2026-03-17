@@ -125,24 +125,32 @@ function initCartDrawer() {
       id: item.id || "",
       slug: item.slug || "",
       name: item.name || "Product",
+      product_name: item.name || "Product",
       variantLabel: item.variantLabel || item.variant || "",
       variant_label: item.variantLabel || item.variant || "",
+      variant: item.variantLabel || item.variant || "",
       price: Number(item.price) || 0,
+      unit_price: Number(item.price) || 0,
       compareAtPrice:
         item.compareAtPrice !== undefined && item.compareAtPrice !== null
           ? Number(item.compareAtPrice) || null
           : item.oldPrice !== undefined && item.oldPrice !== null
             ? Number(item.oldPrice) || null
-            : null,
+            : item.compare_at_price !== undefined && item.compare_at_price !== null
+              ? Number(item.compare_at_price) || null
+              : null,
       compare_at_price:
-        item.compareAtPrice !== undefined && item.compareAtPrice !== null
-          ? Number(item.compareAtPrice) || null
-          : item.oldPrice !== undefined && item.oldPrice !== null
-            ? Number(item.oldPrice) || null
-            : null,
+        item.compare_at_price !== undefined && item.compare_at_price !== null
+          ? Number(item.compare_at_price) || null
+          : item.compareAtPrice !== undefined && item.compareAtPrice !== null
+            ? Number(item.compareAtPrice) || null
+            : item.oldPrice !== undefined && item.oldPrice !== null
+              ? Number(item.oldPrice) || null
+              : null,
       image: normalizeImagePath(item.image || ""),
       quantity: normalizedQty,
       qty: normalizedQty,
+      line_total: (Number(item.price) || 0) * normalizedQty,
       weightOz:
         item.weightOz !== undefined && item.weightOz !== null
           ? Number(item.weightOz) || 0
@@ -230,14 +238,6 @@ function initCartDrawer() {
 
   async function syncCartToCheckoutSession(cartOverride) {
     try {
-      if (
-        !window.AXIOM_CHECKOUT_SESSION ||
-        typeof window.AXIOM_CHECKOUT_SESSION.ensureSession !== "function" ||
-        typeof window.AXIOM_CHECKOUT_SESSION.patchSession !== "function"
-      ) {
-        return;
-      }
-
       const normalizedCart = Array.isArray(cartOverride)
         ? cartOverride.map(normalizeCartItem)
         : getCart().map(normalizeCartItem);
@@ -245,6 +245,27 @@ function initCartDrawer() {
       const subtotal = getCartSubtotal(normalizedCart);
       const discountValue = getDiscountValue(subtotal);
       const discountedSubtotal = Math.max(subtotal - discountValue, 0);
+
+      if (window.AXIOM_CART_CHECKOUT_SYNC && typeof window.AXIOM_CART_CHECKOUT_SYNC.syncToSession === "function") {
+        await window.AXIOM_CART_CHECKOUT_SYNC.syncToSession({
+          cart_items: normalizedCart,
+          subtotal: subtotal,
+          discount_amount: discountValue,
+          shipping_amount: 0,
+          tax_amount: 0,
+          total_amount: discountedSubtotal,
+          session_status: "active"
+        });
+        return;
+      }
+
+      if (
+        !window.AXIOM_CHECKOUT_SESSION ||
+        typeof window.AXIOM_CHECKOUT_SESSION.ensureSession !== "function" ||
+        typeof window.AXIOM_CHECKOUT_SESSION.patchSession !== "function"
+      ) {
+        return;
+      }
 
       await window.AXIOM_CHECKOUT_SESSION.ensureSession();
 
@@ -257,6 +278,7 @@ function initCartDrawer() {
             product_name: item.name || "Product",
             variantLabel: item.variantLabel || "",
             variant_label: item.variantLabel || "",
+            variant: item.variant || "",
             quantity: getItemQuantity(item),
             qty: getItemQuantity(item),
             price: Number(item.price || 0),
@@ -284,7 +306,7 @@ function initCartDrawer() {
         shipping_amount: 0,
         tax_amount: 0,
         total_amount: discountedSubtotal,
-        session_status: normalizedCart.length ? "active" : "active",
+        session_status: "active",
         updated_at: new Date().toISOString(),
         last_activity_at: new Date().toISOString()
       });
@@ -352,14 +374,18 @@ function initCartDrawer() {
             id: item.id,
             slug: item.slug,
             name: item.name,
+            product_name: item.name,
             variantLabel: item.variantLabel,
             variant_label: item.variantLabel,
+            variant: item.variantLabel,
             price: item.price,
+            unit_price: item.price,
             compareAtPrice: null,
             compare_at_price: null,
             image: item.image,
             quantity: 1,
             qty: 1,
+            line_total: item.price,
             weightOz: item.weightOz,
             weight_oz: item.weightOz,
             inStock: true,
