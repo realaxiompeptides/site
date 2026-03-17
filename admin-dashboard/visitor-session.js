@@ -17,19 +17,19 @@ document.addEventListener("DOMContentLoaded", async function () {
   const nowIso = helpers.nowIso();
 
   try {
-    const { data: existingVisitor, error: visitorLookupError } = await supabase
+    const { data: existingVisitor, error: lookupError } = await supabase
       .from("visitor_sessions")
       .select("id, visitor_id, visit_count")
       .eq("visitor_id", visitorId)
       .maybeSingle();
 
-    if (visitorLookupError) {
-      console.error("Visitor lookup failed:", visitorLookupError);
+    if (lookupError) {
+      console.error("Visitor lookup failed:", lookupError);
       return;
     }
 
     if (!existingVisitor) {
-      const { error: visitorInsertError } = await supabase
+      const { error: insertError } = await supabase
         .from("visitor_sessions")
         .insert({
           visitor_id: visitorId,
@@ -41,15 +41,16 @@ document.addEventListener("DOMContentLoaded", async function () {
           user_agent: userAgent,
           language: language,
           screen_width: screenWidth,
-          screen_height: screenHeight
+          screen_height: screenHeight,
+          updated_at: nowIso
         });
 
-      if (visitorInsertError) {
-        console.error("Visitor insert failed:", visitorInsertError);
+      if (insertError) {
+        console.error("Visitor insert failed:", insertError);
         return;
       }
     } else {
-      const { error: visitorUpdateError } = await supabase
+      const { error: updateError } = await supabase
         .from("visitor_sessions")
         .update({
           last_seen_at: nowIso,
@@ -57,17 +58,18 @@ document.addEventListener("DOMContentLoaded", async function () {
           user_agent: userAgent,
           language: language,
           screen_width: screenWidth,
-          screen_height: screenHeight
+          screen_height: screenHeight,
+          updated_at: nowIso
         })
         .eq("id", existingVisitor.id);
 
-      if (visitorUpdateError) {
-        console.error("Visitor update failed:", visitorUpdateError);
+      if (updateError) {
+        console.error("Visitor update failed:", updateError);
         return;
       }
     }
 
-    const { error: pageViewInsertError } = await supabase
+    const { error: pageViewError } = await supabase
       .from("page_views")
       .insert({
         visitor_id: visitorId,
@@ -77,8 +79,8 @@ document.addEventListener("DOMContentLoaded", async function () {
         created_at: nowIso
       });
 
-    if (pageViewInsertError) {
-      console.error("Page view insert failed:", pageViewInsertError);
+    if (pageViewError) {
+      console.error("Page view insert failed:", pageViewError);
       return;
     }
 
