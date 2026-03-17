@@ -1,4 +1,4 @@
-((function () {
+(function () {
   const CART_STORAGE_KEY = "axiom_cart";
   const SESSION_QUERY_PARAM = "axiom_session";
 
@@ -8,9 +8,7 @@
 
   function getSupabase() {
     if (!window.axiomSupabase) {
-      throw new Error(
-        "Supabase client missing. Load dashboard-config.js and supabase-client.js before checkout-session.js."
-      );
+      throw new Error("Supabase client missing.");
     }
     return window.axiomSupabase;
   }
@@ -49,52 +47,43 @@
       id: item.id || "",
       slug: item.slug || "",
       name: item.name || item.product_name || "Product",
-      product_name: item.name || item.product_name || "Product",
+      product_name: item.product_name || item.name || "Product",
       variantLabel: variant,
       variant_label: variant,
       variant: variant,
-      price: price,
-      unit_price: price,
-      compareAtPrice:
-        item.compareAtPrice !== undefined && item.compareAtPrice !== null
-          ? Number(item.compareAtPrice) || null
-          : item.oldPrice !== undefined && item.oldPrice !== null
-            ? Number(item.oldPrice) || null
-            : item.compare_at_price !== undefined && item.compare_at_price !== null
-              ? Number(item.compare_at_price) || null
-              : null,
-      compare_at_price:
-        item.compare_at_price !== undefined && item.compare_at_price !== null
-          ? Number(item.compare_at_price) || null
-          : item.compareAtPrice !== undefined && item.compareAtPrice !== null
-            ? Number(item.compareAtPrice) || null
-            : item.oldPrice !== undefined && item.oldPrice !== null
-              ? Number(item.oldPrice) || null
-              : null,
       quantity: quantity,
       qty: quantity,
-      line_total: price * quantity,
+      price: price,
+      unit_price: price,
+      line_total:
+        item.line_total !== undefined && item.line_total !== null
+          ? Number(item.line_total || 0)
+          : price * quantity,
       image: item.image || "",
       weightOz:
         item.weightOz !== undefined && item.weightOz !== null
           ? Number(item.weightOz) || 0
           : item.weight_oz !== undefined && item.weight_oz !== null
             ? Number(item.weight_oz) || 0
-            : (String(item.id || "").toLowerCase().includes("bacwater") ? 9.6 : 0.188),
+            : 0,
       weight_oz:
         item.weight_oz !== undefined && item.weight_oz !== null
           ? Number(item.weight_oz) || 0
           : item.weightOz !== undefined && item.weightOz !== null
             ? Number(item.weightOz) || 0
-            : (String(item.id || "").toLowerCase().includes("bacwater") ? 9.6 : 0.188),
+            : 0,
       inStock: item.inStock !== false && item.in_stock !== false,
       in_stock: item.inStock !== false && item.in_stock !== false
     };
   }
 
   function calculateSubtotal(items) {
-    return items.reduce((sum, item) => {
-      return sum + (Number(item.price || item.unit_price || 0) * Number(item.quantity || item.qty || 0));
+    const safeItems = Array.isArray(items) ? items : [];
+    return safeItems.reduce((sum, item) => {
+      return sum + (
+        Number(item.unit_price || item.price || 0) *
+        Number(item.quantity || item.qty || 0)
+      );
     }, 0);
   }
 
@@ -292,12 +281,10 @@
       session_status: normalized.session_status || "active",
       payment_status: normalized.payment_status || "unpaid",
       fulfillment_status: normalized.fulfillment_status || "unfulfilled",
-
       customer_email: normalized.customer_email || "",
       customer_phone: normalized.customer_phone || "",
       customer_first_name: normalized.customer_first_name || "",
       customer_last_name: normalized.customer_last_name || "",
-
       cart_items: normalized.cart_items,
       subtotal: Number(normalized.subtotal || 0),
       shipping_selection: normalized.shipping_selection || {},
@@ -305,35 +292,28 @@
       tax_amount: Number(normalized.tax_amount || 0),
       discount_amount: Number(normalized.discount_amount || 0),
       total_amount: Number(normalized.total_amount || 0),
-
       shipping_address: normalized.shipping_address || {},
       billing_address: normalized.billing_address || {},
-
       payment_method: normalized.payment_method || "",
       notes: normalized.notes || "",
-
       shipping_method_code: normalized.shipping_method_code || "",
       shipping_method_name: normalized.shipping_method_name || "",
       shipping_carrier: normalized.shipping_carrier || "",
       shipping_service_level: normalized.shipping_service_level || "",
-
       currency: normalized.currency || "USD",
-
-      last_activity_at: now,
-      updated_at: now
+      updated_at: now,
+      last_activity_at: now
     };
   }
 
   function normalizeDbRow(row) {
-    const merged = {
+    return normalizeSessionShape({
       ...row,
       contact: {
         email: row?.customer_email || "",
         phone: row?.customer_phone || ""
       }
-    };
-
-    return normalizeSessionShape(merged);
+    });
   }
 
   function setActiveSessionId(sessionId) {
@@ -354,8 +334,7 @@
 
   function getSessionIdFromUrl() {
     try {
-      const url = new URL(window.location.href);
-      return url.searchParams.get(SESSION_QUERY_PARAM) || "";
+      return new URL(window.location.href).searchParams.get(SESSION_QUERY_PARAM) || "";
     } catch (error) {
       return "";
     }
@@ -371,10 +350,7 @@
       .eq("session_id", sessionId)
       .maybeSingle();
 
-    if (error) {
-      throw error;
-    }
-
+    if (error) throw error;
     return data ? normalizeDbRow(data) : null;
   }
 
@@ -388,9 +364,7 @@
       .select("*")
       .single();
 
-    if (error) {
-      throw error;
-    }
+    if (error) throw error;
 
     const normalized = normalizeDbRow(data);
     cachedSession = normalized;
@@ -408,9 +382,7 @@
       .select("*")
       .single();
 
-    if (error) {
-      throw error;
-    }
+    if (error) throw error;
 
     const normalized = normalizeDbRow(data);
     cachedSession = normalized;
@@ -448,9 +420,7 @@
   }
 
   async function saveSession(session) {
-    const normalized = normalizeSessionShape(session);
-    const saved = await upsertSession(normalized);
-    return normalizeSessionShape(saved);
+    return normalizeSessionShape(await upsertSession(session));
   }
 
   async function ensureSession() {
@@ -469,10 +439,10 @@
           return existing.session_id;
         }
 
-        const newFromExistingId = getEmptySession();
-        newFromExistingId.session_id = existingId;
-        const insertedExistingId = await insertSession(newFromExistingId);
-        return insertedExistingId.session_id;
+        const freshFromExisting = getEmptySession();
+        freshFromExisting.session_id = existingId;
+        const inserted = await insertSession(freshFromExisting);
+        return inserted.session_id;
       }
 
       const fresh = getEmptySession();
@@ -502,8 +472,8 @@
 
     session.shipping_amount = shippingAmount;
     session.tax_amount = taxAmount;
-    session.tax = taxAmount;
     session.discount_amount = discountAmount;
+    session.tax = taxAmount;
     session.total_amount = session.subtotal + shippingAmount + taxAmount - discountAmount;
     session.total = session.total_amount;
 
@@ -621,40 +591,23 @@
 
   async function updateContact(fields) {
     const session = await getSession();
-
-    session.contact = {
-      ...session.contact,
-      ...(fields || {})
-    };
-
+    session.contact = { ...session.contact, ...(fields || {}) };
     session.customer_email = session.contact.email || session.customer_email || "";
     session.customer_phone = session.contact.phone || session.customer_phone || "";
-
     return await saveSession(session);
   }
 
   async function updateShippingAddress(fields) {
     const session = await getSession();
-
-    session.shipping_address = {
-      ...session.shipping_address,
-      ...(fields || {})
-    };
-
+    session.shipping_address = { ...session.shipping_address, ...(fields || {}) };
     session.customer_first_name = session.shipping_address.first_name || session.customer_first_name || "";
     session.customer_last_name = session.shipping_address.last_name || session.customer_last_name || "";
-
     return await saveSession(session);
   }
 
   async function updateBillingAddress(fields) {
     const session = await getSession();
-
-    session.billing_address = {
-      ...session.billing_address,
-      ...(fields || {})
-    };
-
+    session.billing_address = { ...session.billing_address, ...(fields || {}) };
     return await saveSession(session);
   }
 
@@ -697,7 +650,6 @@
 
   async function updateTax(taxAmount) {
     const session = await getSession();
-
     session.tax_amount = Number(taxAmount || 0);
     session.tax = session.tax_amount;
     session.total_amount =
@@ -819,28 +771,17 @@
 
   function debounceAsync(fn, delay) {
     let timer = null;
-    let pendingResolve = null;
-    let pendingReject = null;
 
     return function debounced() {
-      if (timer) {
-        clearTimeout(timer);
-      }
-
       return new Promise((resolve, reject) => {
-        pendingResolve = resolve;
-        pendingReject = reject;
+        if (timer) clearTimeout(timer);
 
         timer = setTimeout(async () => {
-          timer = null;
           try {
             const result = await fn();
-            if (pendingResolve) pendingResolve(result);
+            resolve(result);
           } catch (error) {
-            if (pendingReject) pendingReject(error);
-          } finally {
-            pendingResolve = null;
-            pendingReject = null;
+            reject(error);
           }
         }, delay);
       });
@@ -889,68 +830,6 @@
           });
       }
     });
-
-    window.addEventListener("beforeunload", function () {
-      const session = cachedSession ? normalizeSessionShape(cachedSession) : null;
-      if (!session) return;
-
-      try {
-        const now = new Date().toISOString();
-        const payload = {
-          session_id: session.session_id,
-          session_status: session.session_status || "active",
-          payment_status: session.payment_status || "unpaid",
-          fulfillment_status: session.fulfillment_status || "unfulfilled",
-          customer_email: session.customer_email || "",
-          customer_phone: session.customer_phone || "",
-          customer_first_name: session.customer_first_name || "",
-          customer_last_name: session.customer_last_name || "",
-          cart_items: Array.isArray(session.cart_items) ? session.cart_items : [],
-          subtotal: Number(session.subtotal || 0),
-          shipping_selection: session.shipping_selection || {},
-          shipping_amount: Number(session.shipping_amount || 0),
-          tax_amount: Number(session.tax_amount || 0),
-          discount_amount: Number(session.discount_amount || 0),
-          total_amount: Number(session.total_amount || 0),
-          shipping_address: session.shipping_address || {},
-          billing_address: session.billing_address || {},
-          payment_method: session.payment_method || "",
-          notes: session.notes || "",
-          shipping_method_code: session.shipping_method_code || "",
-          shipping_method_name: session.shipping_method_name || "",
-          shipping_carrier: session.shipping_carrier || "",
-          shipping_service_level: session.shipping_service_level || "",
-          currency: session.currency || "USD",
-          updated_at: now,
-          last_activity_at: now
-        };
-
-        const supabaseUrl =
-          window.AXIOM_SUPABASE_URL ||
-          window.SUPABASE_URL ||
-          window.dashboardConfig?.supabaseUrl ||
-          "";
-
-        const supabaseAnonKey =
-          window.AXIOM_SUPABASE_ANON_KEY ||
-          window.SUPABASE_ANON_KEY ||
-          window.dashboardConfig?.supabaseAnonKey ||
-          "";
-
-        if (!supabaseUrl || !supabaseAnonKey) return;
-
-        const endpoint = `${supabaseUrl.replace(/\/$/, "")}/rest/v1/checkout_sessions?on_conflict=session_id`;
-
-        navigator.sendBeacon(
-          endpoint,
-          new Blob([JSON.stringify(payload)], {
-            type: "application/json"
-          })
-        );
-      } catch (error) {
-        console.warn("beforeunload persistence skipped", error);
-      }
-    });
   }
 
   window.AXIOM_CHECKOUT_SESSION = {
@@ -969,4 +848,6 @@
     updateFromCheckoutForm,
     bindCheckoutTracking
   };
+
+  console.log("AXIOM_CHECKOUT_SESSION ready", !!window.AXIOM_CHECKOUT_SESSION);
 })();
