@@ -11,6 +11,8 @@ let allSessions = [];
 let allOrders = [];
 let selectedSessionId = null;
 let dashboardRealtimeChannel = null;
+let hasShownCheckoutSessionsError = false;
+let hasShownOrdersError = false;
 
 function formatMoney(value) {
   return `$${Number(value || 0).toFixed(2)}`;
@@ -215,6 +217,21 @@ function isAbandonedCheckoutSession(session) {
   return status === "abandoned";
 }
 
+function showOneTimeError(type, message, extra) {
+  if (type === "checkout_sessions") {
+    if (hasShownCheckoutSessionsError) return;
+    hasShownCheckoutSessionsError = true;
+  }
+
+  if (type === "orders") {
+    if (hasShownOrdersError) return;
+    hasShownOrdersError = true;
+  }
+
+  console.error(message, extra || "");
+  alert(message);
+}
+
 async function loadPartials() {
   await Promise.all(
     DASHBOARD_PARTIALS.map(async ({ mountId, file }) => {
@@ -233,82 +250,114 @@ async function loadPartials() {
 
 async function fetchCheckoutSessions() {
   if (!window.axiomSupabase) {
-    alert("Supabase client missing on dashboard.");
-    console.error("Supabase client missing.");
+    showOneTimeError("checkout_sessions", "Supabase client missing on dashboard.");
     return [];
   }
 
-  const { data, error } = await window.axiomSupabase
-    .from("checkout_sessions")
-    .select("*")
-    .order("created_at", { ascending: false });
+  try {
+    const { data, error } = await window.axiomSupabase
+      .from("checkout_sessions")
+      .select("*")
+      .order("created_at", { ascending: false });
 
-  if (error) {
-    alert("Dashboard failed to load checkout sessions: " + (error.message || "Unknown error"));
-    console.error("Failed to load checkout sessions:", error);
+    if (error) {
+      showOneTimeError(
+        "checkout_sessions",
+        "Dashboard failed to load checkout sessions: " + (error.message || "Unknown error"),
+        error
+      );
+      return [];
+    }
+
+    console.log("checkout_sessions loaded:", data?.length || 0, data);
+    return data || [];
+  } catch (error) {
+    showOneTimeError(
+      "checkout_sessions",
+      "Dashboard failed to load checkout sessions: " + (error?.message || "Load failed"),
+      error
+    );
     return [];
   }
-
-  console.log("checkout_sessions loaded:", data?.length || 0, data);
-  return data || [];
 }
 
 async function fetchOrders() {
   if (!window.axiomSupabase) {
-    alert("Supabase client missing on dashboard.");
-    console.error("Supabase client missing.");
+    showOneTimeError("orders", "Supabase client missing on dashboard.");
     return [];
   }
 
-  const { data, error } = await window.axiomSupabase
-    .from("orders")
-    .select("*")
-    .order("created_at", { ascending: false });
+  try {
+    const { data, error } = await window.axiomSupabase
+      .from("orders")
+      .select("*")
+      .order("created_at", { ascending: false });
 
-  if (error) {
-    alert("Dashboard failed to load orders: " + (error.message || "Unknown error"));
-    console.error("Failed to load orders:", error);
+    if (error) {
+      showOneTimeError(
+        "orders",
+        "Dashboard failed to load orders: " + (error.message || "Unknown error"),
+        error
+      );
+      return [];
+    }
+
+    console.log("orders loaded:", data?.length || 0, data);
+    return data || [];
+  } catch (error) {
+    showOneTimeError(
+      "orders",
+      "Dashboard failed to load orders: " + (error?.message || "Load failed"),
+      error
+    );
     return [];
   }
-
-  console.log("orders loaded:", data?.length || 0, data);
-  return data || [];
 }
 
 async function countPageViewsSince(dateIso) {
   if (!window.axiomSupabase) return 0;
 
-  const { count, error } = await window.axiomSupabase
-    .from("page_views")
-    .select("*", { count: "exact", head: true })
-    .gte("viewed_at", dateIso);
+  try {
+    const { count, error } = await window.axiomSupabase
+      .from("page_views")
+      .select("*", { count: "exact", head: true })
+      .gte("viewed_at", dateIso);
 
-  if (error) {
+    if (error) {
+      console.error("Failed to count page views:", error);
+      return 0;
+    }
+
+    return Number(count || 0);
+  } catch (error) {
     console.error("Failed to count page views:", error);
     return 0;
   }
-
-  return Number(count || 0);
 }
 
 async function countUniqueVisitorsSince(dateIso) {
   if (!window.axiomSupabase) return 0;
 
-  const { data, error } = await window.axiomSupabase
-    .from("page_views")
-    .select("visitor_id")
-    .gte("viewed_at", dateIso);
+  try {
+    const { data, error } = await window.axiomSupabase
+      .from("page_views")
+      .select("visitor_id")
+      .gte("viewed_at", dateIso);
 
-  if (error) {
+    if (error) {
+      console.error("Failed to count unique visitors:", error);
+      return 0;
+    }
+
+    return new Set(
+      safeArray(data)
+        .map((row) => row.visitor_id)
+        .filter(Boolean)
+    ).size;
+  } catch (error) {
     console.error("Failed to count unique visitors:", error);
     return 0;
   }
-
-  return new Set(
-    safeArray(data)
-      .map((row) => row.visitor_id)
-      .filter(Boolean)
-  ).size;
 }
 
 function getFilteredSessions() {
@@ -661,16 +710,14 @@ function subscribeDashboardRealtime() {
     .on(
       "postgres_changes",
       { event: "*", schema: "public", table: "checkout_sessions" },
-      async function (payload) {
-        console.log("Realtime checkout_sessions change:", payload);
+      async function () {
         await refreshAllDashboardData();
       }
     )
     .on(
       "postgres_changes",
       { event: "*", schema: "public", table: "orders" },
-      async function (payload) {
-        console.log("Realtime orders change:", payload);
+      async function () {
         await refreshAllDashboardData();
       }
     )
