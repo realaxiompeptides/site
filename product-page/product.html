@@ -24,7 +24,7 @@
   <link rel="stylesheet" href="../css/style.css" />
   <link rel="stylesheet" href="../css/home.css" />
   <link rel="stylesheet" href="../css/menu.css" />
-  <link rel="stylesheet" href="../cart/cart.css" />
+  <link rel="stylesheet" href="../css/cart.css" />
   <link rel="stylesheet" href="../footer/footer.css" />
   <link rel="stylesheet" href="product.css" />
   <link rel="stylesheet" href="product-price.css" />
@@ -116,7 +116,38 @@
     </div>
   </aside>
 
-  <div id="cart-drawer-mount"></div>
+  <aside class="cart-drawer" id="cartDrawer" aria-hidden="true">
+    <div class="cart-drawer-inner">
+      <div class="cart-drawer-header">
+        <h2>Your Cart</h2>
+        <button class="drawer-close" id="cartClose" aria-label="Close cart" type="button">
+          &times;
+        </button>
+      </div>
+
+      <div class="cart-body">
+        <div class="cart-empty-state" id="cartEmptyState">
+          <p class="cart-empty-text">Your cart is currently empty.</p>
+          <a href="../catalog.html" class="cart-pill-btn cart-outline-btn">Browse Products</a>
+        </div>
+
+        <div class="cart-items-list" id="cartItemsList" hidden></div>
+      </div>
+
+      <div class="cart-footer">
+        <div class="cart-subtotal-row">
+          <span>Subtotal</span>
+          <strong id="cartSubtotal">$0.00</strong>
+        </div>
+
+        <div class="cart-action-stack">
+          <a href="../cart.html" class="cart-pill-btn cart-muted-btn">View Cart</a>
+          <a href="../checkout.html" class="cart-pill-btn cart-outline-btn">Checkout</a>
+        </div>
+      </div>
+    </div>
+  </aside>
+
   <div class="site-overlay" id="siteOverlay"></div>
 
   <main class="product-main">
@@ -162,6 +193,8 @@
 
   <script src="../js/product-data.js" defer></script>
   <script src="../js/menu.js" defer></script>
+  <script src="../js/cart.js" defer></script>
+  <script src="product.js" defer></script>
 
   <script src="../admin-dashboard/dashboard-config.js" defer></script>
   <script src="../admin-dashboard/shared/tracking-config.js" defer></script>
@@ -169,50 +202,6 @@
   <script src="../admin-dashboard/supabase-client.js" defer></script>
   <script src="../admin-dashboard/visitor-session.js" defer></script>
   <script src="../admin-dashboard/cart-session/cart-session.js" defer></script>
-
-  <script src="../cart/cart-loader.js" defer></script>
-
-  <script>
-    (function () {
-      let cartScriptLoaded = false;
-
-      function loadCartScript() {
-        if (cartScriptLoaded) return;
-        if (!document.getElementById("cartDrawer")) return;
-
-        cartScriptLoaded = true;
-
-        const cartScript = document.createElement("script");
-        cartScript.src = "../cart/cart.js";
-        cartScript.defer = true;
-        document.body.appendChild(cartScript);
-      }
-
-      document.addEventListener("cartDrawerLoaded", loadCartScript);
-
-      document.addEventListener("DOMContentLoaded", function () {
-        const maxChecks = 60;
-        let checks = 0;
-
-        const interval = setInterval(function () {
-          checks += 1;
-
-          if (document.getElementById("cartDrawer")) {
-            clearInterval(interval);
-            loadCartScript();
-            return;
-          }
-
-          if (checks >= maxChecks) {
-            clearInterval(interval);
-            console.error("cartDrawer was not found after loading cart-loader.js");
-          }
-        }, 100);
-      });
-    })();
-  </script>
-
-  <script src="product.js" defer></script>
 
   <script>
     document.addEventListener("DOMContentLoaded", function () {
