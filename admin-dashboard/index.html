@@ -26,7 +26,7 @@
     href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
   />
 
-  <link rel="stylesheet" href="dashboard.css" />
+  <link rel="stylesheet" href="/site/admin-dashboard/dashboard.css" />
 </head>
 
 <body class="axiom-dashboard-page">
@@ -41,35 +41,32 @@
     </div>
 
     <div class="dashboard-search-wrap">
-
       <nav class="dashboard-nav">
 
-        <a href="index.html" class="dashboard-nav-link active">
+        <a href="/site/admin-dashboard/index.html" class="dashboard-nav-link active">
           <i class="fa-solid fa-table-columns"></i>
           <span>Dashboard Home</span>
         </a>
 
-        <a href="orders/orders.html" class="dashboard-nav-link">
+        <a href="/site/admin-dashboard/orders/orders.html" class="dashboard-nav-link">
           <i class="fa-solid fa-box-open"></i>
           <span>Orders</span>
         </a>
 
-        <a href="sessions/sessions.html" class="dashboard-nav-link">
+        <a href="/site/admin-dashboard/sessions/sessions.html" class="dashboard-nav-link">
           <i class="fa-solid fa-cart-shopping"></i>
           <span>Checkout Sessions</span>
         </a>
 
-        <a href="analytics/analytics.html" class="dashboard-nav-link">
+        <a href="/site/admin-dashboard/analytics/analytics-page.html" class="dashboard-nav-link">
           <i class="fa-solid fa-chart-line"></i>
           <span>Analytics</span>
         </a>
 
       </nav>
-
     </div>
 
     <div class="dashboard-search-wrap">
-
       <div class="dashboard-admin-box">
 
         <p class="dashboard-admin-label">Admin</p>
@@ -87,11 +84,9 @@
         </button>
 
       </div>
-
     </div>
 
   </aside>
-
 
   <main class="dashboard-main">
 
@@ -117,17 +112,14 @@
 
     </section>
 
-
     <section class="dashboard-details-grid">
 
       <div class="dashboard-card">
-
         <div class="dashboard-card-header">
           <h3>Orders To Fulfill</h3>
         </div>
 
         <div class="dashboard-info-list">
-
           <div class="dashboard-info-row">
             <span>Unfulfilled Orders</span>
             <strong id="homeUnfulfilledOrders">—</strong>
@@ -142,20 +134,15 @@
             <span>Paid / Processing</span>
             <strong id="homePaidOrders">—</strong>
           </div>
-
         </div>
-
       </div>
 
-
       <div class="dashboard-card">
-
         <div class="dashboard-card-header">
           <h3>Checkout Sessions</h3>
         </div>
 
         <div class="dashboard-info-list">
-
           <div class="dashboard-info-row">
             <span>Active Sessions</span>
             <strong id="homeActiveSessions">—</strong>
@@ -170,20 +157,15 @@
             <span>Abandoned Sessions</span>
             <strong id="homeAbandonedSessions">—</strong>
           </div>
-
         </div>
-
       </div>
 
-
       <div class="dashboard-card">
-
         <div class="dashboard-card-header">
           <h3>Traffic Today</h3>
         </div>
 
         <div class="dashboard-info-list">
-
           <div class="dashboard-info-row">
             <span>Page Views</span>
             <strong id="homePageViewsToday">—</strong>
@@ -198,42 +180,35 @@
             <span>Last 7 Days Views</span>
             <strong id="homePageViews7Days">—</strong>
           </div>
-
         </div>
-
       </div>
 
-
       <div class="dashboard-card">
-
         <div class="dashboard-card-header">
           <h3>Quick Actions</h3>
         </div>
 
         <div class="dashboard-action-list">
 
-          <a href="orders/orders.html" class="dashboard-quick-link">
+          <a href="/site/admin-dashboard/orders/orders.html" class="dashboard-quick-link">
             <i class="fa-solid fa-box-open"></i>
             <span>Open Orders</span>
           </a>
 
-          <a href="sessions/sessions.html" class="dashboard-quick-link">
+          <a href="/site/admin-dashboard/sessions/sessions.html" class="dashboard-quick-link">
             <i class="fa-solid fa-cart-shopping"></i>
             <span>Open Sessions</span>
           </a>
 
-          <a href="analytics/analytics-page.html" class="dashboard-quick-link">
+          <a href="/site/admin-dashboard/analytics/analytics-page.html" class="dashboard-quick-link">
             <i class="fa-solid fa-chart-line"></i>
             <span>Open Analytics</span>
           </a>
 
         </div>
-
       </div>
 
-
       <div class="dashboard-card dashboard-span-2">
-
         <div class="dashboard-card-header">
           <h3>Recent Orders</h3>
         </div>
@@ -243,12 +218,9 @@
             Loading recent orders...
           </div>
         </div>
-
       </div>
 
-
       <div class="dashboard-card dashboard-span-2">
-
         <div class="dashboard-card-header">
           <h3>Recent Checkout Sessions</h3>
         </div>
@@ -258,7 +230,6 @@
             Loading recent checkout sessions...
           </div>
         </div>
-
       </div>
 
     </section>
@@ -267,19 +238,14 @@
 
 </div>
 
-
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-<script src="dashboard-config.js"></script>
-<script src="shared/tracking-config.js"></script>
-<script src="shared/helpers.js"></script>
-<script src="supabase-client.js"></script>
-
-<!-- ADMIN AUTH GUARD -->
-<script src="auth/admin-auth.js"></script>
-
-<!-- DASHBOARD DATA -->
-<script src="home/home-dashboard.js"></script>
+<script src="/site/admin-dashboard/dashboard-config.js"></script>
+<script src="/site/admin-dashboard/shared/tracking-config.js"></script>
+<script src="/site/admin-dashboard/shared/helpers.js"></script>
+<script src="/site/admin-dashboard/supabase-client.js"></script>
+<script src="/site/admin-dashboard/auth/admin-auth.js"></script>
+<script src="/site/admin-dashboard/home/home-dashboard.js"></script>
 
 </body>
 </html>
