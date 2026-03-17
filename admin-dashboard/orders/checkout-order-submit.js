@@ -48,8 +48,11 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   function showError(message, extra) {
-    if (extra) console.error(message, extra);
-    else console.error(message);
+    if (extra) {
+      console.error(message, extra);
+    } else {
+      console.error(message);
+    }
     alert(message);
   }
 
@@ -200,7 +203,7 @@ document.addEventListener("DOMContentLoaded", function () {
       const taxAmount = Number(currentSession?.tax_amount || currentSession?.tax || 0);
       const totalAmount = subtotal + shippingAmount + taxAmount;
 
-      await window.AXIOM_CHECKOUT_SESSION.patchSession({
+      const patchPayload = {
         session_status: "pending_payment",
         payment_status: "unpaid",
         fulfillment_status: "unfulfilled",
@@ -235,7 +238,39 @@ document.addEventListener("DOMContentLoaded", function () {
         total_amount: totalAmount,
         updated_at: new Date().toISOString(),
         last_activity_at: new Date().toISOString()
-      });
+      };
+
+      await window.AXIOM_CHECKOUT_SESSION.patchSession(patchPayload);
+
+      const { data: refreshedSessionRow, error: refreshedSessionError } =
+        await window.axiomSupabase
+          .from("checkout_sessions")
+          .select("*")
+          .eq("session_id", sessionId)
+          .maybeSingle();
+
+      if (refreshedSessionError) {
+        showError(
+          "There was a problem preparing your order: " +
+            (refreshedSessionError.message || "Session reload failed"),
+          refreshedSessionError
+        );
+        return;
+      }
+
+      if (!refreshedSessionRow) {
+        showError("Checkout session could not be loaded.");
+        return;
+      }
+
+      const refreshedCartItems = Array.isArray(refreshedSessionRow.cart_items)
+        ? refreshedSessionRow.cart_items
+        : [];
+
+      if (!refreshedCartItems.length) {
+        showError("Your cart is empty.");
+        return;
+      }
 
       const result = await window.AXIOM_ORDER_SUBMIT.createOrderFromSession({
         order_status: "pending_payment",
@@ -290,7 +325,7 @@ document.addEventListener("DOMContentLoaded", function () {
         `${THANK_YOU_BASE_URL}?order=${encodeURIComponent(redirectOrderNumber)}`;
     } catch (error) {
       console.error("Checkout submit failed:", error);
-      alert("There was a problem submitting your order.");
+      alert("There was a problem submitting your order: " + (error?.message || "Unknown error"));
     } finally {
       setSubmittingState(false);
     }
