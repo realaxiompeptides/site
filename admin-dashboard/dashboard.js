@@ -460,3 +460,68 @@ document.addEventListener("DOMContentLoaded", async () => {
     console.error("Dashboard failed to initialize:", error);
   }
 });
+
+document.addEventListener("DOMContentLoaded", function () {
+
+  const views = {
+    home: document.getElementById("dashboardHomeView"),
+    sessions: document.getElementById("dashboardSessionsView"),
+    analytics: document.getElementById("dashboardAnalyticsView"),
+    orders: document.getElementById("dashboardOrdersView")
+  };
+
+  const buttons = {
+    home: document.getElementById("showHomeViewBtn"),
+    sessions: document.getElementById("showSessionsViewBtn"),
+    analytics: document.getElementById("showAnalyticsViewBtn"),
+    orders: document.getElementById("showOrdersViewBtn")
+  };
+
+  const sessionsSidebar = document.getElementById("dashboardSessionsSidebar");
+  const analyticsSidebar = document.getElementById("dashboardAnalyticsSidebar");
+
+  function setActiveButton(activeKey) {
+    Object.entries(buttons).forEach(([key, btn]) => {
+      if (!btn) return;
+      btn.classList.toggle("active", key === activeKey);
+    });
+  }
+
+  function showView(viewKey) {
+    // Hide all views
+    Object.values(views).forEach(view => {
+      if (view) view.hidden = true;
+    });
+
+    // Show selected view
+    if (views[viewKey]) {
+      views[viewKey].hidden = false;
+    }
+
+    // Sidebar switching
+    if (sessionsSidebar) {
+      sessionsSidebar.hidden = viewKey !== "sessions";
+    }
+
+    if (analyticsSidebar) {
+      analyticsSidebar.hidden = viewKey !== "analytics";
+    }
+
+    setActiveButton(viewKey);
+  }
+
+  // NAV BUTTONS
+  buttons.home?.addEventListener("click", () => showView("home"));
+  buttons.sessions?.addEventListener("click", () => showView("sessions"));
+  buttons.analytics?.addEventListener("click", () => showView("analytics"));
+  buttons.orders?.addEventListener("click", () => showView("orders"));
+
+  // QUICK ACTION BUTTONS
+  document.getElementById("quickOpenSessionsBtn")?.addEventListener("click", () => showView("sessions"));
+  document.getElementById("quickOpenAnalyticsBtn")?.addEventListener("click", () => showView("analytics"));
+  document.getElementById("quickOpenOrdersBtn")?.addEventListener("click", () => showView("orders"));
+
+  // Default view
+  showView("home");
+
+});
