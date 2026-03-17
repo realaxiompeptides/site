@@ -138,6 +138,7 @@ function normalizeCartItemsForSession(items) {
             : null,
       quantity: quantity,
       qty: quantity,
+      line_total: getItemPrice(item) * quantity,
       image: item.image || "",
       weightOz: Number(item.weightOz || item.weight_oz || 0),
       weight_oz: Number(item.weight_oz || item.weightOz || 0),
@@ -151,6 +152,90 @@ function calculateCartSubtotal(items) {
   return items.reduce((sum, item) => {
     return sum + (getItemPrice(item) * getItemQuantity(item));
   }, 0);
+}
+
+function hasSupabaseCheckoutSession() {
+  return Boolean(
+    window.axiomSupabase &&
+    window.AXIOM_CHECKOUT_SESSION &&
+    typeof window.AXIOM_CHECKOUT_SESSION.ensureSession === "function" &&
+    typeof window.AXIOM_CHECKOUT_SESSION.patchSession === "function"
+  );
+}
+
+function hasLocalCheckoutSession() {
+  return Boolean(
+    window.AXIOM_CHECKOUT_SESSION &&
+    typeof window.AXIOM_CHECKOUT_SESSION.getSession === "function" &&
+    typeof window.AXIOM_CHECKOUT_SESSION.saveSession === "function"
+  );
+}
+
+function normalizeSessionShape(session) {
+  if (!session || typeof session !== "object") return null;
+
+  const shippingSelection =
+    session.shipping_selection && typeof session.shipping_selection === "object"
+      ? session.shipping_selection
+      : {};
+
+  const shippingAddress =
+    session.shipping_address && typeof session.shipping_address === "object"
+      ? session.shipping_address
+      : {};
+
+  const billingAddress =
+    session.billing_address && typeof session.billing_address === "object"
+      ? session.billing_address
+      : {};
+
+  const cartItems = Array.isArray(session.cart_items) ? session.cart_items : [];
+  const subtotal = Number(
+    session.subtotal !== undefined && session.subtotal !== null
+      ? session.subtotal
+      : calculateCartSubtotal(cartItems)
+  );
+
+  const shippingAmount = Number(
+    session.shipping_amount !== undefined && session.shipping_amount !== null
+      ? session.shipping_amount
+      : shippingSelection.amount !== undefined && shippingSelection.amount !== null
+        ? shippingSelection.amount
+        : 0
+  );
+
+  const taxAmount = Number(
+    session.tax_amount !== undefined && session.tax_amount !== null
+      ? session.tax_amount
+      : session.tax !== undefined && session.tax !== null
+        ? session.tax
+        : 0
+  );
+
+  const totalAmount = Number(
+    session.total_amount !== undefined && session.total_amount !== null
+      ? session.total_amount
+      : session.total !== undefined && session.total !== null
+        ? session.total
+        : subtotal + shippingAmount + taxAmount
+  );
+
+  return {
+    ...session,
+    cart_items: cartItems,
+    subtotal: subtotal,
+    shipping_amount: shippingAmount,
+    tax_amount: taxAmount,
+    total_amount: totalAmount,
+    shipping_selection: shippingSelection,
+    shipping_address: shippingAddress,
+    billing_address: billingAddress,
+    customer_email: session.customer_email || session.contact?.email || "",
+    customer_phone: session.customer_phone || session.contact?.phone || "",
+    customer_first_name: session.customer_first_name || shippingAddress.first_name || "",
+    customer_last_name: session.customer_last_name || shippingAddress.last_name || "",
+    payment_method: session.payment_method || ""
+  };
 }
 
 function getCurrentSessionItems() {
@@ -207,34 +292,47 @@ function calculateEstimatedRates(items) {
 }
 
 async function fetchCurrentCheckoutSession() {
-  if (!window.axiomSupabase || !window.AXIOM_HELPERS || !window.AXIOM_CHECKOUT_SESSION) {
-    console.error("Supabase checkout dependencies are missing.");
-    return null;
+  if (hasSupabaseCheckoutSession()) {
+    try {
+      const sessionId = await window.AXIOM_CHECKOUT_SESSION.ensureSession();
+      if (!sessionId) return null;
+
+      const { data, error } = await window.axiomSupabase
+        .from("checkout_sessions")
+        .select("*")
+        .eq("session_id", sessionId)
+        .maybeSingle();
+
+      if (error) {
+        console.error("Failed to fetch checkout session:", error);
+        return null;
+      }
+
+      axiomCurrentCheckoutSession = normalizeSessionShape(data || null);
+      return axiomCurrentCheckoutSession;
+    } catch (error) {
+      console.error("Failed to fetch checkout session:", error);
+      return null;
+    }
   }
 
-  const sessionId = await window.AXIOM_CHECKOUT_SESSION.ensureSession();
-  if (!sessionId) return null;
-
-  const { data, error } = await window.axiomSupabase
-    .from("checkout_sessions")
-    .select("*")
-    .eq("session_id", sessionId)
-    .maybeSingle();
-
-  if (error) {
-    console.error("Failed to fetch checkout session:", error);
-    return null;
+  if (hasLocalCheckoutSession()) {
+    try {
+      axiomCurrentCheckoutSession = normalizeSessionShape(
+        window.AXIOM_CHECKOUT_SESSION.getSession()
+      );
+      return axiomCurrentCheckoutSession;
+    } catch (error) {
+      console.error("Failed to fetch local checkout session:", error);
+      return null;
+    }
   }
 
-  axiomCurrentCheckoutSession = data || null;
-  return axiomCurrentCheckoutSession;
+  console.error("Checkout session dependencies are missing.");
+  return null;
 }
 
 async function syncLocalCartIntoSession(forceUseLocal = false) {
-  if (!window.AXIOM_CHECKOUT_SESSION || typeof window.AXIOM_CHECKOUT_SESSION.patchSession !== "function") {
-    return;
-  }
-
   const localItems = getLocalCartItems();
   const sessionItems =
     axiomCurrentCheckoutSession && Array.isArray(axiomCurrentCheckoutSession.cart_items)
@@ -254,14 +352,54 @@ async function syncLocalCartIntoSession(forceUseLocal = false) {
   const existingTaxAmount = Number(axiomCurrentCheckoutSession?.tax_amount || 0);
   const totalAmount = subtotal + existingShippingAmount + existingTaxAmount;
 
-  await window.AXIOM_CHECKOUT_SESSION.patchSession({
-    cart_items: normalizedItems,
-    subtotal: subtotal,
-    total_amount: totalAmount,
-    last_activity_at: new Date().toISOString()
-  });
+  if (window.AXIOM_CART_CHECKOUT_SYNC && typeof window.AXIOM_CART_CHECKOUT_SYNC.syncToSession === "function") {
+    await window.AXIOM_CART_CHECKOUT_SYNC.syncToSession({
+      cart_items: normalizedItems,
+      subtotal: subtotal,
+      shipping_amount: existingShippingAmount,
+      tax_amount: existingTaxAmount,
+      total_amount: totalAmount,
+      session_status: "active"
+    });
 
-  await fetchCurrentCheckoutSession();
+    await fetchCurrentCheckoutSession();
+    return;
+  }
+
+  if (hasSupabaseCheckoutSession()) {
+    await window.AXIOM_CHECKOUT_SESSION.patchSession({
+      cart_items: normalizedItems,
+      subtotal: subtotal,
+      shipping_amount: existingShippingAmount,
+      tax_amount: existingTaxAmount,
+      total_amount: totalAmount,
+      session_status: "active",
+      last_activity_at: new Date().toISOString()
+    });
+
+    await fetchCurrentCheckoutSession();
+    return;
+  }
+
+  if (hasLocalCheckoutSession()) {
+    const session = window.AXIOM_CHECKOUT_SESSION.getSession();
+
+    session.cart_items = normalizedItems;
+    session.subtotal = subtotal;
+    session.shipping_amount = existingShippingAmount;
+    session.tax_amount = existingTaxAmount;
+    session.total_amount = totalAmount;
+
+    if (!session.shipping_selection || typeof session.shipping_selection !== "object") {
+      session.shipping_selection = {};
+    }
+
+    session.shipping_selection.amount = existingShippingAmount;
+    session.session_status = "active";
+
+    window.AXIOM_CHECKOUT_SESSION.saveSession(session);
+    axiomCurrentCheckoutSession = normalizeSessionShape(session);
+  }
 }
 
 function hydrateCheckoutFormFromSession(session) {
@@ -352,8 +490,6 @@ function getSelectedShippingSelectionObject() {
 }
 
 async function syncCheckoutSessionFromForm() {
-  if (!window.AXIOM_CHECKOUT_SESSION) return;
-
   const items = normalizeCartItemsForSession(getCurrentSessionItems());
   const subtotal = calculateCartSubtotal(items);
 
@@ -365,29 +501,60 @@ async function syncCheckoutSessionFromForm() {
   const paymentMethod = getSelectedPaymentMethod();
   const shippingSelection = getSelectedShippingSelectionObject();
 
-  await window.AXIOM_CHECKOUT_SESSION.patchSession({
-    session_status: "active",
-    customer_email: document.getElementById("checkoutEmail")?.value.trim() || null,
-    customer_phone: document.getElementById("phone")?.value.trim() || null,
-    customer_first_name: shippingAddress.first_name || null,
-    customer_last_name: shippingAddress.last_name || null,
-    shipping_address: shippingAddress,
-    billing_address: billingAddress,
-    payment_method: paymentMethod,
-    shipping_selection: shippingSelection,
-    shipping_amount: shippingAmount,
-    tax_amount: taxAmount,
-    subtotal: subtotal,
-    total_amount: totalAmount,
-    cart_items: items,
-    shipping_method_code: shippingSelection.method_code || null,
-    shipping_method_name: shippingSelection.method_name || null,
-    shipping_carrier: shippingSelection.carrier || null,
-    shipping_service_level: shippingSelection.service_level || null,
-    last_activity_at: new Date().toISOString()
-  });
+  if (hasSupabaseCheckoutSession()) {
+    await window.AXIOM_CHECKOUT_SESSION.patchSession({
+      session_status: "active",
+      customer_email: document.getElementById("checkoutEmail")?.value.trim() || null,
+      customer_phone: document.getElementById("phone")?.value.trim() || null,
+      customer_first_name: shippingAddress.first_name || null,
+      customer_last_name: shippingAddress.last_name || null,
+      shipping_address: shippingAddress,
+      billing_address: billingAddress,
+      payment_method: paymentMethod,
+      shipping_selection: shippingSelection,
+      shipping_amount: shippingAmount,
+      tax_amount: taxAmount,
+      subtotal: subtotal,
+      total_amount: totalAmount,
+      cart_items: items,
+      shipping_method_code: shippingSelection.method_code || null,
+      shipping_method_name: shippingSelection.method_name || null,
+      shipping_carrier: shippingSelection.carrier || null,
+      shipping_service_level: shippingSelection.service_level || null,
+      last_activity_at: new Date().toISOString()
+    });
+  } else if (hasLocalCheckoutSession()) {
+    const session = window.AXIOM_CHECKOUT_SESSION.getSession();
 
-  axiomCurrentCheckoutSession = {
+    session.session_status = "active";
+    session.customer_email = document.getElementById("checkoutEmail")?.value.trim() || null;
+    session.customer_phone = document.getElementById("phone")?.value.trim() || null;
+    session.customer_first_name = shippingAddress.first_name || null;
+    session.customer_last_name = shippingAddress.last_name || null;
+    session.contact = {
+      email: document.getElementById("checkoutEmail")?.value.trim() || "",
+      phone: document.getElementById("phone")?.value.trim() || ""
+    };
+    session.shipping_address = shippingAddress;
+    session.billing_address = billingAddress;
+    session.payment_method = paymentMethod;
+    session.shipping_selection = shippingSelection;
+    session.shipping_amount = shippingAmount;
+    session.tax_amount = taxAmount;
+    session.tax = taxAmount;
+    session.subtotal = subtotal;
+    session.total_amount = totalAmount;
+    session.total = totalAmount;
+    session.cart_items = items;
+    session.shipping_method_code = shippingSelection.method_code || null;
+    session.shipping_method_name = shippingSelection.method_name || null;
+    session.shipping_carrier = shippingSelection.carrier || null;
+    session.shipping_service_level = shippingSelection.service_level || null;
+
+    window.AXIOM_CHECKOUT_SESSION.saveSession(session);
+  }
+
+  axiomCurrentCheckoutSession = normalizeSessionShape({
     ...(axiomCurrentCheckoutSession || {}),
     customer_email: document.getElementById("checkoutEmail")?.value.trim() || null,
     customer_phone: document.getElementById("phone")?.value.trim() || null,
@@ -407,7 +574,7 @@ async function syncCheckoutSessionFromForm() {
     shipping_carrier: shippingSelection.carrier || null,
     shipping_service_level: shippingSelection.service_level || null,
     last_activity_at: new Date().toISOString()
-  };
+  });
 
   saveLocalCartItems(items);
 }
@@ -614,7 +781,15 @@ document.addEventListener("DOMContentLoaded", async () => {
   ]);
 
   await fetchCurrentCheckoutSession();
-  await syncLocalCartIntoSession(false);
+
+  if (window.AXIOM_CART_CHECKOUT_SYNC && typeof window.AXIOM_CART_CHECKOUT_SYNC.syncToSession === "function") {
+    await window.AXIOM_CART_CHECKOUT_SYNC.syncToSession({
+      session_status: "active"
+    });
+    await fetchCurrentCheckoutSession();
+  } else {
+    await syncLocalCartIntoSession(true);
+  }
 
   hydrateCheckoutFormFromSession(axiomCurrentCheckoutSession);
   renderCheckoutSummary();
@@ -627,13 +802,29 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   window.addEventListener("axiom-cart-updated", async function () {
-    await syncLocalCartIntoSession(true);
+    if (window.AXIOM_CART_CHECKOUT_SYNC && typeof window.AXIOM_CART_CHECKOUT_SYNC.syncToSession === "function") {
+      await window.AXIOM_CART_CHECKOUT_SYNC.syncToSession({
+        session_status: "active"
+      });
+      await fetchCurrentCheckoutSession();
+    } else {
+      await syncLocalCartIntoSession(true);
+    }
+
     renderCheckoutSummary();
   });
 
   window.addEventListener("storage", async function (event) {
     if (event.key === CART_STORAGE_KEY) {
-      await syncLocalCartIntoSession(true);
+      if (window.AXIOM_CART_CHECKOUT_SYNC && typeof window.AXIOM_CART_CHECKOUT_SYNC.syncToSession === "function") {
+        await window.AXIOM_CART_CHECKOUT_SYNC.syncToSession({
+          session_status: "active"
+        });
+        await fetchCurrentCheckoutSession();
+      } else {
+        await syncLocalCartIntoSession(true);
+      }
+
       renderCheckoutSummary();
     }
   });
@@ -666,11 +857,16 @@ document.addEventListener("submit", async function (e) {
 
   await syncCheckoutSessionFromForm();
 
-  if (window.AXIOM_CHECKOUT_SESSION) {
+  if (hasSupabaseCheckoutSession()) {
     await window.AXIOM_CHECKOUT_SESSION.patchSession({
       session_status: "pending_payment",
       payment_status: "unpaid",
       last_activity_at: new Date().toISOString()
     });
+  } else if (hasLocalCheckoutSession()) {
+    const session = window.AXIOM_CHECKOUT_SESSION.getSession();
+    session.session_status = "pending_payment";
+    session.payment_status = "unpaid";
+    window.AXIOM_CHECKOUT_SESSION.saveSession(session);
   }
 });
