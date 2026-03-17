@@ -59,7 +59,11 @@ window.AXIOM_ORDER_SUBMIT = {
         return null;
       }
 
-      const highest = Array.isArray(data) && data.length ? Number(data[0].order_number || 1000) : 1000;
+      const highest =
+        Array.isArray(data) && data.length
+          ? Number(data[0].order_number || 1000)
+          : 1000;
+
       return highest + 1;
     }
 
@@ -103,23 +107,32 @@ window.AXIOM_ORDER_SUBMIT = {
       }
 
       if (existingOrder) {
-        await supabase
+        const { error: existingCheckoutUpdateError } = await supabase
           .from("checkout_sessions")
           .update({
             order_number: existingOrder.order_number,
             session_status: extraPayload.session_status || "converted",
-            payment_status: extraPayload.payment_status || "pending",
-            fulfillment_status: extraPayload.fulfillment_status || "unfulfilled",
+            payment_status: extraPayload.payment_status || existingOrder.payment_status || "pending",
+            fulfillment_status: extraPayload.fulfillment_status || existingOrder.fulfillment_status || "unfulfilled",
             confirmed_at: nowIso,
             updated_at: nowIso,
             last_activity_at: nowIso
           })
           .eq("id", sessionRow.id);
 
+        if (existingCheckoutUpdateError) {
+          console.error("Existing order checkout session update failed:", existingCheckoutUpdateError);
+        }
+
         return {
           ok: true,
           orderId: existingOrder.id,
-          orderNumber: existingOrder.order_number
+          orderNumber: existingOrder.order_number,
+          totalAmount: Number(existingOrder.total_amount || 0),
+          subtotal: Number(existingOrder.subtotal || 0),
+          shippingAmount: Number(existingOrder.shipping_amount || 0),
+          taxAmount: Number(existingOrder.tax_amount || 0),
+          paymentMethod: existingOrder.payment_method || null
         };
       }
 
@@ -164,7 +177,10 @@ window.AXIOM_ORDER_SUBMIT = {
 
       if (orderError || !orderInsert) {
         console.error("Order insert failed:", orderError);
-        return { ok: false, error: "Failed to create order" };
+        return {
+          ok: false,
+          error: orderError?.message || "Failed to create order"
+        };
       }
 
       const orderItemsPayload = cartItems.map((item) => ({
@@ -185,12 +201,14 @@ window.AXIOM_ORDER_SUBMIT = {
         created_at: nowIso
       }));
 
-      const { error: orderItemsError } = await supabase
-        .from("order_items")
-        .insert(orderItemsPayload);
+      if (orderItemsPayload.length) {
+        const { error: orderItemsError } = await supabase
+          .from("order_items")
+          .insert(orderItemsPayload);
 
-      if (orderItemsError) {
-        console.error("Order items insert failed:", orderItemsError);
+        if (orderItemsError) {
+          console.error("Order items insert failed:", orderItemsError);
+        }
       }
 
       const checkoutSessionUpdate = {
@@ -237,11 +255,19 @@ window.AXIOM_ORDER_SUBMIT = {
       return {
         ok: true,
         orderId: orderInsert.id,
-        orderNumber: orderInsert.order_number
+        orderNumber: orderInsert.order_number,
+        totalAmount: Number(orderInsert.total_amount || 0),
+        subtotal: Number(orderInsert.subtotal || 0),
+        shippingAmount: Number(orderInsert.shipping_amount || 0),
+        taxAmount: Number(orderInsert.tax_amount || 0),
+        paymentMethod: orderInsert.payment_method || null
       };
     } catch (error) {
       console.error("createOrderFromSession crashed:", error);
-      return { ok: false, error: "Unexpected order submit failure" };
+      return {
+        ok: false,
+        error: error?.message || "Unexpected order submit failure"
+      };
     }
   }
 };
