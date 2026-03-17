@@ -81,6 +81,9 @@ document.addEventListener("DOMContentLoaded", function () {
       const shippingOption = selectedShipping.closest(".shipping-option");
       const shippingLabel = shippingOption?.querySelector("span")?.textContent?.trim() || "";
       const shippingAmount = Number(selectedShipping.value || 0);
+      const shippingCode =
+        selectedShipping.dataset.code ||
+        shippingLabel.toLowerCase().replace(/\s+/g, "_");
 
       const checkoutEmail = document.getElementById("checkoutEmail")?.value.trim() || null;
       const firstName = document.getElementById("firstName")?.value.trim() || "";
@@ -102,13 +105,13 @@ document.addEventListener("DOMContentLoaded", function () {
       const billingAddress = { ...shippingAddress };
 
       const subtotal = cartItems.reduce(function (sum, item) {
-        return sum + (Number(item.price || 0) * Number(item.quantity || item.qty || 1));
+        return sum + (Number(item.price || item.unit_price || 0) * Number(item.quantity || item.qty || 1));
       }, 0);
 
       const taxAmount = 0;
       const totalAmount = subtotal + shippingAmount + taxAmount;
 
-      await window.AXIOM_CHECKOUT_SESSION.patchSession({
+      const patchPayload = {
         session_status: "pending_payment",
         payment_status: "unpaid",
         fulfillment_status: "unfulfilled",
@@ -123,9 +126,10 @@ document.addEventListener("DOMContentLoaded", function () {
           label: shippingLabel,
           method_name: shippingLabel,
           amount: shippingAmount,
-          code: selectedShipping.dataset.code || shippingLabel.toLowerCase().replace(/\s+/g, "_")
+          code: shippingCode,
+          method_code: shippingCode
         },
-        shipping_method_code: selectedShipping.dataset.code || shippingLabel.toLowerCase().replace(/\s+/g, "_"),
+        shipping_method_code: shippingCode,
         shipping_method_name: shippingLabel || null,
         shipping_carrier: shippingLabel.includes("USPS") ? "USPS" : null,
         shipping_service_level: shippingLabel || null,
@@ -133,7 +137,30 @@ document.addEventListener("DOMContentLoaded", function () {
         shipping_amount: shippingAmount,
         tax_amount: taxAmount,
         total_amount: totalAmount
-      });
+      };
+
+      await window.AXIOM_CHECKOUT_SESSION.patchSession(patchPayload);
+
+      const { data: refreshedSessionRow, error: refreshedSessionError } = await window.axiomSupabase
+        .from("checkout_sessions")
+        .select("*")
+        .eq("session_id", sessionId)
+        .maybeSingle();
+
+      if (refreshedSessionError) {
+        console.error("Failed to reload checkout session after patch:", refreshedSessionError);
+        alert("There was a problem preparing your order.");
+        return;
+      }
+
+      const refreshedCartItems = Array.isArray(refreshedSessionRow?.cart_items)
+        ? refreshedSessionRow.cart_items
+        : [];
+
+      if (!refreshedCartItems.length) {
+        alert("Your cart is empty.");
+        return;
+      }
 
       const result = await window.AXIOM_ORDER_SUBMIT.createOrderFromSession({
         order_status: "pending_payment",
@@ -151,6 +178,23 @@ document.addEventListener("DOMContentLoaded", function () {
       if (!redirectOrderNumber) {
         alert("The order was created, but the order number was missing.");
         return;
+      }
+
+      try {
+        if (window.AXIOM_HELPERS && typeof window.AXIOM_HELPERS.clearCart === "function") {
+          window.AXIOM_HELPERS.clearCart();
+        } else {
+          localStorage.removeItem("axiom_cart");
+        }
+      } catch (cartClearError) {
+        console.error("Cart clear failed after order creation:", cartClearError);
+      }
+
+      try {
+        window.dispatchEvent(new Event("axiom-cart-updated"));
+        document.dispatchEvent(new CustomEvent("axiom-cart-updated"));
+      } catch (eventError) {
+        console.error("Cart update event failed:", eventError);
       }
 
       window.location.href = `../thank-you/thank-you.html?order=${encodeURIComponent(redirectOrderNumber)}`;
