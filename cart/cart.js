@@ -122,12 +122,19 @@ function initCartDrawer() {
     const normalizedQty = getItemQuantity(item);
 
     return {
-      id: item.id,
+      id: item.id || "",
       slug: item.slug || "",
       name: item.name || "Product",
       variantLabel: item.variantLabel || item.variant || "",
+      variant_label: item.variantLabel || item.variant || "",
       price: Number(item.price) || 0,
       compareAtPrice:
+        item.compareAtPrice !== undefined && item.compareAtPrice !== null
+          ? Number(item.compareAtPrice) || null
+          : item.oldPrice !== undefined && item.oldPrice !== null
+            ? Number(item.oldPrice) || null
+            : null,
+      compare_at_price:
         item.compareAtPrice !== undefined && item.compareAtPrice !== null
           ? Number(item.compareAtPrice) || null
           : item.oldPrice !== undefined && item.oldPrice !== null
@@ -139,10 +146,21 @@ function initCartDrawer() {
       weightOz:
         item.weightOz !== undefined && item.weightOz !== null
           ? Number(item.weightOz) || 0
-          : item.id === "bacwater-10ml"
-            ? 9.6
-            : 0.188,
-      inStock: item.inStock !== false
+          : item.weight_oz !== undefined && item.weight_oz !== null
+            ? Number(item.weight_oz) || 0
+            : item.id === "bacwater-10ml"
+              ? 9.6
+              : 0.188,
+      weight_oz:
+        item.weight_oz !== undefined && item.weight_oz !== null
+          ? Number(item.weight_oz) || 0
+          : item.weightOz !== undefined && item.weightOz !== null
+            ? Number(item.weightOz) || 0
+            : item.id === "bacwater-10ml"
+              ? 9.6
+              : 0.188,
+      inStock: item.inStock !== false,
+      in_stock: item.inStock !== false
     };
   }
 
@@ -204,6 +222,98 @@ function initCartDrawer() {
     return 0;
   }
 
+  function getCartSubtotal(cart) {
+    return cart.reduce((sum, item) => {
+      return sum + (Number(item.price || 0) * getItemQuantity(item));
+    }, 0);
+  }
+
+  async function syncCartToCheckoutSession(cartOverride) {
+    try {
+      if (
+        !window.AXIOM_CHECKOUT_SESSION ||
+        typeof window.AXIOM_CHECKOUT_SESSION.ensureSession !== "function" ||
+        typeof window.AXIOM_CHECKOUT_SESSION.patchSession !== "function"
+      ) {
+        return;
+      }
+
+      const normalizedCart = Array.isArray(cartOverride)
+        ? cartOverride.map(normalizeCartItem)
+        : getCart().map(normalizeCartItem);
+
+      const subtotal = getCartSubtotal(normalizedCart);
+      const discountValue = getDiscountValue(subtotal);
+      const discountedSubtotal = Math.max(subtotal - discountValue, 0);
+
+      await window.AXIOM_CHECKOUT_SESSION.ensureSession();
+
+      await window.AXIOM_CHECKOUT_SESSION.patchSession({
+        cart_items: normalizedCart.map(function (item) {
+          return {
+            id: item.id || "",
+            slug: item.slug || "",
+            name: item.name || "Product",
+            product_name: item.name || "Product",
+            variantLabel: item.variantLabel || "",
+            variant_label: item.variantLabel || "",
+            quantity: getItemQuantity(item),
+            qty: getItemQuantity(item),
+            price: Number(item.price || 0),
+            unit_price: Number(item.price || 0),
+            compareAtPrice:
+              item.compareAtPrice !== undefined && item.compareAtPrice !== null
+                ? Number(item.compareAtPrice) || null
+                : null,
+            compare_at_price:
+              item.compare_at_price !== undefined && item.compare_at_price !== null
+                ? Number(item.compare_at_price) || null
+                : item.compareAtPrice !== undefined && item.compareAtPrice !== null
+                  ? Number(item.compareAtPrice) || null
+                  : null,
+            line_total: Number(item.price || 0) * getItemQuantity(item),
+            image: item.image || "",
+            weightOz: Number(item.weightOz || 0),
+            weight_oz: Number(item.weight_oz || item.weightOz || 0),
+            inStock: item.inStock !== false,
+            in_stock: item.in_stock !== false
+          };
+        }),
+        subtotal: subtotal,
+        discount_amount: discountValue,
+        shipping_amount: 0,
+        tax_amount: 0,
+        total_amount: discountedSubtotal,
+        session_status: normalizedCart.length ? "active" : "active",
+        updated_at: new Date().toISOString(),
+        last_activity_at: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error("Failed to sync cart to checkout session:", error);
+    }
+  }
+
+  async function prepareCheckoutAndRedirect(event) {
+    if (event) {
+      event.preventDefault();
+    }
+
+    try {
+      const cart = getCart().map(normalizeCartItem);
+
+      if (!cart.length) {
+        openCart();
+        return;
+      }
+
+      await syncCartToCheckoutSession(cart);
+      window.location.href = getPageLink("checkout/checkout.html");
+    } catch (error) {
+      console.error("Failed to prepare checkout redirect:", error);
+      alert("There was a problem preparing checkout.");
+    }
+  }
+
   function renderRecommendations(cart) {
     if (!cartRecommendList || !cartRecommendSection) return;
 
@@ -231,7 +341,7 @@ function initCartDrawer() {
 
     const addButton = cartRecommendList.querySelector("[data-add-recommend]");
     if (addButton) {
-      addButton.onclick = function () {
+      addButton.onclick = async function () {
         const updatedCart = getCart().map(normalizeCartItem);
         const existing = updatedCart.find(entry => entry.id === item.id);
 
@@ -243,18 +353,23 @@ function initCartDrawer() {
             slug: item.slug,
             name: item.name,
             variantLabel: item.variantLabel,
+            variant_label: item.variantLabel,
             price: item.price,
             compareAtPrice: null,
+            compare_at_price: null,
             image: item.image,
             quantity: 1,
             qty: 1,
             weightOz: item.weightOz,
-            inStock: true
+            weight_oz: item.weightOz,
+            inStock: true,
+            in_stock: true
           });
         }
 
         saveCart(updatedCart);
         renderCart();
+        await syncCartToCheckoutSession(updatedCart);
         window.dispatchEvent(new Event("axiom-cart-updated"));
       };
     }
@@ -273,8 +388,13 @@ function initCartDrawer() {
     const totalValue = discountedSubtotal + shippingValue + taxValue;
 
     const liveCartCount = document.getElementById("cartCount");
-    if (liveCartCount) liveCartCount.textContent = String(itemCount);
-    if (cartDrawerItemCount) cartDrawerItemCount.textContent = String(itemCount);
+    if (liveCartCount) {
+      liveCartCount.textContent = String(itemCount);
+    }
+
+    if (cartDrawerItemCount) {
+      cartDrawerItemCount.textContent = String(itemCount);
+    }
 
     if (!cart.length) {
       if (cartEmptyState) cartEmptyState.hidden = false;
@@ -326,17 +446,18 @@ function initCartDrawer() {
         `).join("");
 
         cartItemsList.querySelectorAll("[data-remove-index]").forEach(button => {
-          button.onclick = function () {
+          button.onclick = async function () {
             const updatedCart = getCart().map(normalizeCartItem);
             updatedCart.splice(Number(button.dataset.removeIndex), 1);
             saveCart(updatedCart);
             renderCart();
+            await syncCartToCheckoutSession(updatedCart);
             window.dispatchEvent(new Event("axiom-cart-updated"));
           };
         });
 
         cartItemsList.querySelectorAll("[data-increase-index]").forEach(button => {
-          button.onclick = function () {
+          button.onclick = async function () {
             const updatedCart = getCart().map(normalizeCartItem);
             const item = updatedCart[Number(button.dataset.increaseIndex)];
             if (!item) return;
@@ -344,12 +465,13 @@ function initCartDrawer() {
             setItemQuantity(item, getItemQuantity(item) + 1);
             saveCart(updatedCart);
             renderCart();
+            await syncCartToCheckoutSession(updatedCart);
             window.dispatchEvent(new Event("axiom-cart-updated"));
           };
         });
 
         cartItemsList.querySelectorAll("[data-decrease-index]").forEach(button => {
-          button.onclick = function () {
+          button.onclick = async function () {
             const updatedCart = getCart().map(normalizeCartItem);
             const item = updatedCart[Number(button.dataset.decreaseIndex)];
             if (!item) return;
@@ -364,6 +486,7 @@ function initCartDrawer() {
 
             saveCart(updatedCart);
             renderCart();
+            await syncCartToCheckoutSession(updatedCart);
             window.dispatchEvent(new Event("axiom-cart-updated"));
           };
         });
@@ -403,7 +526,7 @@ function initCartDrawer() {
   }
 
   if (!window.__axiomCartDiscountBound && applyCartDiscount) {
-    applyCartDiscount.addEventListener("click", function () {
+    applyCartDiscount.addEventListener("click", async function () {
       const code = cartDiscountCode ? cartDiscountCode.value.trim().toUpperCase() : "";
 
       if (code === "SAVE10") {
@@ -421,6 +544,7 @@ function initCartDrawer() {
       }
 
       renderCart();
+      await syncCartToCheckoutSession();
     });
 
     window.__axiomCartDiscountBound = true;
@@ -436,6 +560,17 @@ function initCartDrawer() {
     });
 
     window.__axiomCartDelegatedToggleBound = true;
+  }
+
+  if (!window.__axiomCheckoutDelegatedBound) {
+    document.addEventListener("click", function (event) {
+      const checkoutLink = event.target.closest('.cart-action-stack a[href*="checkout"]');
+      if (!checkoutLink) return;
+
+      prepareCheckoutAndRedirect(event);
+    });
+
+    window.__axiomCheckoutDelegatedBound = true;
   }
 
   if (cartClose && !cartClose.dataset.cartBound) {
