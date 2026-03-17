@@ -1,5 +1,8 @@
 document.addEventListener("DOMContentLoaded", async function () {
-  if (!window.axiomSupabase || !window.AXIOM_HELPERS) return;
+  if (!window.axiomSupabase || !window.AXIOM_HELPERS) {
+    console.error("Visitor tracking dependencies missing.");
+    return;
+  }
 
   const supabase = window.axiomSupabase;
   const helpers = window.AXIOM_HELPERS;
@@ -11,73 +14,78 @@ document.addEventListener("DOMContentLoaded", async function () {
   const language = navigator.language || "";
   const screenWidth = window.innerWidth || null;
   const screenHeight = window.innerHeight || null;
-  const now = helpers.nowIso();
+  const nowIso = helpers.nowIso();
 
   try {
-    const { data: existing, error: lookupError } = await supabase
+    const { data: existingVisitor, error: visitorLookupError } = await supabase
       .from("visitor_sessions")
-      .select("id, visit_count")
+      .select("id, visitor_id, visit_count")
       .eq("visitor_id", visitorId)
       .maybeSingle();
 
-    if (lookupError) {
-      console.error("Visitor lookup failed:", lookupError);
+    if (visitorLookupError) {
+      console.error("Visitor lookup failed:", visitorLookupError);
       return;
     }
 
-    if (!existing) {
-      const { error: insertError } = await supabase
+    if (!existingVisitor) {
+      const { error: visitorInsertError } = await supabase
         .from("visitor_sessions")
         .insert({
           visitor_id: visitorId,
-          first_seen_at: now,
-          last_seen_at: now,
+          first_seen_at: nowIso,
+          last_seen_at: nowIso,
           visit_count: 1,
           referrer: referrer,
           landing_path: pathname,
           user_agent: userAgent,
           language: language,
           screen_width: screenWidth,
-          screen_height: screenHeight,
-          updated_at: now
+          screen_height: screenHeight
         });
 
-      if (insertError) {
-        console.error("Visitor insert failed:", insertError);
+      if (visitorInsertError) {
+        console.error("Visitor insert failed:", visitorInsertError);
+        return;
       }
     } else {
-      const { error: updateError } = await supabase
+      const { error: visitorUpdateError } = await supabase
         .from("visitor_sessions")
         .update({
-          last_seen_at: now,
-          visit_count: Number(existing.visit_count || 0) + 1,
-          referrer: referrer,
+          last_seen_at: nowIso,
+          visit_count: Number(existingVisitor.visit_count || 0) + 1,
           user_agent: userAgent,
           language: language,
           screen_width: screenWidth,
-          screen_height: screenHeight,
-          updated_at: now
+          screen_height: screenHeight
         })
-        .eq("id", existing.id);
+        .eq("id", existingVisitor.id);
 
-      if (updateError) {
-        console.error("Visitor update failed:", updateError);
+      if (visitorUpdateError) {
+        console.error("Visitor update failed:", visitorUpdateError);
+        return;
       }
     }
 
-    const { error: pageViewError } = await supabase
+    const { error: pageViewInsertError } = await supabase
       .from("page_views")
       .insert({
         visitor_id: visitorId,
         path: pathname,
         referrer: referrer,
-        viewed_at: now,
-        created_at: now
+        viewed_at: nowIso,
+        created_at: nowIso
       });
 
-    if (pageViewError) {
-      console.error("Page view insert failed:", pageViewError);
+    if (pageViewInsertError) {
+      console.error("Page view insert failed:", pageViewInsertError);
+      return;
     }
+
+    console.log("Visitor tracking saved:", {
+      visitor_id: visitorId,
+      path: pathname
+    });
   } catch (error) {
     console.error("Visitor session tracking failed:", error);
   }
