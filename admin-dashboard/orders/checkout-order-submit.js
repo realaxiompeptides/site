@@ -2,6 +2,59 @@ document.addEventListener("DOMContentLoaded", function () {
   const form = document.getElementById("checkoutForm");
   if (!form) return;
 
+  function getLocalCartItems() {
+    try {
+      const parsed = JSON.parse(localStorage.getItem("axiom_cart") || "[]");
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (error) {
+      console.error("Failed to read axiom_cart:", error);
+      return [];
+    }
+  }
+
+  function normalizeCartItems(items) {
+    if (!Array.isArray(items)) return [];
+
+    return items.map((item) => {
+      const quantity = Number(item.quantity || item.qty || 1);
+      const unitPrice = Number(
+        item.unit_price !== undefined && item.unit_price !== null
+          ? item.unit_price
+          : item.price || 0
+      );
+
+      return {
+        id: item.id || "",
+        slug: item.slug || "",
+        name: item.name || item.product_name || "Product",
+        product_name: item.product_name || item.name || "Product",
+        variantLabel: item.variantLabel || item.variant_label || item.variant || "",
+        variant_label: item.variant_label || item.variantLabel || item.variant || "",
+        quantity: quantity,
+        qty: quantity,
+        price: unitPrice,
+        unit_price: unitPrice,
+        line_total:
+          item.line_total !== undefined && item.line_total !== null
+            ? Number(item.line_total || 0)
+            : unitPrice * quantity,
+        image: item.image || "",
+        weightOz:
+          item.weightOz !== undefined && item.weightOz !== null
+            ? Number(item.weightOz || 0)
+            : item.weight_oz !== undefined && item.weight_oz !== null
+              ? Number(item.weight_oz || 0)
+              : 0,
+        weight_oz:
+          item.weight_oz !== undefined && item.weight_oz !== null
+            ? Number(item.weight_oz || 0)
+            : item.weightOz !== undefined && item.weightOz !== null
+              ? Number(item.weightOz || 0)
+              : 0
+      };
+    });
+  }
+
   form.addEventListener("submit", async function (e) {
     e.preventDefault();
 
@@ -12,93 +65,6 @@ document.addEventListener("DOMContentLoaded", function () {
       if (!submitButton) return;
       submitButton.disabled = isSubmitting;
       submitButton.textContent = isSubmitting ? "Submitting..." : originalButtonText;
-    }
-
-    function safeArray(value) {
-      return Array.isArray(value) ? value : [];
-    }
-
-    function toNumber(value) {
-      const n = Number(value);
-      return Number.isFinite(n) ? n : 0;
-    }
-
-    function getLocalCartItems() {
-      try {
-        const parsed = JSON.parse(localStorage.getItem("axiom_cart") || "[]");
-        return Array.isArray(parsed) ? parsed : [];
-      } catch (error) {
-        console.error("Failed to read local cart:", error);
-        return [];
-      }
-    }
-
-    function normalizeCartItemsForSession(items) {
-      return safeArray(items).map(function (item) {
-        const quantity = toNumber(item.quantity || item.qty || 1) || 1;
-        const unitPrice = toNumber(
-          item.unit_price !== undefined && item.unit_price !== null
-            ? item.unit_price
-            : item.price !== undefined && item.price !== null
-              ? item.price
-              : 0
-        );
-
-        const compareAtPrice =
-          item.compare_at_price !== undefined && item.compare_at_price !== null
-            ? toNumber(item.compare_at_price)
-            : item.compareAtPrice !== undefined && item.compareAtPrice !== null
-              ? toNumber(item.compareAtPrice)
-              : null;
-
-        const weightOz =
-          item.weight_oz !== undefined && item.weight_oz !== null
-            ? toNumber(item.weight_oz)
-            : item.weightOz !== undefined && item.weightOz !== null
-              ? toNumber(item.weightOz)
-              : 0;
-
-        return {
-          id: item.id || "",
-          slug: item.slug || "",
-          name: item.name || item.product_name || "Product",
-          product_name: item.product_name || item.name || "Product",
-          variantLabel: item.variantLabel || item.variant_label || item.variant || "",
-          variant_label: item.variant_label || item.variantLabel || item.variant || "",
-          variant: item.variant || item.variantLabel || item.variant_label || "",
-          quantity: quantity,
-          qty: quantity,
-          price: unitPrice,
-          unit_price: unitPrice,
-          line_total:
-            item.line_total !== undefined && item.line_total !== null
-              ? toNumber(item.line_total)
-              : unitPrice * quantity,
-          compareAtPrice: compareAtPrice,
-          compare_at_price: compareAtPrice,
-          image: item.image || "",
-          weightOz: weightOz,
-          weight_oz: weightOz,
-          inStock: item.inStock !== false && item.in_stock !== false,
-          in_stock: item.inStock !== false && item.in_stock !== false
-        };
-      });
-    }
-
-    function calculateSubtotal(items) {
-      return safeArray(items).reduce(function (sum, item) {
-        return sum + (toNumber(item.price || item.unit_price || 0) * toNumber(item.quantity || item.qty || 1));
-      }, 0);
-    }
-
-    async function fetchSessionRow(sessionId) {
-      const { data, error } = await window.axiomSupabase
-        .from("checkout_sessions")
-        .select("*")
-        .eq("session_id", sessionId)
-        .maybeSingle();
-
-      return { data, error };
     }
 
     try {
@@ -138,83 +104,14 @@ document.addEventListener("DOMContentLoaded", function () {
         await window.AXIOM_CHECKOUT_TRACKING.syncAll();
       }
 
-      if (
-        typeof window.syncCheckoutSessionFromForm === "function"
-      ) {
-        await window.syncCheckoutSessionFromForm();
-      }
-
-      if (
-        typeof window.syncLocalCartIntoSession === "function"
-      ) {
-        await window.syncLocalCartIntoSession(true);
-      }
-
       const sessionId = await window.AXIOM_CHECKOUT_SESSION.ensureSession();
       if (!sessionId) {
         alert("Could not create or load your checkout session.");
         return;
       }
 
-      let { data: sessionRow, error: sessionError } = await fetchSessionRow(sessionId);
-
-      if (sessionError) {
-        console.error("Failed to load checkout session before order submit:", sessionError);
-        alert("There was a problem loading your checkout session.");
-        return;
-      }
-
-      let cartItems = safeArray(sessionRow?.cart_items);
-
-      const localCartItems = normalizeCartItemsForSession(getLocalCartItems());
-
-      if (!cartItems.length && localCartItems.length) {
-        const localSubtotal = calculateSubtotal(localCartItems);
-
-        const selectedShippingNow = document.querySelector('input[name="shippingMethod"]:checked');
-        const shippingOptionNow = selectedShippingNow?.closest(".shipping-option");
-        const shippingLabelNow = shippingOptionNow?.querySelector("span")?.textContent?.trim() || "";
-        const shippingAmountNow = toNumber(selectedShippingNow?.value || 0);
-        const shippingCodeNow =
-          selectedShippingNow?.dataset.code ||
-          shippingLabelNow.toLowerCase().replace(/\s+/g, "_");
-
-        const fallbackPatchPayload = {
-          cart_items: localCartItems,
-          subtotal: localSubtotal,
-          shipping_amount: shippingAmountNow,
-          tax_amount: 0,
-          total_amount: localSubtotal + shippingAmountNow,
-          shipping_selection: {
-            label: shippingLabelNow,
-            method_name: shippingLabelNow,
-            amount: shippingAmountNow,
-            code: shippingCodeNow,
-            method_code: shippingCodeNow
-          },
-          shipping_method_code: shippingCodeNow,
-          shipping_method_name: shippingLabelNow || null,
-          shipping_carrier: shippingLabelNow.includes("USPS") ? "USPS" : null,
-          shipping_service_level: shippingLabelNow || null,
-          last_activity_at: new Date().toISOString()
-        };
-
-        await window.AXIOM_CHECKOUT_SESSION.patchSession(fallbackPatchPayload);
-
-        const retryResult = await fetchSessionRow(sessionId);
-        sessionRow = retryResult.data;
-        sessionError = retryResult.error;
-
-        if (sessionError) {
-          console.error("Failed to reload checkout session after fallback cart sync:", sessionError);
-          alert("There was a problem preparing your order.");
-          return;
-        }
-
-        cartItems = safeArray(sessionRow?.cart_items);
-      }
-
-      if (!cartItems.length) {
+      const localCartItems = normalizeCartItems(getLocalCartItems());
+      if (!localCartItems.length) {
         alert("Your cart is empty.");
         return;
       }
@@ -224,7 +121,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
       const shippingOption = selectedShipping.closest(".shipping-option");
       const shippingLabel = shippingOption?.querySelector("span")?.textContent?.trim() || "";
-      const shippingAmount = toNumber(selectedShipping.value || 0);
+      const shippingAmount = Number(selectedShipping.value || 0);
       const shippingCode =
         selectedShipping.dataset.code ||
         shippingLabel.toLowerCase().replace(/\s+/g, "_");
@@ -248,8 +145,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
       const billingAddress = { ...shippingAddress };
 
-      const subtotal = cartItems.reduce(function (sum, item) {
-        return sum + (toNumber(item.price || item.unit_price || 0) * toNumber(item.quantity || item.qty || 1));
+      const subtotal = localCartItems.reduce(function (sum, item) {
+        return sum + (Number(item.unit_price || item.price || 0) * Number(item.quantity || item.qty || 1));
       }, 0);
 
       const taxAmount = 0;
@@ -266,7 +163,7 @@ document.addEventListener("DOMContentLoaded", function () {
         shipping_address: shippingAddress,
         billing_address: billingAddress,
         payment_method: paymentMethod,
-        cart_items: cartItems,
+        cart_items: localCartItems,
         shipping_selection: {
           label: shippingLabel,
           method_name: shippingLabel,
@@ -282,12 +179,17 @@ document.addEventListener("DOMContentLoaded", function () {
         shipping_amount: shippingAmount,
         tax_amount: taxAmount,
         total_amount: totalAmount,
+        updated_at: new Date().toISOString(),
         last_activity_at: new Date().toISOString()
       };
 
       await window.AXIOM_CHECKOUT_SESSION.patchSession(patchPayload);
 
-      const { data: refreshedSessionRow, error: refreshedSessionError } = await fetchSessionRow(sessionId);
+      const { data: refreshedSessionRow, error: refreshedSessionError } = await window.axiomSupabase
+        .from("checkout_sessions")
+        .select("*")
+        .eq("session_id", sessionId)
+        .maybeSingle();
 
       if (refreshedSessionError) {
         console.error("Failed to reload checkout session after patch:", refreshedSessionError);
@@ -295,7 +197,9 @@ document.addEventListener("DOMContentLoaded", function () {
         return;
       }
 
-      const refreshedCartItems = safeArray(refreshedSessionRow?.cart_items);
+      const refreshedCartItems = Array.isArray(refreshedSessionRow?.cart_items)
+        ? refreshedSessionRow.cart_items
+        : [];
 
       if (!refreshedCartItems.length) {
         alert("Your cart is empty.");
@@ -305,7 +209,8 @@ document.addEventListener("DOMContentLoaded", function () {
       const result = await window.AXIOM_ORDER_SUBMIT.createOrderFromSession({
         order_status: "pending_payment",
         payment_status: "pending",
-        fulfillment_status: "unfulfilled"
+        fulfillment_status: "unfulfilled",
+        session_status: "converted"
       });
 
       if (!result || !result.ok) {
@@ -336,11 +241,6 @@ document.addEventListener("DOMContentLoaded", function () {
       } catch (eventError) {
         console.error("Cart update event failed:", eventError);
       }
-
-      console.log(
-        "Redirecting to thank you page:",
-        `/site/thank-you/thank-you.html?order=${encodeURIComponent(redirectOrderNumber)}`
-      );
 
       window.location.href = `/site/thank-you/thank-you.html?order=${encodeURIComponent(redirectOrderNumber)}`;
     } catch (error) {
