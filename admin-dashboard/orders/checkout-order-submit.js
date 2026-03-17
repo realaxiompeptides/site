@@ -2,6 +2,8 @@ document.addEventListener("DOMContentLoaded", function () {
   const form = document.getElementById("checkoutForm");
   if (!form) return;
 
+  const THANK_YOU_BASE_URL = "https://realaxiompeptides.github.io/site/thank-you/thank-you.html";
+
   function normalizeCartItems(items) {
     if (!Array.isArray(items)) return [];
 
@@ -46,21 +48,21 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   function showError(message, extra) {
-    if (extra) {
-      console.error(message, extra);
-    } else {
-      console.error(message);
-    }
+    if (extra) console.error(message, extra);
+    else console.error(message);
     alert(message);
   }
 
-  function waitForCheckoutDependencies(timeoutMs = 5000) {
+  function waitForCheckoutDependencies(timeoutMs = 6000) {
     return new Promise((resolve) => {
-      const start = Date.now();
+      const startedAt = Date.now();
 
       function check() {
         const ready =
           !!window.AXIOM_CHECKOUT_SESSION &&
+          typeof window.AXIOM_CHECKOUT_SESSION.ensureSession === "function" &&
+          typeof window.AXIOM_CHECKOUT_SESSION.getSession === "function" &&
+          typeof window.AXIOM_CHECKOUT_SESSION.patchSession === "function" &&
           !!window.axiomSupabase &&
           !!window.AXIOM_ORDER_SUBMIT &&
           typeof window.AXIOM_ORDER_SUBMIT.createOrderFromSession === "function";
@@ -70,7 +72,7 @@ document.addEventListener("DOMContentLoaded", function () {
           return;
         }
 
-        if (Date.now() - start >= timeoutMs) {
+        if (Date.now() - startedAt >= timeoutMs) {
           resolve(false);
           return;
         }
@@ -101,19 +103,13 @@ document.addEventListener("DOMContentLoaded", function () {
         return;
       }
 
-      const dependenciesReady = await waitForCheckoutDependencies(5000);
-      if (!dependenciesReady) {
+      setSubmittingState(true);
+
+      const ready = await waitForCheckoutDependencies(6000);
+      if (!ready) {
         showError("Checkout session is not ready.");
         return;
       }
-
-      const selectedShipping = document.querySelector('input[name="shippingMethod"]:checked');
-      if (!selectedShipping) {
-        showError("Please choose a shipping method.");
-        return;
-      }
-
-      setSubmittingState(true);
 
       if (
         window.AXIOM_CHECKOUT_TRACKING &&
@@ -124,6 +120,12 @@ document.addEventListener("DOMContentLoaded", function () {
         } catch (trackingError) {
           console.error("Checkout tracking sync failed:", trackingError);
         }
+      }
+
+      const selectedShipping = document.querySelector('input[name="shippingMethod"]:checked');
+      if (!selectedShipping) {
+        showError("Please choose a shipping method.");
+        return;
       }
 
       const sessionId = await window.AXIOM_CHECKOUT_SESSION.ensureSession();
@@ -171,7 +173,7 @@ document.addEventListener("DOMContentLoaded", function () {
       const billingSameCheckbox = document.getElementById("billingSameAsShipping");
       const billingSameAsShipping = billingSameCheckbox ? billingSameCheckbox.checked : true;
 
-      let billingAddress = { ...shippingAddress };
+      let billingAddress = { ...shippingAddress, same_as_shipping: true };
 
       if (!billingSameAsShipping) {
         billingAddress = {
@@ -186,8 +188,6 @@ document.addEventListener("DOMContentLoaded", function () {
           country: document.getElementById("billingCountry")?.value.trim() || "US",
           same_as_shipping: false
         };
-      } else {
-        billingAddress.same_as_shipping = true;
       }
 
       const subtotal = sessionCartItems.reduce(function (sum, item) {
@@ -200,7 +200,7 @@ document.addEventListener("DOMContentLoaded", function () {
       const taxAmount = Number(currentSession?.tax_amount || currentSession?.tax || 0);
       const totalAmount = subtotal + shippingAmount + taxAmount;
 
-      const patchPayload = {
+      await window.AXIOM_CHECKOUT_SESSION.patchSession({
         session_status: "pending_payment",
         payment_status: "unpaid",
         fulfillment_status: "unfulfilled",
@@ -235,35 +235,7 @@ document.addEventListener("DOMContentLoaded", function () {
         total_amount: totalAmount,
         updated_at: new Date().toISOString(),
         last_activity_at: new Date().toISOString()
-      };
-
-      await window.AXIOM_CHECKOUT_SESSION.patchSession(patchPayload);
-
-      const { data: refreshedSessionRow, error: refreshedSessionError } =
-        await window.axiomSupabase
-          .from("checkout_sessions")
-          .select("*")
-          .eq("session_id", sessionId)
-          .maybeSingle();
-
-      if (refreshedSessionError) {
-        showError("There was a problem preparing your order.", refreshedSessionError);
-        return;
-      }
-
-      if (!refreshedSessionRow) {
-        showError("Checkout session could not be loaded.");
-        return;
-      }
-
-      const refreshedCartItems = Array.isArray(refreshedSessionRow.cart_items)
-        ? refreshedSessionRow.cart_items
-        : [];
-
-      if (!refreshedCartItems.length) {
-        showError("Your cart is empty.");
-        return;
-      }
+      });
 
       const result = await window.AXIOM_ORDER_SUBMIT.createOrderFromSession({
         order_status: "pending_payment",
@@ -314,7 +286,8 @@ document.addEventListener("DOMContentLoaded", function () {
         console.error("Cart update event failed:", eventError);
       }
 
-      window.location.href = `../thank-you/thank-you.html?order=${encodeURIComponent(redirectOrderNumber)}`;
+      window.location.href =
+        `${THANK_YOU_BASE_URL}?order=${encodeURIComponent(redirectOrderNumber)}`;
     } catch (error) {
       console.error("Checkout submit failed:", error);
       alert("There was a problem submitting your order.");
