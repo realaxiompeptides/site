@@ -375,7 +375,13 @@ function renderSelectedSession() {
   }
 }
 
-function switchDashboardTab(tabName) {
+async function refreshAnalytics() {
+  if (window.AXIOM_ANALYTICS && typeof window.AXIOM_ANALYTICS.load === "function") {
+    await window.AXIOM_ANALYTICS.load();
+  }
+}
+
+async function switchDashboardTab(tabName) {
   const sessionsView = document.getElementById("dashboardSessionsView");
   const analyticsView = document.getElementById("dashboardAnalyticsView");
   const sessionsSidebar = document.getElementById("dashboardSessionsSidebar");
@@ -392,9 +398,7 @@ function switchDashboardTab(tabName) {
     sessionsBtn?.classList.remove("active");
     analyticsBtn?.classList.add("active");
 
-    if (window.AXIOM_ANALYTICS && typeof window.AXIOM_ANALYTICS.load === "function") {
-      window.AXIOM_ANALYTICS.load();
-    }
+    await refreshAnalytics();
   } else {
     if (sessionsView) sessionsView.hidden = false;
     if (analyticsView) analyticsView.hidden = true;
@@ -426,12 +430,6 @@ async function refreshDashboard() {
   renderSelectedSession();
 }
 
-function refreshAnalytics() {
-  if (window.AXIOM_ANALYTICS && typeof window.AXIOM_ANALYTICS.load === "function") {
-    window.AXIOM_ANALYTICS.load();
-  }
-}
-
 document.addEventListener("DOMContentLoaded", async () => {
   try {
     await loadPartials();
@@ -441,18 +439,23 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("statusFilter")?.addEventListener("change", renderSessionsList);
     document.getElementById("refreshSessionsBtn")?.addEventListener("click", refreshDashboard);
 
-    document.getElementById("showSessionsTab")?.addEventListener("click", function () {
-      switchDashboardTab("sessions");
+    document.getElementById("showSessionsTab")?.addEventListener("click", async function () {
+      await switchDashboardTab("sessions");
     });
 
-    document.getElementById("showAnalyticsTab")?.addEventListener("click", function () {
-      switchDashboardTab("analytics");
+    document.getElementById("showAnalyticsTab")?.addEventListener("click", async function () {
+      await switchDashboardTab("analytics");
     });
 
-    document.getElementById("refreshAnalyticsBtn")?.addEventListener("click", refreshAnalytics);
-    document.getElementById("refreshAnalyticsBtnTop")?.addEventListener("click", refreshAnalytics);
+    document.getElementById("refreshAnalyticsBtn")?.addEventListener("click", async function () {
+      await refreshAnalytics();
+    });
 
-    switchDashboardTab("sessions");
+    document.getElementById("refreshAnalyticsBtnTop")?.addEventListener("click", async function () {
+      await refreshAnalytics();
+    });
+
+    await switchDashboardTab("sessions");
   } catch (error) {
     console.error("Dashboard failed to initialize:", error);
   }
