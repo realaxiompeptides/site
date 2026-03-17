@@ -26,7 +26,7 @@
     href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
   />
 
-  <link rel="stylesheet" href="/site/admin-dashboard/dashboard.css" />
+  <link rel="stylesheet" href="dashboard.css" />
 </head>
 
 <body class="axiom-dashboard-page">
@@ -91,7 +91,7 @@
         type="text"
         id="sessionSearch"
         class="dashboard-search"
-        placeholder="Search by email, phone, or session ID"
+        placeholder="Search by email, phone, session ID, or name"
       />
 
       <div class="dashboard-filter-row">
@@ -120,14 +120,20 @@
       </button>
     </div>
 
+    <div class="dashboard-search-wrap" id="dashboardOrdersSidebar" hidden>
+      <button
+        type="button"
+        class="dashboard-btn dashboard-btn-secondary"
+        id="refreshOrdersBtn"
+      >
+        Refresh Orders
+      </button>
+    </div>
+
     <div class="dashboard-search-wrap">
       <div class="dashboard-admin-box">
-
         <p class="dashboard-admin-label">Admin</p>
-
-        <strong id="dashboardAdminEmail">
-          Loading...
-        </strong>
+        <strong id="dashboardAdminEmail">Loading...</strong>
 
         <button
           type="button"
@@ -136,7 +142,6 @@
         >
           Log Out
         </button>
-
       </div>
     </div>
 
@@ -148,15 +153,9 @@
     <section id="dashboardHomeView">
 
       <section class="dashboard-main-header">
-
         <div>
-          <p class="dashboard-kicker">
-            Dashboard Home
-          </p>
-
-          <h2>
-            Store Overview
-          </h2>
+          <p class="dashboard-kicker">Dashboard Home</p>
+          <h2>Store Overview</h2>
         </div>
 
         <button
@@ -166,7 +165,6 @@
         >
           Refresh
         </button>
-
       </section>
 
       <section class="dashboard-details-grid">
@@ -246,7 +244,6 @@
           </div>
 
           <div class="dashboard-action-list">
-
             <button type="button" class="dashboard-quick-link" id="quickOpenSessionsBtn">
               <i class="fa-solid fa-cart-shopping"></i>
               <span>Open Sessions</span>
@@ -261,7 +258,6 @@
               <i class="fa-solid fa-box-open"></i>
               <span>Open Orders</span>
             </button>
-
           </div>
         </div>
 
@@ -269,11 +265,8 @@
           <div class="dashboard-card-header">
             <h3>Recent Orders</h3>
           </div>
-
           <div id="homeRecentOrders" class="dashboard-items-wrap">
-            <div class="dashboard-loading">
-              Loading recent orders...
-            </div>
+            <div class="dashboard-loading">Loading recent orders...</div>
           </div>
         </div>
 
@@ -281,11 +274,8 @@
           <div class="dashboard-card-header">
             <h3>Recent Checkout Sessions</h3>
           </div>
-
           <div id="homeRecentSessions" class="dashboard-items-wrap">
-            <div class="dashboard-loading">
-              Loading recent checkout sessions...
-            </div>
+            <div class="dashboard-loading">Loading recent checkout sessions...</div>
           </div>
         </div>
 
@@ -297,7 +287,6 @@
     <section id="dashboardSessionsView" hidden>
 
       <section class="dashboard-main-header">
-
         <div>
           <p class="dashboard-kicker">Checkout Session Details</p>
           <h2 id="dashboardSessionTitle">Select a session</h2>
@@ -310,7 +299,6 @@
         >
           Refresh
         </button>
-
       </section>
 
       <section class="dashboard-details-grid">
@@ -318,7 +306,7 @@
         <div id="paymentInfoMount"></div>
         <div id="shippingInfoMount"></div>
         <div id="billingInfoMount"></div>
-        <div class="dashboard-span-2" id="cartItemsMount"></div>
+        <div id="cartItemsMount" class="dashboard-span-2"></div>
       </section>
 
     </section>
@@ -327,7 +315,6 @@
     <section id="dashboardAnalyticsView" hidden>
 
       <section class="dashboard-main-header">
-
         <div>
           <p class="dashboard-kicker">Visitor Analytics</p>
           <h2>Traffic & Tracking</h2>
@@ -340,11 +327,10 @@
         >
           Refresh
         </button>
-
       </section>
 
       <section class="dashboard-details-grid">
-        <div class="dashboard-span-2" id="analyticsMount"></div>
+        <div id="analyticsMount" class="dashboard-span-2"></div>
       </section>
 
     </section>
@@ -353,12 +339,10 @@
     <section id="dashboardOrdersView" hidden>
 
       <section class="dashboard-main-header">
-
         <div>
           <p class="dashboard-kicker">Orders</p>
           <h2>Order Management</h2>
         </div>
-
       </section>
 
       <section class="dashboard-details-grid">
@@ -366,9 +350,8 @@
           <div class="dashboard-card-header">
             <h3>Orders</h3>
           </div>
-
-          <div class="dashboard-empty">
-            Orders view is not built yet. Your order data is already saving in Supabase.
+          <div id="ordersListWrap" class="dashboard-items-wrap">
+            <div class="dashboard-loading">Loading orders...</div>
           </div>
         </div>
       </section>
@@ -380,15 +363,14 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-<script src="/site/admin-dashboard/dashboard-config.js"></script>
-<script src="/site/admin-dashboard/shared/tracking-config.js"></script>
-<script src="/site/admin-dashboard/shared/helpers.js"></script>
-<script src="/site/admin-dashboard/supabase-client.js"></script>
-<script src="/site/admin-dashboard/auth/admin-auth.js"></script>
-<script src="/site/admin-dashboard/home/home-dashboard.js"></script>
-<script src="/site/admin-dashboard/analytics/analytics.js"></script>
-<script src="/site/admin-dashboard/dashboard.js"></script>
+<script src="dashboard-config.js"></script>
+<script src="shared/tracking-config.js"></script>
+<script src="shared/helpers.js"></script>
+<script src="supabase-client.js"></script>
+<script src="auth/admin-auth.js"></script>
+<script src="home/home-dashboard.js"></script>
+<script src="analytics/analytics.js"></script>
+<script src="dashboard.js"></script>
 
 </body>
 </html>
