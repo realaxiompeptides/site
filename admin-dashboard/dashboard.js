@@ -10,6 +10,7 @@ const DASHBOARD_PARTIALS = [
 let allSessions = [];
 let allOrders = [];
 let selectedSessionId = null;
+let dashboardRealtimeChannel = null;
 
 function formatMoney(value) {
   return `$${Number(value || 0).toFixed(2)}`;
@@ -175,6 +176,45 @@ function getSessionBadgeClass(status) {
     .replace(/\s+/g, "_");
 }
 
+function isPendingPaymentOrder(order) {
+  const paymentStatus = String(order.payment_status || "").toLowerCase();
+  const orderStatus = String(order.order_status || "").toLowerCase();
+
+  return (
+    paymentStatus === "unpaid" ||
+    paymentStatus === "pending" ||
+    orderStatus === "pending_payment"
+  );
+}
+
+function isPaidOrProcessingOrder(order) {
+  const paymentStatus = String(order.payment_status || "").toLowerCase();
+  const fulfillmentStatus = String(order.fulfillment_status || "").toLowerCase();
+  const orderStatus = String(order.order_status || "").toLowerCase();
+
+  return (
+    paymentStatus === "paid" ||
+    fulfillmentStatus === "processing" ||
+    fulfillmentStatus === "fulfilled" ||
+    orderStatus === "processing"
+  );
+}
+
+function isActiveCheckoutSession(session) {
+  const status = String(session.session_status || "").toLowerCase();
+  return status === "active";
+}
+
+function isPendingCheckoutSession(session) {
+  const status = String(session.session_status || "").toLowerCase();
+  return status === "pending_payment" || status === "converted";
+}
+
+function isAbandonedCheckoutSession(session) {
+  const status = String(session.session_status || "").toLowerCase();
+  return status === "abandoned";
+}
+
 async function loadPartials() {
   await Promise.all(
     DASHBOARD_PARTIALS.map(async ({ mountId, file }) => {
@@ -193,6 +233,7 @@ async function loadPartials() {
 
 async function fetchCheckoutSessions() {
   if (!window.axiomSupabase) {
+    alert("Supabase client missing on dashboard.");
     console.error("Supabase client missing.");
     return [];
   }
@@ -203,15 +244,18 @@ async function fetchCheckoutSessions() {
     .order("created_at", { ascending: false });
 
   if (error) {
+    alert("Dashboard failed to load checkout sessions: " + (error.message || "Unknown error"));
     console.error("Failed to load checkout sessions:", error);
     return [];
   }
 
+  console.log("checkout_sessions loaded:", data?.length || 0, data);
   return data || [];
 }
 
 async function fetchOrders() {
   if (!window.axiomSupabase) {
+    alert("Supabase client missing on dashboard.");
     console.error("Supabase client missing.");
     return [];
   }
@@ -222,10 +266,12 @@ async function fetchOrders() {
     .order("created_at", { ascending: false });
 
   if (error) {
+    alert("Dashboard failed to load orders: " + (error.message || "Unknown error"));
     console.error("Failed to load orders:", error);
     return [];
   }
 
+  console.log("orders loaded:", data?.length || 0, data);
   return data || [];
 }
 
@@ -485,16 +531,29 @@ async function refreshHomeDashboard() {
     countPageViewsSince(isoDaysAgo(7))
   ]);
 
-  const unfulfilledOrders = orders.filter((order) => String(order.fulfillment_status || "").toLowerCase() === "unfulfilled").length;
-  const pendingPaymentOrders = orders.filter((order) => String(order.payment_status || "").toLowerCase() === "pending").length;
-  const paidOrders = orders.filter((order) => {
-    const paymentStatus = String(order.payment_status || "").toLowerCase();
-    return paymentStatus === "paid" || paymentStatus === "pending";
+  const unfulfilledOrders = orders.filter((order) => {
+    return String(order.fulfillment_status || "").toLowerCase() === "unfulfilled";
   }).length;
 
-  const activeSessions = sessions.filter((session) => String(session.session_status || "").toLowerCase() === "active").length;
-  const pendingSessions = sessions.filter((session) => String(session.session_status || "").toLowerCase() === "pending_payment").length;
-  const abandonedSessions = sessions.filter((session) => String(session.session_status || "").toLowerCase() === "abandoned").length;
+  const pendingPaymentOrders = orders.filter((order) => {
+    return isPendingPaymentOrder(order);
+  }).length;
+
+  const paidOrders = orders.filter((order) => {
+    return isPaidOrProcessingOrder(order);
+  }).length;
+
+  const activeSessions = sessions.filter((session) => {
+    return isActiveCheckoutSession(session);
+  }).length;
+
+  const pendingSessions = sessions.filter((session) => {
+    return isPendingCheckoutSession(session);
+  }).length;
+
+  const abandonedSessions = sessions.filter((session) => {
+    return isAbandonedCheckoutSession(session);
+  }).length;
 
   setText("homeUnfulfilledOrders", unfulfilledOrders);
   setText("homePendingPaymentOrders", pendingPaymentOrders);
@@ -573,6 +632,51 @@ async function refreshDashboard() {
 
   renderSessionsList();
   renderSelectedSession();
+}
+
+async function refreshAllDashboardData() {
+  await Promise.all([
+    refreshHomeDashboard(),
+    refreshDashboard(),
+    refreshOrders()
+  ]);
+}
+
+function subscribeDashboardRealtime() {
+  if (!window.axiomSupabase) {
+    console.error("Supabase client missing for realtime subscription.");
+    return;
+  }
+
+  if (dashboardRealtimeChannel) {
+    try {
+      window.axiomSupabase.removeChannel(dashboardRealtimeChannel);
+    } catch (error) {
+      console.error("Failed to remove previous realtime channel:", error);
+    }
+  }
+
+  dashboardRealtimeChannel = window.axiomSupabase
+    .channel("dashboard-live")
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "checkout_sessions" },
+      async function (payload) {
+        console.log("Realtime checkout_sessions change:", payload);
+        await refreshAllDashboardData();
+      }
+    )
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "orders" },
+      async function (payload) {
+        console.log("Realtime orders change:", payload);
+        await refreshAllDashboardData();
+      }
+    )
+    .subscribe((status) => {
+      console.log("Dashboard realtime status:", status);
+    });
 }
 
 document.addEventListener("DOMContentLoaded", async function () {
@@ -689,8 +793,10 @@ document.addEventListener("DOMContentLoaded", async function () {
       await showView("orders");
     });
 
+    subscribeDashboardRealtime();
     await showView("home");
   } catch (error) {
     console.error("Dashboard failed to initialize:", error);
+    alert("Dashboard failed to initialize: " + (error.message || "Unknown error"));
   }
 });
