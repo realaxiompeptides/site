@@ -25,6 +25,42 @@ window.AXIOM_ANALYTICS = {
       return Array.isArray(value) ? value : [];
     }
 
+    function escapeHtml(value) {
+      return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
+    function formatDateTime(value) {
+      if (!value) return "—";
+
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return "—";
+
+      return date.toLocaleString();
+    }
+
+    function setLoadingState() {
+      const topPagesMount = document.getElementById("analyticsTopPages");
+      const topLandingMount = document.getElementById("analyticsTopLandingPages");
+      const recentVisitorsMount = document.getElementById("analyticsRecentVisitors");
+
+      if (topPagesMount) {
+        topPagesMount.innerHTML = `<div class="dashboard-loading">Loading top pages...</div>`;
+      }
+
+      if (topLandingMount) {
+        topLandingMount.innerHTML = `<div class="dashboard-loading">Loading top landing pages...</div>`;
+      }
+
+      if (recentVisitorsMount) {
+        recentVisitorsMount.innerHTML = `<div class="dashboard-loading">Loading recent visitors...</div>`;
+      }
+    }
+
     async function countPageViewsSince(dateIso) {
       const { count, error } = await supabase
         .from("page_views")
@@ -64,7 +100,7 @@ window.AXIOM_ANALYTICS = {
         .from("page_views")
         .select("path, visitor_id, viewed_at")
         .order("viewed_at", { ascending: false })
-        .limit(1000);
+        .limit(2000);
 
       if (error) {
         console.error("Top pages load failed:", error);
@@ -89,7 +125,7 @@ window.AXIOM_ANALYTICS = {
         .from("visitor_sessions")
         .select("landing_path, visit_count, first_seen_at")
         .order("first_seen_at", { ascending: false })
-        .limit(1000);
+        .limit(2000);
 
       if (error) {
         console.error("Top landing pages load failed:", error);
@@ -137,8 +173,8 @@ window.AXIOM_ANALYTICS = {
       mount.innerHTML = rows.map((row) => {
         return `
           <div class="dashboard-info-row">
-            <span>${row.path}</span>
-            <strong>${row.views}</strong>
+            <span>${escapeHtml(row.path)}</span>
+            <strong>${Number(row.views || 0)}</strong>
           </div>
         `;
       }).join("");
@@ -156,8 +192,8 @@ window.AXIOM_ANALYTICS = {
       mount.innerHTML = rows.map((row) => {
         return `
           <div class="dashboard-info-row">
-            <span>${row.path}</span>
-            <strong>${row.visits}</strong>
+            <span>${escapeHtml(row.path)}</span>
+            <strong>${Number(row.visits || 0)}</strong>
           </div>
         `;
       }).join("");
@@ -175,48 +211,82 @@ window.AXIOM_ANALYTICS = {
       mount.innerHTML = rows.map((row) => {
         return `
           <div class="dashboard-session-card">
-            <h4>${row.visitor_id || "Unknown Visitor"}</h4>
-            <p>${row.landing_path || "/"}</p>
+            <h4>${escapeHtml(row.visitor_id || "Unknown Visitor")}</h4>
+            <p>${escapeHtml(row.landing_path || "/")}</p>
             <p>Visits: ${Number(row.visit_count || 0)}</p>
-            <p>Last Seen: ${row.last_seen_at ? new Date(row.last_seen_at).toLocaleString() : "—"}</p>
+            <p>Last Seen: ${escapeHtml(formatDateTime(row.last_seen_at))}</p>
           </div>
         `;
       }).join("");
     }
 
-    const todayViews = await countPageViewsSince(isoDaysAgo(1));
-    const sevenViews = await countPageViewsSince(isoDaysAgo(7));
-    const thirtyViews = await countPageViewsSince(isoDaysAgo(30));
-    const ninetyViews = await countPageViewsSince(isoDaysAgo(90));
-    const yearViews = await countPageViewsSince(isoDaysAgo(365));
+    try {
+      setLoadingState();
 
-    const todayVisitors = await countUniqueVisitorsSince(isoDaysAgo(1));
-    const sevenVisitors = await countUniqueVisitorsSince(isoDaysAgo(7));
-    const thirtyVisitors = await countUniqueVisitorsSince(isoDaysAgo(30));
-    const ninetyVisitors = await countUniqueVisitorsSince(isoDaysAgo(90));
-    const yearVisitors = await countUniqueVisitorsSince(isoDaysAgo(365));
+      const todayViews = await countPageViewsSince(isoDaysAgo(1));
+      const sevenViews = await countPageViewsSince(isoDaysAgo(7));
+      const thirtyViews = await countPageViewsSince(isoDaysAgo(30));
+      const ninetyViews = await countPageViewsSince(isoDaysAgo(90));
+      const yearViews = await countPageViewsSince(isoDaysAgo(365));
 
-    setText("analyticsToday", todayViews);
-    setText("analytics7Days", sevenViews);
-    setText("analytics30Days", thirtyViews);
-    setText("analytics90Days", ninetyViews);
-    setText("analytics365Days", yearViews);
+      const todayVisitors = await countUniqueVisitorsSince(isoDaysAgo(1));
+      const sevenVisitors = await countUniqueVisitorsSince(isoDaysAgo(7));
+      const thirtyVisitors = await countUniqueVisitorsSince(isoDaysAgo(30));
+      const ninetyVisitors = await countUniqueVisitorsSince(isoDaysAgo(90));
+      const yearVisitors = await countUniqueVisitorsSince(isoDaysAgo(365));
 
-    setText("analyticsUniqueToday", todayVisitors);
-    setText("analyticsUnique7Days", sevenVisitors);
-    setText("analyticsUnique30Days", thirtyVisitors);
-    setText("analyticsUnique90Days", ninetyVisitors);
-    setText("analyticsUnique365Days", yearVisitors);
+      setText("analyticsToday", todayViews);
+      setText("analytics7Days", sevenViews);
+      setText("analytics30Days", thirtyViews);
+      setText("analytics90Days", ninetyViews);
+      setText("analytics365Days", yearViews);
 
-    const [topPages, topLandingPages, recentVisitors] = await Promise.all([
-      loadTopPages(10),
-      loadTopLandingPages(10),
-      loadRecentVisitors(10)
-    ]);
+      setText("analyticsUniqueToday", todayVisitors);
+      setText("analyticsUnique7Days", sevenVisitors);
+      setText("analyticsUnique30Days", thirtyVisitors);
+      setText("analyticsUnique90Days", ninetyVisitors);
+      setText("analyticsUnique365Days", yearVisitors);
 
-    renderTopPages(topPages);
-    renderTopLandingPages(topLandingPages);
-    renderRecentVisitors(recentVisitors);
+      const [topPages, topLandingPages, recentVisitors] = await Promise.all([
+        loadTopPages(10),
+        loadTopLandingPages(10),
+        loadRecentVisitors(10)
+      ]);
+
+      renderTopPages(topPages);
+      renderTopLandingPages(topLandingPages);
+      renderRecentVisitors(recentVisitors);
+    } catch (error) {
+      console.error("Analytics load failed:", error);
+
+      setText("analyticsToday", 0);
+      setText("analytics7Days", 0);
+      setText("analytics30Days", 0);
+      setText("analytics90Days", 0);
+      setText("analytics365Days", 0);
+
+      setText("analyticsUniqueToday", 0);
+      setText("analyticsUnique7Days", 0);
+      setText("analyticsUnique30Days", 0);
+      setText("analyticsUnique90Days", 0);
+      setText("analyticsUnique365Days", 0);
+
+      const topPagesMount = document.getElementById("analyticsTopPages");
+      const topLandingMount = document.getElementById("analyticsTopLandingPages");
+      const recentVisitorsMount = document.getElementById("analyticsRecentVisitors");
+
+      if (topPagesMount) {
+        topPagesMount.innerHTML = `<div class="dashboard-empty">Could not load analytics.</div>`;
+      }
+
+      if (topLandingMount) {
+        topLandingMount.innerHTML = `<div class="dashboard-empty">Could not load analytics.</div>`;
+      }
+
+      if (recentVisitorsMount) {
+        recentVisitorsMount.innerHTML = `<div class="dashboard-empty">Could not load analytics.</div>`;
+      }
+    }
   }
 };
 
