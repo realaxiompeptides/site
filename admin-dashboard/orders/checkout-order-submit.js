@@ -211,10 +211,6 @@ document.addEventListener("DOMContentLoaded", function () {
         customer_phone: phone,
         customer_first_name: firstName || null,
         customer_last_name: lastName || null,
-        contact: {
-          email: checkoutEmail || "",
-          phone: phone || ""
-        },
         shipping_address: shippingAddress,
         billing_address: billingAddress,
         payment_method: paymentMethod,
