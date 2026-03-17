@@ -197,7 +197,8 @@ document.addEventListener("DOMContentLoaded", function () {
         console.error("Cart update event failed:", eventError);
       }
 
-      window.location.href = `../thank-you/thank-you.html?order=${encodeURIComponent(redirectOrderNumber)}`;
+      console.log("Redirecting to thank you page:", `/site/thank-you/thank-you.html?order=${encodeURIComponent(redirectOrderNumber)}`);
+      window.location.href = `/site/thank-you/thank-you.html?order=${encodeURIComponent(redirectOrderNumber)}`;
     } catch (error) {
       console.error("Checkout submit failed:", error);
       alert("There was a problem submitting your order.");
