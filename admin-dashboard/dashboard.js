@@ -8,6 +8,7 @@ const DASHBOARD_PARTIALS = [
 ];
 
 let allSessions = [];
+let allOrders = [];
 let selectedSessionId = null;
 
 function formatMoney(value) {
@@ -81,6 +82,7 @@ function renderAddress(addressObj) {
   const state = getAddressField(address, ["state", "province", "region"]);
   const zip = getAddressField(address, ["zip", "postal_code", "postalCode"]);
   const country = getAddressField(address, ["country", "country_code", "countryCode"]);
+  const phone = getAddressField(address, ["phone"]);
 
   const cityStateZip = [city, state, zip].filter(Boolean).join(", ");
 
@@ -89,7 +91,8 @@ function renderAddress(addressObj) {
     address1,
     address2,
     cityStateZip,
-    country
+    country,
+    phone ? `Phone: ${phone}` : ""
   ].filter(Boolean);
 
   if (!lines.length) {
@@ -209,6 +212,82 @@ async function fetchCheckoutSessions() {
   return data || [];
 }
 
+async function fetchOrders() {
+  if (!window.axiomSupabase) {
+    console.error("Supabase client missing.");
+    return [];
+  }
+
+  const { data, error } = await window.axiomSupabase
+    .from("orders")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("Failed to load orders:", error);
+    return [];
+  }
+
+  return data || [];
+}
+
+async function fetchHomePageViewsToday() {
+  if (!window.axiomSupabase) return 0;
+
+  const since = new Date();
+  since.setHours(0, 0, 0, 0);
+
+  const { count, error } = await window.axiomSupabase
+    .from("page_views")
+    .select("*", { count: "exact", head: true })
+    .gte("viewed_at", since.toISOString());
+
+  if (error) {
+    console.error("Failed to load page views today:", error);
+    return 0;
+  }
+
+  return Number(count || 0);
+}
+
+async function fetchHomeVisitorsToday() {
+  if (!window.axiomSupabase) return 0;
+
+  const since = new Date();
+  since.setHours(0, 0, 0, 0);
+
+  const { data, error } = await window.axiomSupabase
+    .from("page_views")
+    .select("visitor_id")
+    .gte("viewed_at", since.toISOString());
+
+  if (error) {
+    console.error("Failed to load unique visitors today:", error);
+    return 0;
+  }
+
+  return new Set(safeArray(data).map((row) => row.visitor_id).filter(Boolean)).size;
+}
+
+async function fetchHomePageViews7Days() {
+  if (!window.axiomSupabase) return 0;
+
+  const since = new Date();
+  since.setDate(since.getDate() - 7);
+
+  const { count, error } = await window.axiomSupabase
+    .from("page_views")
+    .select("*", { count: "exact", head: true })
+    .gte("viewed_at", since.toISOString());
+
+  if (error) {
+    console.error("Failed to load 7 day page views:", error);
+    return 0;
+  }
+
+  return Number(count || 0);
+}
+
 function getFilteredSessions() {
   const searchValue = (document.getElementById("sessionSearch")?.value || "").trim().toLowerCase();
   const statusValue = (document.getElementById("statusFilter")?.value || "").trim().toLowerCase();
@@ -250,10 +329,23 @@ function clearSelectedSessionDisplay() {
   setText("overviewShipping", "—");
   setText("overviewTax", "—");
   setText("overviewTotal", "—");
+  setText("overviewPaymentStatus", "—");
+  setText("overviewFulfillmentStatus", "—");
+  setText("overviewOrderNumber", "—");
+  setText("overviewCustomerIp", "—");
+  setText("overviewLandingPage", "—");
+  setText("overviewReferrerUrl", "—");
+  setText("overviewUserAgent", "—");
 
   setText("paymentMethodValue", "—");
+  setText("paymentStatusValue", "—");
+  setText("paymentReferenceValue", "—");
   setText("paymentShippingMethodValue", "—");
   setText("paymentShippingCodeValue", "—");
+  setText("paymentShippingCarrierValue", "—");
+  setText("paymentShippingServiceLevelValue", "—");
+  setText("paymentTrackingNumberValue", "—");
+  setText("paymentTrackingUrlValue", "—");
 
   const shippingInfoBlock = document.getElementById("shippingInfoBlock");
   if (shippingInfoBlock) {
@@ -328,10 +420,23 @@ function renderSelectedSession() {
   setText("overviewShipping", formatMoney(session.shipping_amount));
   setText("overviewTax", formatMoney(session.tax_amount));
   setText("overviewTotal", formatMoney(session.total_amount));
+  setText("overviewPaymentStatus", session.payment_status || "—");
+  setText("overviewFulfillmentStatus", session.fulfillment_status || "—");
+  setText("overviewOrderNumber", session.order_number || "—");
+  setText("overviewCustomerIp", session.customer_ip || "—");
+  setText("overviewLandingPage", session.landing_page || "—");
+  setText("overviewReferrerUrl", session.referrer_url || "—");
+  setText("overviewUserAgent", session.user_agent || "—");
 
   setText("paymentMethodValue", session.payment_method || "—");
+  setText("paymentStatusValue", session.payment_status || "—");
+  setText("paymentReferenceValue", session.payment_reference || "—");
   setText("paymentShippingMethodValue", getShippingMethodName(session, shippingSelection));
   setText("paymentShippingCodeValue", getShippingMethodCode(session, shippingSelection));
+  setText("paymentShippingCarrierValue", session.shipping_carrier || "—");
+  setText("paymentShippingServiceLevelValue", session.shipping_service_level || "—");
+  setText("paymentTrackingNumberValue", session.tracking_number || "—");
+  setText("paymentTrackingUrlValue", session.tracking_url || "—");
 
   const shippingInfoBlock = document.getElementById("shippingInfoBlock");
   if (shippingInfoBlock) {
@@ -375,38 +480,120 @@ function renderSelectedSession() {
   }
 }
 
+function renderOrdersList() {
+  const wrap = document.getElementById("ordersListWrap");
+  if (!wrap) return;
+
+  if (!allOrders.length) {
+    wrap.innerHTML = `<div class="dashboard-empty">No orders found.</div>`;
+    return;
+  }
+
+  wrap.innerHTML = allOrders.map((order) => {
+    const fullName = [order.customer_first_name, order.customer_last_name].filter(Boolean).join(" ").trim();
+
+    return `
+      <div class="dashboard-session-card">
+        <h4>Order #${order.order_number || "—"}</h4>
+        <p>${fullName || order.customer_email || "Unknown customer"}</p>
+        <p>${formatDateTime(order.created_at)}</p>
+        <p>Status: ${order.order_status || "—"} | Payment: ${order.payment_status || "—"} | Fulfillment: ${order.fulfillment_status || "—"}</p>
+        <p>Total: ${formatMoney(order.total_amount)}</p>
+      </div>
+    `;
+  }).join("");
+}
+
 async function refreshAnalytics() {
   if (window.AXIOM_ANALYTICS && typeof window.AXIOM_ANALYTICS.load === "function") {
     await window.AXIOM_ANALYTICS.load();
   }
 }
 
-async function switchDashboardTab(tabName) {
-  const sessionsView = document.getElementById("dashboardSessionsView");
-  const analyticsView = document.getElementById("dashboardAnalyticsView");
-  const sessionsSidebar = document.getElementById("dashboardSessionsSidebar");
-  const analyticsSidebar = document.getElementById("dashboardAnalyticsSidebar");
-  const sessionsBtn = document.getElementById("showSessionsTab");
-  const analyticsBtn = document.getElementById("showAnalyticsTab");
+async function refreshOrders() {
+  allOrders = await fetchOrders();
+  renderOrdersList();
+}
 
-  if (tabName === "analytics") {
-    if (sessionsView) sessionsView.hidden = true;
-    if (analyticsView) analyticsView.hidden = false;
-    if (sessionsSidebar) sessionsSidebar.hidden = true;
-    if (analyticsSidebar) analyticsSidebar.hidden = false;
+async function refreshHomeDashboard() {
+  const [orders, sessions, viewsToday, visitorsToday, views7Days] = await Promise.all([
+    fetchOrders(),
+    fetchCheckoutSessions(),
+    fetchHomePageViewsToday(),
+    fetchHomeVisitorsToday(),
+    fetchHomePageViews7Days()
+  ]);
 
-    sessionsBtn?.classList.remove("active");
-    analyticsBtn?.classList.add("active");
+  allOrders = orders;
+  allSessions = sessions;
 
-    await refreshAnalytics();
-  } else {
-    if (sessionsView) sessionsView.hidden = false;
-    if (analyticsView) analyticsView.hidden = true;
-    if (sessionsSidebar) sessionsSidebar.hidden = false;
-    if (analyticsSidebar) analyticsSidebar.hidden = true;
+  setText(
+    "homeUnfulfilledOrders",
+    orders.filter((order) => String(order.fulfillment_status || "").toLowerCase() === "unfulfilled").length
+  );
 
-    sessionsBtn?.classList.add("active");
-    analyticsBtn?.classList.remove("active");
+  setText(
+    "homePendingPaymentOrders",
+    orders.filter((order) => String(order.payment_status || "").toLowerCase() === "pending").length
+  );
+
+  setText(
+    "homePaidOrders",
+    orders.filter((order) => {
+      const paymentStatus = String(order.payment_status || "").toLowerCase();
+      return paymentStatus === "paid" || paymentStatus === "processing";
+    }).length
+  );
+
+  setText(
+    "homeActiveSessions",
+    sessions.filter((session) => String(session.session_status || "").toLowerCase() === "active").length
+  );
+
+  setText(
+    "homePendingSessions",
+    sessions.filter((session) => String(session.session_status || "").toLowerCase() === "pending_payment").length
+  );
+
+  setText(
+    "homeAbandonedSessions",
+    sessions.filter((session) => String(session.session_status || "").toLowerCase() === "abandoned").length
+  );
+
+  setText("homePageViewsToday", viewsToday);
+  setText("homeVisitorsToday", visitorsToday);
+  setText("homePageViews7Days", views7Days);
+
+  const homeRecentOrders = document.getElementById("homeRecentOrders");
+  if (homeRecentOrders) {
+    const recentOrders = orders.slice(0, 5);
+
+    homeRecentOrders.innerHTML = recentOrders.length
+      ? recentOrders.map((order) => `
+          <div class="dashboard-session-card">
+            <h4>Order #${order.order_number || "—"}</h4>
+            <p>${order.customer_email || "No email"}</p>
+            <p>${formatDateTime(order.created_at)}</p>
+            <p>${formatMoney(order.total_amount)}</p>
+          </div>
+        `).join("")
+      : `<div class="dashboard-empty">No recent orders found.</div>`;
+  }
+
+  const homeRecentSessions = document.getElementById("homeRecentSessions");
+  if (homeRecentSessions) {
+    const recentSessions = sessions.slice(0, 5);
+
+    homeRecentSessions.innerHTML = recentSessions.length
+      ? recentSessions.map((session) => `
+          <div class="dashboard-session-card">
+            <h4>${getSessionDisplayTitle(session)}</h4>
+            <p>${session.session_id || "No session ID"}</p>
+            <p>${formatDateTime(session.created_at)}</p>
+            <p>${session.session_status || "—"}</p>
+          </div>
+        `).join("")
+      : `<div class="dashboard-empty">No recent checkout sessions found.</div>`;
   }
 }
 
@@ -433,95 +620,97 @@ async function refreshDashboard() {
 document.addEventListener("DOMContentLoaded", async () => {
   try {
     await loadPartials();
-    await refreshDashboard();
+    await Promise.all([
+      refreshDashboard(),
+      refreshOrders(),
+      refreshHomeDashboard()
+    ]);
+
+    const views = {
+      home: document.getElementById("dashboardHomeView"),
+      sessions: document.getElementById("dashboardSessionsView"),
+      analytics: document.getElementById("dashboardAnalyticsView"),
+      orders: document.getElementById("dashboardOrdersView")
+    };
+
+    const buttons = {
+      home: document.getElementById("showHomeViewBtn"),
+      sessions: document.getElementById("showSessionsViewBtn"),
+      analytics: document.getElementById("showAnalyticsViewBtn"),
+      orders: document.getElementById("showOrdersViewBtn")
+    };
+
+    const sessionsSidebar = document.getElementById("dashboardSessionsSidebar");
+    const analyticsSidebar = document.getElementById("dashboardAnalyticsSidebar");
+    const ordersSidebar = document.getElementById("dashboardOrdersSidebar");
+
+    function setActiveButton(activeKey) {
+      Object.entries(buttons).forEach(([key, btn]) => {
+        if (!btn) return;
+        btn.classList.toggle("active", key === activeKey);
+      });
+    }
+
+    async function showView(viewKey) {
+      Object.values(views).forEach((view) => {
+        if (view) view.hidden = true;
+      });
+
+      if (views[viewKey]) {
+        views[viewKey].hidden = false;
+      }
+
+      if (sessionsSidebar) {
+        sessionsSidebar.hidden = viewKey !== "sessions";
+      }
+
+      if (analyticsSidebar) {
+        analyticsSidebar.hidden = viewKey !== "analytics";
+      }
+
+      if (ordersSidebar) {
+        ordersSidebar.hidden = viewKey !== "orders";
+      }
+
+      setActiveButton(viewKey);
+
+      if (viewKey === "analytics") {
+        await refreshAnalytics();
+      }
+
+      if (viewKey === "sessions") {
+        await refreshDashboard();
+      }
+
+      if (viewKey === "orders") {
+        await refreshOrders();
+      }
+
+      if (viewKey === "home") {
+        await refreshHomeDashboard();
+      }
+    }
+
+    buttons.home?.addEventListener("click", () => showView("home"));
+    buttons.sessions?.addEventListener("click", () => showView("sessions"));
+    buttons.analytics?.addEventListener("click", () => showView("analytics"));
+    buttons.orders?.addEventListener("click", () => showView("orders"));
+
+    document.getElementById("quickOpenSessionsBtn")?.addEventListener("click", () => showView("sessions"));
+    document.getElementById("quickOpenAnalyticsBtn")?.addEventListener("click", () => showView("analytics"));
+    document.getElementById("quickOpenOrdersBtn")?.addEventListener("click", () => showView("orders"));
 
     document.getElementById("sessionSearch")?.addEventListener("input", renderSessionsList);
     document.getElementById("statusFilter")?.addEventListener("change", renderSessionsList);
+
     document.getElementById("refreshSessionsBtn")?.addEventListener("click", refreshDashboard);
+    document.getElementById("refreshAnalyticsBtn")?.addEventListener("click", refreshAnalytics);
+    document.getElementById("refreshAnalyticsBtnTop")?.addEventListener("click", refreshAnalytics);
+    document.getElementById("refreshOrdersBtn")?.addEventListener("click", refreshOrders);
+    document.getElementById("refreshHomeDashboardBtn")?.addEventListener("click", refreshHomeDashboard);
 
-    document.getElementById("showSessionsTab")?.addEventListener("click", async function () {
-      await switchDashboardTab("sessions");
-    });
-
-    document.getElementById("showAnalyticsTab")?.addEventListener("click", async function () {
-      await switchDashboardTab("analytics");
-    });
-
-    document.getElementById("refreshAnalyticsBtn")?.addEventListener("click", async function () {
-      await refreshAnalytics();
-    });
-
-    document.getElementById("refreshAnalyticsBtnTop")?.addEventListener("click", async function () {
-      await refreshAnalytics();
-    });
-
-    await switchDashboardTab("sessions");
+    await showView("home");
   } catch (error) {
     console.error("Dashboard failed to initialize:", error);
   }
-});
-
-document.addEventListener("DOMContentLoaded", function () {
-
-  const views = {
-    home: document.getElementById("dashboardHomeView"),
-    sessions: document.getElementById("dashboardSessionsView"),
-    analytics: document.getElementById("dashboardAnalyticsView"),
-    orders: document.getElementById("dashboardOrdersView")
-  };
-
-  const buttons = {
-    home: document.getElementById("showHomeViewBtn"),
-    sessions: document.getElementById("showSessionsViewBtn"),
-    analytics: document.getElementById("showAnalyticsViewBtn"),
-    orders: document.getElementById("showOrdersViewBtn")
-  };
-
-  const sessionsSidebar = document.getElementById("dashboardSessionsSidebar");
-  const analyticsSidebar = document.getElementById("dashboardAnalyticsSidebar");
-
-  function setActiveButton(activeKey) {
-    Object.entries(buttons).forEach(([key, btn]) => {
-      if (!btn) return;
-      btn.classList.toggle("active", key === activeKey);
-    });
-  }
-
-  function showView(viewKey) {
-    // Hide all views
-    Object.values(views).forEach(view => {
-      if (view) view.hidden = true;
-    });
-
-    // Show selected view
-    if (views[viewKey]) {
-      views[viewKey].hidden = false;
-    }
-
-    // Sidebar switching
-    if (sessionsSidebar) {
-      sessionsSidebar.hidden = viewKey !== "sessions";
-    }
-
-    if (analyticsSidebar) {
-      analyticsSidebar.hidden = viewKey !== "analytics";
-    }
-
-    setActiveButton(viewKey);
-  }
-
-  // NAV BUTTONS
-  buttons.home?.addEventListener("click", () => showView("home"));
-  buttons.sessions?.addEventListener("click", () => showView("sessions"));
-  buttons.analytics?.addEventListener("click", () => showView("analytics"));
-  buttons.orders?.addEventListener("click", () => showView("orders"));
-
-  // QUICK ACTION BUTTONS
-  document.getElementById("quickOpenSessionsBtn")?.addEventListener("click", () => showView("sessions"));
-  document.getElementById("quickOpenAnalyticsBtn")?.addEventListener("click", () => showView("analytics"));
-  document.getElementById("quickOpenOrdersBtn")?.addEventListener("click", () => showView("orders"));
-
-  // Default view
-  showView("home");
-
 });
