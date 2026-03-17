@@ -5,49 +5,46 @@ window.AXIOM_ORDER_SUBMIT = {
     }
 
     const supabase = window.axiomSupabase;
-
     const nowIso =
       window.AXIOM_HELPERS && typeof window.AXIOM_HELPERS.nowIso === "function"
         ? window.AXIOM_HELPERS.nowIso()
         : new Date().toISOString();
 
-    function safeArray(value) {
-      return Array.isArray(value) ? value : [];
+    function toNumber(value) {
+      return Number(value || 0);
     }
 
-    function toNumber(value, fallback = 0) {
-      const parsed = Number(value);
-      return Number.isFinite(parsed) ? parsed : fallback;
-    }
+    function normalizeCartItems(items) {
+      if (!Array.isArray(items)) return [];
 
-    function getItemQty(item) {
-      return toNumber(item.quantity ?? item.qty ?? 1, 1);
-    }
+      return items.map((item) => {
+        const quantity = Number(item.quantity || item.qty || 1);
+        const unitPrice = Number(
+          item.unit_price !== undefined && item.unit_price !== null
+            ? item.unit_price
+            : item.price || 0
+        );
 
-    function getItemUnitPrice(item) {
-      return toNumber(item.unit_price ?? item.price ?? 0, 0);
-    }
-
-    function getItemLineTotal(item) {
-      if (item.line_total !== undefined && item.line_total !== null) {
-        return toNumber(item.line_total, 0);
-      }
-      return getItemQty(item) * getItemUnitPrice(item);
-    }
-
-    function normalizeCartItem(item) {
-      return {
-        id: item.id || "",
-        product_id: item.product_id || item.id || "",
-        slug: item.slug || "",
-        product_name: item.product_name || item.name || "Product",
-        variant_label: item.variant_label || item.variantLabel || item.variant || "",
-        quantity: getItemQty(item),
-        unit_price: getItemUnitPrice(item),
-        line_total: getItemLineTotal(item),
-        image: item.image || "",
-        weight_oz: toNumber(item.weight_oz ?? item.weightOz ?? 0, 0)
-      };
+        return {
+          id: item.id || "",
+          slug: item.slug || "",
+          product_name: item.product_name || item.name || "Product",
+          variant_label: item.variant_label || item.variantLabel || item.variant || "",
+          quantity: quantity,
+          unit_price: unitPrice,
+          line_total:
+            item.line_total !== undefined && item.line_total !== null
+              ? Number(item.line_total || 0)
+              : unitPrice * quantity,
+          image: item.image || "",
+          weight_oz:
+            item.weight_oz !== undefined && item.weight_oz !== null
+              ? Number(item.weight_oz || 0)
+              : item.weightOz !== undefined && item.weightOz !== null
+                ? Number(item.weightOz || 0)
+                : 0
+        };
+      });
     }
 
     async function getNextOrderNumber() {
@@ -62,9 +59,8 @@ window.AXIOM_ORDER_SUBMIT = {
         return null;
       }
 
-      const highest = safeArray(data)[0]?.order_number;
-      const next = highest ? Number(highest) + 1 : 100001;
-      return next;
+      const highest = Array.isArray(data) && data.length ? Number(data[0].order_number || 1000) : 1000;
+      return highest + 1;
     }
 
     try {
@@ -84,65 +80,16 @@ window.AXIOM_ORDER_SUBMIT = {
         return { ok: false, error: "Failed to load session" };
       }
 
-      let cartItems = safeArray(sessionRow.cart_items);
-
-      if (!cartItems.length) {
-        try {
-          const localCart = JSON.parse(localStorage.getItem("axiom_cart") || "[]");
-          if (Array.isArray(localCart) && localCart.length) {
-            cartItems = localCart.map(normalizeCartItem);
-
-            const fallbackSubtotal = cartItems.reduce((sum, item) => {
-              return sum + getItemLineTotal(item);
-            }, 0);
-
-            const fallbackShippingAmount = toNumber(sessionRow.shipping_amount, 0);
-            const fallbackTaxAmount = toNumber(sessionRow.tax_amount, 0);
-            const fallbackDiscountAmount = toNumber(sessionRow.discount_amount, 0);
-            const fallbackTotalAmount =
-              fallbackSubtotal + fallbackShippingAmount + fallbackTaxAmount - fallbackDiscountAmount;
-
-            const { error: fallbackPatchError } = await supabase
-              .from("checkout_sessions")
-              .update({
-                cart_items: cartItems,
-                subtotal: fallbackSubtotal,
-                total_amount: fallbackTotalAmount,
-                updated_at: nowIso,
-                last_activity_at: nowIso
-              })
-              .eq("id", sessionRow.id);
-
-            if (fallbackPatchError) {
-              console.error("Fallback cart patch failed:", fallbackPatchError);
-            } else {
-              sessionRow.cart_items = cartItems;
-              sessionRow.subtotal = fallbackSubtotal;
-              sessionRow.total_amount = fallbackTotalAmount;
-            }
-          }
-        } catch (localCartError) {
-          console.error("Local cart fallback failed:", localCartError);
-        }
-      }
-
-      cartItems = safeArray(sessionRow.cart_items).map(normalizeCartItem);
-
+      const cartItems = normalizeCartItems(sessionRow.cart_items);
       if (!cartItems.length) {
         return { ok: false, error: "Cart is empty" };
       }
 
-      const subtotal =
-        toNumber(sessionRow.subtotal, 0) ||
-        cartItems.reduce((sum, item) => sum + getItemLineTotal(item), 0);
-
-      const shippingAmount = toNumber(sessionRow.shipping_amount, 0);
-      const taxAmount = toNumber(sessionRow.tax_amount, 0);
-      const discountAmount = toNumber(sessionRow.discount_amount, 0);
-
-      const totalAmount =
-        toNumber(sessionRow.total_amount, 0) ||
-        subtotal + shippingAmount + taxAmount - discountAmount;
+      const subtotal = toNumber(sessionRow.subtotal);
+      const shippingAmount = toNumber(sessionRow.shipping_amount);
+      const taxAmount = toNumber(sessionRow.tax_amount);
+      const discountAmount = toNumber(sessionRow.discount_amount);
+      const totalAmount = toNumber(sessionRow.total_amount);
 
       const { data: existingOrder, error: existingOrderError } = await supabase
         .from("orders")
@@ -160,9 +107,10 @@ window.AXIOM_ORDER_SUBMIT = {
           .from("checkout_sessions")
           .update({
             order_number: existingOrder.order_number,
-            session_status: extraPayload.session_status || "pending_payment",
+            session_status: extraPayload.session_status || "converted",
             payment_status: extraPayload.payment_status || "pending",
             fulfillment_status: extraPayload.fulfillment_status || "unfulfilled",
+            confirmed_at: nowIso,
             updated_at: nowIso,
             last_activity_at: nowIso
           })
@@ -222,32 +170,32 @@ window.AXIOM_ORDER_SUBMIT = {
       const orderItemsPayload = cartItems.map((item) => ({
         order_id: orderInsert.id,
         order_number: orderInsert.order_number,
-        product_id: item.product_id || item.id || "",
-        slug: item.slug || "",
+        product_id: item.id || null,
+        slug: item.slug || null,
         product_name: item.product_name || "Product",
-        variant_label: item.variant_label || "",
-        quantity: getItemQty(item),
-        unit_price: getItemUnitPrice(item),
-        line_total: getItemLineTotal(item),
-        image: item.image || "",
-        weight_oz: toNumber(item.weight_oz, 0),
+        variant_label: item.variant_label || null,
+        quantity: Number(item.quantity || 1),
+        unit_price: Number(item.unit_price || 0),
+        line_total:
+          item.line_total !== undefined && item.line_total !== null
+            ? Number(item.line_total || 0)
+            : Number(item.unit_price || 0) * Number(item.quantity || 1),
+        image: item.image || null,
+        weight_oz: Number(item.weight_oz || 0),
         created_at: nowIso
       }));
 
-      if (orderItemsPayload.length) {
-        const { error: orderItemsError } = await supabase
-          .from("order_items")
-          .insert(orderItemsPayload);
+      const { error: orderItemsError } = await supabase
+        .from("order_items")
+        .insert(orderItemsPayload);
 
-        if (orderItemsError) {
-          console.error("Order items insert failed:", orderItemsError);
-          return { ok: false, error: "Failed to create order items" };
-        }
+      if (orderItemsError) {
+        console.error("Order items insert failed:", orderItemsError);
       }
 
       const checkoutSessionUpdate = {
         order_number: orderInsert.order_number,
-        session_status: extraPayload.session_status || "pending_payment",
+        session_status: extraPayload.session_status || "converted",
         payment_status: extraPayload.payment_status || "pending",
         fulfillment_status: extraPayload.fulfillment_status || "unfulfilled",
         confirmed_at: nowIso,
@@ -277,8 +225,7 @@ window.AXIOM_ORDER_SUBMIT = {
             payment_method: orderInsert.payment_method,
             total_amount: orderInsert.total_amount,
             payment_status: orderInsert.payment_status,
-            fulfillment_status: orderInsert.fulfillment_status,
-            item_count: cartItems.reduce((sum, item) => sum + getItemQty(item), 0)
+            fulfillment_status: orderInsert.fulfillment_status
           },
           created_at: nowIso
         });
