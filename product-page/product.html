@@ -173,12 +173,43 @@
   <script src="../cart/cart-loader.js" defer></script>
 
   <script>
-    document.addEventListener("cartDrawerLoaded", function () {
-      const cartScript = document.createElement("script");
-      cartScript.src = "../cart/cart.js";
-      cartScript.defer = true;
-      document.body.appendChild(cartScript);
-    }, { once: true });
+    (function () {
+      let cartScriptLoaded = false;
+
+      function loadCartScript() {
+        if (cartScriptLoaded) return;
+        if (!document.getElementById("cartDrawer")) return;
+
+        cartScriptLoaded = true;
+
+        const cartScript = document.createElement("script");
+        cartScript.src = "../cart/cart.js";
+        cartScript.defer = true;
+        document.body.appendChild(cartScript);
+      }
+
+      document.addEventListener("cartDrawerLoaded", loadCartScript);
+
+      document.addEventListener("DOMContentLoaded", function () {
+        const maxChecks = 60;
+        let checks = 0;
+
+        const interval = setInterval(function () {
+          checks += 1;
+
+          if (document.getElementById("cartDrawer")) {
+            clearInterval(interval);
+            loadCartScript();
+            return;
+          }
+
+          if (checks >= maxChecks) {
+            clearInterval(interval);
+            console.error("cartDrawer was not found after loading cart-loader.js");
+          }
+        }, 100);
+      });
+    })();
   </script>
 
   <script src="product.js" defer></script>
