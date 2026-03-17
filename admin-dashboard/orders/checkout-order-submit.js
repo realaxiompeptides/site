@@ -2,16 +2,6 @@ document.addEventListener("DOMContentLoaded", function () {
   const form = document.getElementById("checkoutForm");
   if (!form) return;
 
-  function getLocalCartItems() {
-    try {
-      const parsed = JSON.parse(localStorage.getItem("axiom_cart") || "[]");
-      return Array.isArray(parsed) ? parsed : [];
-    } catch (error) {
-      console.error("Failed to read axiom_cart:", error);
-      return [];
-    }
-  }
-
   function normalizeCartItems(items) {
     if (!Array.isArray(items)) return [];
 
@@ -110,8 +100,10 @@ document.addEventListener("DOMContentLoaded", function () {
         return;
       }
 
-      const localCartItems = normalizeCartItems(getLocalCartItems());
-      if (!localCartItems.length) {
+      const currentSession = await window.AXIOM_CHECKOUT_SESSION.getSession(true);
+      const sessionCartItems = normalizeCartItems(currentSession?.cart_items || []);
+
+      if (!sessionCartItems.length) {
         alert("Your cart is empty.");
         return;
       }
@@ -145,7 +137,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
       const billingAddress = { ...shippingAddress };
 
-      const subtotal = localCartItems.reduce(function (sum, item) {
+      const subtotal = sessionCartItems.reduce(function (sum, item) {
         return sum + (Number(item.unit_price || item.price || 0) * Number(item.quantity || item.qty || 1));
       }, 0);
 
@@ -163,7 +155,7 @@ document.addEventListener("DOMContentLoaded", function () {
         shipping_address: shippingAddress,
         billing_address: billingAddress,
         payment_method: paymentMethod,
-        cart_items: localCartItems,
+        cart_items: sessionCartItems,
         shipping_selection: {
           label: shippingLabel,
           method_name: shippingLabel,
@@ -226,13 +218,21 @@ document.addEventListener("DOMContentLoaded", function () {
       }
 
       try {
-        if (window.AXIOM_HELPERS && typeof window.AXIOM_HELPERS.clearCart === "function") {
-          window.AXIOM_HELPERS.clearCart();
-        } else {
-          localStorage.removeItem("axiom_cart");
-        }
+        await window.AXIOM_CHECKOUT_SESSION.patchSession({
+          cart_items: [],
+          subtotal: 0,
+          shipping_amount: 0,
+          tax_amount: 0,
+          total_amount: 0
+        });
       } catch (cartClearError) {
-        console.error("Cart clear failed after order creation:", cartClearError);
+        console.error("Backend cart clear failed after order creation:", cartClearError);
+      }
+
+      try {
+        localStorage.removeItem("axiom_cart");
+      } catch (localCartClearError) {
+        console.error("Local cart clear failed:", localCartClearError);
       }
 
       try {
@@ -242,7 +242,7 @@ document.addEventListener("DOMContentLoaded", function () {
         console.error("Cart update event failed:", eventError);
       }
 
-      window.location.href = `/site/thank-you/thank-you.html?order=${encodeURIComponent(redirectOrderNumber)}`;
+      window.location.href = `../thank-you/thank-you.html?order=${encodeURIComponent(redirectOrderNumber)}`;
     } catch (error) {
       console.error("Checkout submit failed:", error);
       alert("There was a problem submitting your order.");
