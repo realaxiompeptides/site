@@ -26,7 +26,7 @@
     href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
   />
 
-  <link rel="stylesheet" href="/site/admin-dashboard/dashboard.css" />
+  <link rel="stylesheet" href="/admin-dashboard/dashboard.css" />
 </head>
 
 <body class="axiom-dashboard-page">
@@ -43,27 +43,81 @@
     <div class="dashboard-search-wrap">
       <nav class="dashboard-nav">
 
-        <a href="/site/admin-dashboard/index.html" class="dashboard-nav-link active">
+        <button
+          type="button"
+          class="dashboard-nav-link active"
+          id="showHomeViewBtn"
+          data-dashboard-view="home"
+        >
           <i class="fa-solid fa-table-columns"></i>
           <span>Dashboard Home</span>
-        </a>
+        </button>
 
-        <a href="/site/admin-dashboard/orders/orders.html" class="dashboard-nav-link">
-          <i class="fa-solid fa-box-open"></i>
-          <span>Orders</span>
-        </a>
-
-        <a href="/site/admin-dashboard/sessions/sessions.html" class="dashboard-nav-link">
+        <button
+          type="button"
+          class="dashboard-nav-link"
+          id="showSessionsViewBtn"
+          data-dashboard-view="sessions"
+        >
           <i class="fa-solid fa-cart-shopping"></i>
           <span>Checkout Sessions</span>
-        </a>
+        </button>
 
-        <a href="/site/admin-dashboard/analytics/analytics.html" class="dashboard-nav-link">
+        <button
+          type="button"
+          class="dashboard-nav-link"
+          id="showAnalyticsViewBtn"
+          data-dashboard-view="analytics"
+        >
           <i class="fa-solid fa-chart-line"></i>
           <span>Analytics</span>
-        </a>
+        </button>
+
+        <button
+          type="button"
+          class="dashboard-nav-link"
+          id="showOrdersViewBtn"
+          data-dashboard-view="orders"
+        >
+          <i class="fa-solid fa-box-open"></i>
+          <span>Orders</span>
+        </button>
 
       </nav>
+    </div>
+
+    <div class="dashboard-search-wrap" id="dashboardSessionsSidebar" hidden>
+      <input
+        type="text"
+        id="sessionSearch"
+        class="dashboard-search"
+        placeholder="Search by email, phone, or session ID"
+      />
+
+      <div class="dashboard-filter-row">
+        <select id="statusFilter" class="dashboard-filter">
+          <option value="">All Statuses</option>
+          <option value="active">Active</option>
+          <option value="pending_payment">Pending Payment</option>
+          <option value="abandoned">Abandoned</option>
+          <option value="converted">Converted</option>
+          <option value="expired">Expired</option>
+        </select>
+      </div>
+
+      <div class="sessions-list" id="sessionsList">
+        <div class="dashboard-loading">Loading sessions...</div>
+      </div>
+    </div>
+
+    <div class="dashboard-search-wrap" id="dashboardAnalyticsSidebar" hidden>
+      <button
+        type="button"
+        class="dashboard-btn dashboard-btn-secondary"
+        id="refreshAnalyticsBtn"
+      >
+        Refresh Analytics
+      </button>
     </div>
 
     <div class="dashboard-search-wrap">
@@ -90,147 +144,234 @@
 
   <main class="dashboard-main">
 
-    <section class="dashboard-main-header">
+    <!-- HOME VIEW -->
+    <section id="dashboardHomeView">
 
-      <div>
-        <p class="dashboard-kicker">
-          Dashboard Home
-        </p>
+      <section class="dashboard-main-header">
 
-        <h2>
-          Store Overview
-        </h2>
-      </div>
+        <div>
+          <p class="dashboard-kicker">
+            Dashboard Home
+          </p>
 
-      <button
-        type="button"
-        class="dashboard-btn dashboard-btn-secondary"
-        id="refreshHomeDashboardBtn"
-      >
-        Refresh
-      </button>
+          <h2>
+            Store Overview
+          </h2>
+        </div>
+
+        <button
+          type="button"
+          class="dashboard-btn dashboard-btn-secondary"
+          id="refreshHomeDashboardBtn"
+        >
+          Refresh
+        </button>
+
+      </section>
+
+      <section class="dashboard-details-grid">
+
+        <div class="dashboard-card">
+          <div class="dashboard-card-header">
+            <h3>Orders To Fulfill</h3>
+          </div>
+
+          <div class="dashboard-info-list">
+            <div class="dashboard-info-row">
+              <span>Unfulfilled Orders</span>
+              <strong id="homeUnfulfilledOrders">—</strong>
+            </div>
+
+            <div class="dashboard-info-row">
+              <span>Pending Payment</span>
+              <strong id="homePendingPaymentOrders">—</strong>
+            </div>
+
+            <div class="dashboard-info-row">
+              <span>Paid / Processing</span>
+              <strong id="homePaidOrders">—</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="dashboard-card">
+          <div class="dashboard-card-header">
+            <h3>Checkout Sessions</h3>
+          </div>
+
+          <div class="dashboard-info-list">
+            <div class="dashboard-info-row">
+              <span>Active Sessions</span>
+              <strong id="homeActiveSessions">—</strong>
+            </div>
+
+            <div class="dashboard-info-row">
+              <span>Pending Payment Sessions</span>
+              <strong id="homePendingSessions">—</strong>
+            </div>
+
+            <div class="dashboard-info-row">
+              <span>Abandoned Sessions</span>
+              <strong id="homeAbandonedSessions">—</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="dashboard-card">
+          <div class="dashboard-card-header">
+            <h3>Traffic Today</h3>
+          </div>
+
+          <div class="dashboard-info-list">
+            <div class="dashboard-info-row">
+              <span>Page Views</span>
+              <strong id="homePageViewsToday">—</strong>
+            </div>
+
+            <div class="dashboard-info-row">
+              <span>Unique Visitors</span>
+              <strong id="homeVisitorsToday">—</strong>
+            </div>
+
+            <div class="dashboard-info-row">
+              <span>Last 7 Days Views</span>
+              <strong id="homePageViews7Days">—</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="dashboard-card">
+          <div class="dashboard-card-header">
+            <h3>Quick Actions</h3>
+          </div>
+
+          <div class="dashboard-action-list">
+
+            <button type="button" class="dashboard-quick-link" id="quickOpenSessionsBtn">
+              <i class="fa-solid fa-cart-shopping"></i>
+              <span>Open Sessions</span>
+            </button>
+
+            <button type="button" class="dashboard-quick-link" id="quickOpenAnalyticsBtn">
+              <i class="fa-solid fa-chart-line"></i>
+              <span>Open Analytics</span>
+            </button>
+
+            <button type="button" class="dashboard-quick-link" id="quickOpenOrdersBtn">
+              <i class="fa-solid fa-box-open"></i>
+              <span>Open Orders</span>
+            </button>
+
+          </div>
+        </div>
+
+        <div class="dashboard-card dashboard-span-2">
+          <div class="dashboard-card-header">
+            <h3>Recent Orders</h3>
+          </div>
+
+          <div id="homeRecentOrders" class="dashboard-items-wrap">
+            <div class="dashboard-loading">
+              Loading recent orders...
+            </div>
+          </div>
+        </div>
+
+        <div class="dashboard-card dashboard-span-2">
+          <div class="dashboard-card-header">
+            <h3>Recent Checkout Sessions</h3>
+          </div>
+
+          <div id="homeRecentSessions" class="dashboard-items-wrap">
+            <div class="dashboard-loading">
+              Loading recent checkout sessions...
+            </div>
+          </div>
+        </div>
+
+      </section>
 
     </section>
 
-    <section class="dashboard-details-grid">
+    <!-- SESSIONS VIEW -->
+    <section id="dashboardSessionsView" hidden>
 
-      <div class="dashboard-card">
-        <div class="dashboard-card-header">
-          <h3>Orders To Fulfill</h3>
+      <section class="dashboard-main-header">
+
+        <div>
+          <p class="dashboard-kicker">Checkout Session Details</p>
+          <h2 id="dashboardSessionTitle">Select a session</h2>
         </div>
 
-        <div class="dashboard-info-list">
-          <div class="dashboard-info-row">
-            <span>Unfulfilled Orders</span>
-            <strong id="homeUnfulfilledOrders">—</strong>
+        <button
+          type="button"
+          class="dashboard-btn dashboard-btn-secondary"
+          id="refreshSessionsBtn"
+        >
+          Refresh
+        </button>
+
+      </section>
+
+      <section class="dashboard-details-grid">
+        <div id="sessionOverviewMount"></div>
+        <div id="paymentInfoMount"></div>
+        <div id="shippingInfoMount"></div>
+        <div id="billingInfoMount"></div>
+        <div class="dashboard-span-2" id="cartItemsMount"></div>
+      </section>
+
+    </section>
+
+    <!-- ANALYTICS VIEW -->
+    <section id="dashboardAnalyticsView" hidden>
+
+      <section class="dashboard-main-header">
+
+        <div>
+          <p class="dashboard-kicker">Visitor Analytics</p>
+          <h2>Traffic & Tracking</h2>
+        </div>
+
+        <button
+          type="button"
+          class="dashboard-btn dashboard-btn-secondary"
+          id="refreshAnalyticsBtnTop"
+        >
+          Refresh
+        </button>
+
+      </section>
+
+      <section class="dashboard-details-grid">
+        <div class="dashboard-span-2" id="analyticsMount"></div>
+      </section>
+
+    </section>
+
+    <!-- ORDERS VIEW -->
+    <section id="dashboardOrdersView" hidden>
+
+      <section class="dashboard-main-header">
+
+        <div>
+          <p class="dashboard-kicker">Orders</p>
+          <h2>Order Management</h2>
+        </div>
+
+      </section>
+
+      <section class="dashboard-details-grid">
+        <div class="dashboard-card dashboard-span-2">
+          <div class="dashboard-card-header">
+            <h3>Orders</h3>
           </div>
 
-          <div class="dashboard-info-row">
-            <span>Pending Payment</span>
-            <strong id="homePendingPaymentOrders">—</strong>
-          </div>
-
-          <div class="dashboard-info-row">
-            <span>Paid / Processing</span>
-            <strong id="homePaidOrders">—</strong>
+          <div class="dashboard-empty">
+            Orders view is not built yet. Your order data is already saving in Supabase.
           </div>
         </div>
-      </div>
-
-      <div class="dashboard-card">
-        <div class="dashboard-card-header">
-          <h3>Checkout Sessions</h3>
-        </div>
-
-        <div class="dashboard-info-list">
-          <div class="dashboard-info-row">
-            <span>Active Sessions</span>
-            <strong id="homeActiveSessions">—</strong>
-          </div>
-
-          <div class="dashboard-info-row">
-            <span>Pending Payment Sessions</span>
-            <strong id="homePendingSessions">—</strong>
-          </div>
-
-          <div class="dashboard-info-row">
-            <span>Abandoned Sessions</span>
-            <strong id="homeAbandonedSessions">—</strong>
-          </div>
-        </div>
-      </div>
-
-      <div class="dashboard-card">
-        <div class="dashboard-card-header">
-          <h3>Traffic Today</h3>
-        </div>
-
-        <div class="dashboard-info-list">
-          <div class="dashboard-info-row">
-            <span>Page Views</span>
-            <strong id="homePageViewsToday">—</strong>
-          </div>
-
-          <div class="dashboard-info-row">
-            <span>Unique Visitors</span>
-            <strong id="homeVisitorsToday">—</strong>
-          </div>
-
-          <div class="dashboard-info-row">
-            <span>Last 7 Days Views</span>
-            <strong id="homePageViews7Days">—</strong>
-          </div>
-        </div>
-      </div>
-
-      <div class="dashboard-card">
-        <div class="dashboard-card-header">
-          <h3>Quick Actions</h3>
-        </div>
-
-        <div class="dashboard-action-list">
-
-          <a href="/site/admin-dashboard/orders/orders.html" class="dashboard-quick-link">
-            <i class="fa-solid fa-box-open"></i>
-            <span>Open Orders</span>
-          </a>
-
-          <a href="/site/admin-dashboard/sessions/sessions.html" class="dashboard-quick-link">
-            <i class="fa-solid fa-cart-shopping"></i>
-            <span>Open Sessions</span>
-          </a>
-
-          <a href="/site/admin-dashboard/analytics/analytics-page.html" class="dashboard-quick-link">
-            <i class="fa-solid fa-chart-line"></i>
-            <span>Open Analytics</span>
-          </a>
-
-        </div>
-      </div>
-
-      <div class="dashboard-card dashboard-span-2">
-        <div class="dashboard-card-header">
-          <h3>Recent Orders</h3>
-        </div>
-
-        <div id="homeRecentOrders" class="dashboard-items-wrap">
-          <div class="dashboard-loading">
-            Loading recent orders...
-          </div>
-        </div>
-      </div>
-
-      <div class="dashboard-card dashboard-span-2">
-        <div class="dashboard-card-header">
-          <h3>Recent Checkout Sessions</h3>
-        </div>
-
-        <div id="homeRecentSessions" class="dashboard-items-wrap">
-          <div class="dashboard-loading">
-            Loading recent checkout sessions...
-          </div>
-        </div>
-      </div>
+      </section>
 
     </section>
 
@@ -240,12 +381,14 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-<script src="/site/admin-dashboard/dashboard-config.js"></script>
-<script src="/site/admin-dashboard/shared/tracking-config.js"></script>
-<script src="/site/admin-dashboard/shared/helpers.js"></script>
-<script src="/site/admin-dashboard/supabase-client.js"></script>
-<script src="/site/admin-dashboard/auth/admin-auth.js"></script>
-<script src="/site/admin-dashboard/home/home-dashboard.js"></script>
+<script src="/admin-dashboard/dashboard-config.js"></script>
+<script src="/admin-dashboard/shared/tracking-config.js"></script>
+<script src="/admin-dashboard/shared/helpers.js"></script>
+<script src="/admin-dashboard/supabase-client.js"></script>
+<script src="/admin-dashboard/auth/admin-auth.js"></script>
+<script src="/admin-dashboard/home/home-dashboard.js"></script>
+<script src="/admin-dashboard/analytics/analytics.js"></script>
+<script src="/admin-dashboard/dashboard.js"></script>
 
 </body>
 </html>
