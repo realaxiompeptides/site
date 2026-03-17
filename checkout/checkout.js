@@ -19,6 +19,8 @@ function loadSection(id, file) {
 
 let axiomCurrentCheckoutSession = null;
 
+const CART_STORAGE_KEY = "axiom_cart";
+
 function formatMoney(value) {
   return `$${Number(value || 0).toFixed(2)}`;
 }
@@ -48,11 +50,11 @@ function getItemQuantity(item) {
 }
 
 function getItemPrice(item) {
-  return Number(item.price || item.variantPrice || 0);
+  return Number(item.price || item.variantPrice || item.unit_price || 0);
 }
 
 function getItemName(item) {
-  return item.name || item.productName || "Product";
+  return item.name || item.productName || item.product_name || "Product";
 }
 
 function getItemVariant(item) {
@@ -74,7 +76,7 @@ function getItemWeightOz(item) {
 
   const id = String(item.id || "").toLowerCase();
   const slug = String(item.slug || "").toLowerCase();
-  const name = String(item.name || "").toLowerCase();
+  const name = String(getItemName(item) || "").toLowerCase();
 
   if (
     id.includes("bacwater") ||
@@ -87,11 +89,81 @@ function getItemWeightOz(item) {
   return 0.188;
 }
 
+function getLocalCartItems() {
+  try {
+    const saved = localStorage.getItem(CART_STORAGE_KEY);
+    const parsed = saved ? JSON.parse(saved) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (error) {
+    console.error("Failed to read local cart:", error);
+    return [];
+  }
+}
+
+function saveLocalCartItems(items) {
+  try {
+    localStorage.setItem(CART_STORAGE_KEY, JSON.stringify(items));
+  } catch (error) {
+    console.error("Failed to save local cart:", error);
+  }
+}
+
+function normalizeCartItemsForSession(items) {
+  if (!Array.isArray(items)) return [];
+
+  return items.map((item) => {
+    const quantity = getItemQuantity(item);
+
+    return {
+      id: item.id || "",
+      slug: item.slug || "",
+      name: getItemName(item),
+      product_name: getItemName(item),
+      variantLabel: getItemVariant(item),
+      variant_label: getItemVariant(item),
+      variant: getItemVariant(item),
+      price: getItemPrice(item),
+      unit_price: getItemPrice(item),
+      compareAtPrice:
+        item.compareAtPrice !== undefined && item.compareAtPrice !== null
+          ? Number(item.compareAtPrice) || null
+          : item.compare_at_price !== undefined && item.compare_at_price !== null
+            ? Number(item.compare_at_price) || null
+            : null,
+      compare_at_price:
+        item.compare_at_price !== undefined && item.compare_at_price !== null
+          ? Number(item.compare_at_price) || null
+          : item.compareAtPrice !== undefined && item.compareAtPrice !== null
+            ? Number(item.compareAtPrice) || null
+            : null,
+      quantity: quantity,
+      qty: quantity,
+      image: item.image || "",
+      weightOz: Number(item.weightOz || item.weight_oz || 0),
+      weight_oz: Number(item.weight_oz || item.weightOz || 0),
+      inStock: item.inStock !== false && item.in_stock !== false,
+      in_stock: item.inStock !== false && item.in_stock !== false
+    };
+  });
+}
+
+function calculateCartSubtotal(items) {
+  return items.reduce((sum, item) => {
+    return sum + (getItemPrice(item) * getItemQuantity(item));
+  }, 0);
+}
+
 function getCurrentSessionItems() {
-  if (!axiomCurrentCheckoutSession) return [];
-  return Array.isArray(axiomCurrentCheckoutSession.cart_items)
-    ? axiomCurrentCheckoutSession.cart_items
-    : [];
+  const sessionItems =
+    axiomCurrentCheckoutSession && Array.isArray(axiomCurrentCheckoutSession.cart_items)
+      ? axiomCurrentCheckoutSession.cart_items
+      : [];
+
+  if (sessionItems.length) {
+    return sessionItems;
+  }
+
+  return getLocalCartItems();
 }
 
 function getSelectedShippingInput() {
@@ -156,6 +228,40 @@ async function fetchCurrentCheckoutSession() {
 
   axiomCurrentCheckoutSession = data || null;
   return axiomCurrentCheckoutSession;
+}
+
+async function syncLocalCartIntoSession(forceUseLocal = false) {
+  if (!window.AXIOM_CHECKOUT_SESSION || typeof window.AXIOM_CHECKOUT_SESSION.patchSession !== "function") {
+    return;
+  }
+
+  const localItems = getLocalCartItems();
+  const sessionItems =
+    axiomCurrentCheckoutSession && Array.isArray(axiomCurrentCheckoutSession.cart_items)
+      ? axiomCurrentCheckoutSession.cart_items
+      : [];
+
+  const itemsToUse = forceUseLocal
+    ? localItems
+    : sessionItems.length
+      ? sessionItems
+      : localItems;
+
+  const normalizedItems = normalizeCartItemsForSession(itemsToUse);
+  const subtotal = calculateCartSubtotal(normalizedItems);
+
+  const existingShippingAmount = Number(axiomCurrentCheckoutSession?.shipping_amount || 0);
+  const existingTaxAmount = Number(axiomCurrentCheckoutSession?.tax_amount || 0);
+  const totalAmount = subtotal + existingShippingAmount + existingTaxAmount;
+
+  await window.AXIOM_CHECKOUT_SESSION.patchSession({
+    cart_items: normalizedItems,
+    subtotal: subtotal,
+    total_amount: totalAmount,
+    last_activity_at: new Date().toISOString()
+  });
+
+  await fetchCurrentCheckoutSession();
 }
 
 function hydrateCheckoutFormFromSession(session) {
@@ -230,9 +336,15 @@ function getSelectedShippingSelectionObject() {
   const selectedOption = selectedInput?.closest(".shipping-option");
   const labelText = selectedOption?.querySelector("span")?.textContent?.trim() || "";
 
+  const selectedCode =
+    selectedInput?.dataset.code ||
+    labelText.toLowerCase().replace(/\s+/g, "_");
+
   return {
     method_name: labelText,
-    method_code: labelText.toLowerCase().replace(/\s+/g, "_"),
+    method_code: selectedCode,
+    label: labelText,
+    code: selectedCode,
     carrier: labelText.includes("USPS") ? "USPS" : "",
     service_level: labelText,
     amount: getSelectedShippingValue()
@@ -242,10 +354,8 @@ function getSelectedShippingSelectionObject() {
 async function syncCheckoutSessionFromForm() {
   if (!window.AXIOM_CHECKOUT_SESSION) return;
 
-  const items = getCurrentSessionItems();
-  const subtotal = items.reduce((sum, item) => {
-    return sum + (getItemPrice(item) * getItemQuantity(item));
-  }, 0);
+  const items = normalizeCartItemsForSession(getCurrentSessionItems());
+  const subtotal = calculateCartSubtotal(items);
 
   const shippingAmount = getSelectedShippingValue();
   const taxAmount = 0;
@@ -267,15 +377,39 @@ async function syncCheckoutSessionFromForm() {
     shipping_selection: shippingSelection,
     shipping_amount: shippingAmount,
     tax_amount: taxAmount,
-    subtotal,
+    subtotal: subtotal,
     total_amount: totalAmount,
+    cart_items: items,
     shipping_method_code: shippingSelection.method_code || null,
     shipping_method_name: shippingSelection.method_name || null,
     shipping_carrier: shippingSelection.carrier || null,
-    shipping_service_level: shippingSelection.service_level || null
+    shipping_service_level: shippingSelection.service_level || null,
+    last_activity_at: new Date().toISOString()
   });
 
-  await fetchCurrentCheckoutSession();
+  axiomCurrentCheckoutSession = {
+    ...(axiomCurrentCheckoutSession || {}),
+    customer_email: document.getElementById("checkoutEmail")?.value.trim() || null,
+    customer_phone: document.getElementById("phone")?.value.trim() || null,
+    customer_first_name: shippingAddress.first_name || null,
+    customer_last_name: shippingAddress.last_name || null,
+    shipping_address: shippingAddress,
+    billing_address: billingAddress,
+    payment_method: paymentMethod,
+    shipping_selection: shippingSelection,
+    shipping_amount: shippingAmount,
+    tax_amount: taxAmount,
+    subtotal: subtotal,
+    total_amount: totalAmount,
+    cart_items: items,
+    shipping_method_code: shippingSelection.method_code || null,
+    shipping_method_name: shippingSelection.method_name || null,
+    shipping_carrier: shippingSelection.carrier || null,
+    shipping_service_level: shippingSelection.service_level || null,
+    last_activity_at: new Date().toISOString()
+  };
+
+  saveLocalCartItems(items);
 }
 
 function renderShippingRatesFromSession() {
@@ -298,7 +432,7 @@ function renderShippingRatesFromSession() {
 
   const rates = calculateEstimatedRates(items);
 
-  const savedCode = savedSelection?.method_code || "";
+  const savedCode = savedSelection?.method_code || savedSelection?.code || "";
   const groundChecked = savedCode ? savedCode === "usps_ground_advantage" : true;
   const priorityChecked = savedCode === "usps_priority_mail";
 
@@ -463,10 +597,12 @@ function bindLiveCheckoutTracking() {
   inputs.forEach((input) => {
     input.addEventListener("input", async function () {
       await syncCheckoutSessionFromForm();
+      renderCheckoutSummary();
     });
 
     input.addEventListener("change", async function () {
       await syncCheckoutSessionFromForm();
+      renderCheckoutSummary();
     });
   });
 }
@@ -478,19 +614,28 @@ document.addEventListener("DOMContentLoaded", async () => {
   ]);
 
   await fetchCurrentCheckoutSession();
+  await syncLocalCartIntoSession(false);
+
   hydrateCheckoutFormFromSession(axiomCurrentCheckoutSession);
   renderCheckoutSummary();
   setupRateButton();
   bindLiveCheckoutTracking();
 
-  if (axiomCurrentCheckoutSession?.shipping_selection?.method_name) {
+  if (axiomCurrentCheckoutSession?.shipping_selection?.method_name || axiomCurrentCheckoutSession?.shipping_selection?.label) {
     renderShippingRatesFromSession();
     renderCheckoutSummary();
   }
 
   window.addEventListener("axiom-cart-updated", async function () {
-    await fetchCurrentCheckoutSession();
+    await syncLocalCartIntoSession(true);
     renderCheckoutSummary();
+  });
+
+  window.addEventListener("storage", async function (event) {
+    if (event.key === CART_STORAGE_KEY) {
+      await syncLocalCartIntoSession(true);
+      renderCheckoutSummary();
+    }
   });
 });
 
@@ -524,7 +669,8 @@ document.addEventListener("submit", async function (e) {
   if (window.AXIOM_CHECKOUT_SESSION) {
     await window.AXIOM_CHECKOUT_SESSION.patchSession({
       session_status: "pending_payment",
-      payment_status: "unpaid"
+      payment_status: "unpaid",
+      last_activity_at: new Date().toISOString()
     });
   }
 });
