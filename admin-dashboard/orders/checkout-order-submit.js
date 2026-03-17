@@ -45,11 +45,48 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
+  function showError(message, extra) {
+    if (extra) {
+      console.error(message, extra);
+    } else {
+      console.error(message);
+    }
+    alert(message);
+  }
+
+  function waitForCheckoutDependencies(timeoutMs = 5000) {
+    return new Promise((resolve) => {
+      const start = Date.now();
+
+      function check() {
+        const ready =
+          !!window.AXIOM_CHECKOUT_SESSION &&
+          !!window.axiomSupabase &&
+          !!window.AXIOM_ORDER_SUBMIT &&
+          typeof window.AXIOM_ORDER_SUBMIT.createOrderFromSession === "function";
+
+        if (ready) {
+          resolve(true);
+          return;
+        }
+
+        if (Date.now() - start >= timeoutMs) {
+          resolve(false);
+          return;
+        }
+
+        setTimeout(check, 100);
+      }
+
+      check();
+    });
+  }
+
   form.addEventListener("submit", async function (e) {
     e.preventDefault();
 
     const submitButton = form.querySelector('button[type="submit"]');
-    const originalButtonText = submitButton ? submitButton.textContent : "";
+    const originalButtonText = submitButton ? submitButton.textContent : "Place Order";
 
     function setSubmittingState(isSubmitting) {
       if (!submitButton) return;
@@ -60,43 +97,38 @@ document.addEventListener("DOMContentLoaded", function () {
     try {
       const termsCheckbox = document.getElementById("termsCheckbox");
       if (!termsCheckbox || !termsCheckbox.checked) {
-        alert("You must agree to the Terms & Conditions before placing your order.");
+        showError("You must agree to the Terms & Conditions before placing your order.");
         return;
       }
 
-      if (!window.AXIOM_CHECKOUT_SESSION) {
-        console.error("AXIOM_CHECKOUT_SESSION is missing.");
-        alert("Checkout session is not ready.");
-        return;
-      }
-
-      if (!window.axiomSupabase) {
-        console.error("Supabase client is missing.");
-        alert("Supabase is not connected.");
-        return;
-      }
-
-      if (!window.AXIOM_ORDER_SUBMIT || typeof window.AXIOM_ORDER_SUBMIT.createOrderFromSession !== "function") {
-        console.error("AXIOM_ORDER_SUBMIT.createOrderFromSession is missing.");
-        alert("Order submit service is not ready.");
+      const dependenciesReady = await waitForCheckoutDependencies(5000);
+      if (!dependenciesReady) {
+        showError("Checkout session is not ready.");
         return;
       }
 
       const selectedShipping = document.querySelector('input[name="shippingMethod"]:checked');
       if (!selectedShipping) {
-        alert("Please choose a shipping method.");
+        showError("Please choose a shipping method.");
         return;
       }
 
       setSubmittingState(true);
 
-      if (window.AXIOM_CHECKOUT_TRACKING && typeof window.AXIOM_CHECKOUT_TRACKING.syncAll === "function") {
-        await window.AXIOM_CHECKOUT_TRACKING.syncAll();
+      if (
+        window.AXIOM_CHECKOUT_TRACKING &&
+        typeof window.AXIOM_CHECKOUT_TRACKING.syncAll === "function"
+      ) {
+        try {
+          await window.AXIOM_CHECKOUT_TRACKING.syncAll();
+        } catch (trackingError) {
+          console.error("Checkout tracking sync failed:", trackingError);
+        }
       }
 
       const sessionId = await window.AXIOM_CHECKOUT_SESSION.ensureSession();
       if (!sessionId) {
-        alert("Could not create or load your checkout session.");
+        showError("Could not create or load your checkout session.");
         return;
       }
 
@@ -104,7 +136,7 @@ document.addEventListener("DOMContentLoaded", function () {
       const sessionCartItems = normalizeCartItems(currentSession?.cart_items || []);
 
       if (!sessionCartItems.length) {
-        alert("Your cart is empty.");
+        showError("Your cart is empty.");
         return;
       }
 
@@ -112,7 +144,8 @@ document.addEventListener("DOMContentLoaded", function () {
         document.querySelector('input[name="paymentMethod"]:checked')?.value || null;
 
       const shippingOption = selectedShipping.closest(".shipping-option");
-      const shippingLabel = shippingOption?.querySelector("span")?.textContent?.trim() || "";
+      const shippingLabel =
+        shippingOption?.querySelector("span")?.textContent?.trim() || "";
       const shippingAmount = Number(selectedShipping.value || 0);
       const shippingCode =
         selectedShipping.dataset.code ||
@@ -135,13 +168,36 @@ document.addEventListener("DOMContentLoaded", function () {
         country: document.getElementById("country")?.value.trim() || "US"
       };
 
-      const billingAddress = { ...shippingAddress };
+      const billingSameCheckbox = document.getElementById("billingSameAsShipping");
+      const billingSameAsShipping = billingSameCheckbox ? billingSameCheckbox.checked : true;
+
+      let billingAddress = { ...shippingAddress };
+
+      if (!billingSameAsShipping) {
+        billingAddress = {
+          first_name: document.getElementById("billingFirstName")?.value.trim() || "",
+          last_name: document.getElementById("billingLastName")?.value.trim() || "",
+          address1: document.getElementById("billingAddress1")?.value.trim() || "",
+          address2: document.getElementById("billingAddress2")?.value.trim() || "",
+          city: document.getElementById("billingCity")?.value.trim() || "",
+          state: document.getElementById("billingState")?.value.trim() || "",
+          zip: document.getElementById("billingZip")?.value.trim() || "",
+          phone: document.getElementById("billingPhone")?.value.trim() || "",
+          country: document.getElementById("billingCountry")?.value.trim() || "US",
+          same_as_shipping: false
+        };
+      } else {
+        billingAddress.same_as_shipping = true;
+      }
 
       const subtotal = sessionCartItems.reduce(function (sum, item) {
-        return sum + (Number(item.unit_price || item.price || 0) * Number(item.quantity || item.qty || 1));
+        return sum + (
+          Number(item.unit_price || item.price || 0) *
+          Number(item.quantity || item.qty || 1)
+        );
       }, 0);
 
-      const taxAmount = 0;
+      const taxAmount = Number(currentSession?.tax_amount || currentSession?.tax || 0);
       const totalAmount = subtotal + shippingAmount + taxAmount;
 
       const patchPayload = {
@@ -152,6 +208,10 @@ document.addEventListener("DOMContentLoaded", function () {
         customer_phone: phone,
         customer_first_name: firstName || null,
         customer_last_name: lastName || null,
+        contact: {
+          email: checkoutEmail || "",
+          phone: phone || ""
+        },
         shipping_address: shippingAddress,
         billing_address: billingAddress,
         payment_method: paymentMethod,
@@ -161,7 +221,9 @@ document.addEventListener("DOMContentLoaded", function () {
           method_name: shippingLabel,
           amount: shippingAmount,
           code: shippingCode,
-          method_code: shippingCode
+          method_code: shippingCode,
+          carrier: shippingLabel.includes("USPS") ? "USPS" : "",
+          service_level: shippingLabel
         },
         shipping_method_code: shippingCode,
         shipping_method_name: shippingLabel || null,
@@ -177,24 +239,29 @@ document.addEventListener("DOMContentLoaded", function () {
 
       await window.AXIOM_CHECKOUT_SESSION.patchSession(patchPayload);
 
-      const { data: refreshedSessionRow, error: refreshedSessionError } = await window.axiomSupabase
-        .from("checkout_sessions")
-        .select("*")
-        .eq("session_id", sessionId)
-        .maybeSingle();
+      const { data: refreshedSessionRow, error: refreshedSessionError } =
+        await window.axiomSupabase
+          .from("checkout_sessions")
+          .select("*")
+          .eq("session_id", sessionId)
+          .maybeSingle();
 
       if (refreshedSessionError) {
-        console.error("Failed to reload checkout session after patch:", refreshedSessionError);
-        alert("There was a problem preparing your order.");
+        showError("There was a problem preparing your order.", refreshedSessionError);
         return;
       }
 
-      const refreshedCartItems = Array.isArray(refreshedSessionRow?.cart_items)
+      if (!refreshedSessionRow) {
+        showError("Checkout session could not be loaded.");
+        return;
+      }
+
+      const refreshedCartItems = Array.isArray(refreshedSessionRow.cart_items)
         ? refreshedSessionRow.cart_items
         : [];
 
       if (!refreshedCartItems.length) {
-        alert("Your cart is empty.");
+        showError("Your cart is empty.");
         return;
       }
 
@@ -206,14 +273,18 @@ document.addEventListener("DOMContentLoaded", function () {
       });
 
       if (!result || !result.ok) {
-        console.error("Order creation failed:", result);
-        alert("There was a problem creating the order.");
+        showError(
+          result?.error
+            ? `There was a problem creating the order: ${result.error}`
+            : "There was a problem creating the order.",
+          result
+        );
         return;
       }
 
       const redirectOrderNumber = result.orderNumber || result.order_number || "";
       if (!redirectOrderNumber) {
-        alert("The order was created, but the order number was missing.");
+        showError("The order was created, but the order number was missing.");
         return;
       }
 
@@ -223,6 +294,7 @@ document.addEventListener("DOMContentLoaded", function () {
           subtotal: 0,
           shipping_amount: 0,
           tax_amount: 0,
+          discount_amount: 0,
           total_amount: 0
         });
       } catch (cartClearError) {
