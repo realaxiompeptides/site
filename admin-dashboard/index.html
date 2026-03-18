@@ -336,14 +336,18 @@
     </section>
 
     <!-- ORDERS VIEW -->
-    <section id="dashboardOrdersView" hidden>
+    <section class="dashboard-details-grid">
+  <div class="dashboard-card dashboard-span-2">
+    <div class="dashboard-card-header">
+      <h3>Orders</h3>
+    </div>
+    <div id="ordersListWrap" class="dashboard-items-wrap">
+      <div class="dashboard-loading">Loading orders...</div>
+    </div>
+  </div>
 
-      <section class="dashboard-main-header">
-        <div>
-          <p class="dashboard-kicker">Orders</p>
-          <h2>Order Management</h2>
-        </div>
-      </section>
+  <div id="orderDetailMount" class="dashboard-span-2"></div>
+</section>
 
       <section class="dashboard-details-grid">
         <div class="dashboard-card dashboard-span-2">
