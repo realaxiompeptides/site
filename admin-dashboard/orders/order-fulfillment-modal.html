@@ -1,5 +1,11 @@
 <div class="order-modal-overlay" id="orderFulfillmentModalOverlay" hidden>
-  <div class="order-modal-card" id="orderFulfillmentModalCard" role="dialog" aria-modal="true" aria-labelledby="orderFulfillmentModalTitle">
+  <div
+    class="order-modal-card"
+    id="orderFulfillmentModalCard"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="orderFulfillmentModalTitle"
+  >
     <button
       type="button"
       class="order-modal-close"
@@ -70,16 +76,86 @@
         </div>
 
         <div class="order-modal-action-stack">
-          <button type="button" class="dashboard-btn dashboard-btn-secondary" id="buyShippingLabelBtn">
+          <button
+            type="button"
+            class="dashboard-btn dashboard-btn-secondary"
+            id="buyShippingLabelBtn"
+          >
             Buy Shipping Label
           </button>
 
-          <button type="button" class="dashboard-btn dashboard-btn-primary" id="saveShipmentBtn">
+          <button
+            type="button"
+            class="dashboard-btn dashboard-btn-primary"
+            id="saveShipmentBtn"
+          >
             Save Shipment
           </button>
 
-          <button type="button" class="dashboard-btn dashboard-btn-secondary" id="cancelShipmentBtn">
+          <button
+            type="button"
+            class="dashboard-btn dashboard-btn-secondary"
+            id="cancelShipmentBtn"
+          >
             Cancel
+          </button>
+        </div>
+      </div>
+
+      <!-- SHIPMENT SAVED STEP -->
+      <div id="shipmentSavedStep" hidden>
+        <div class="order-modal-field-group">
+          <label class="order-modal-field-label">Carrier</label>
+          <div class="order-modal-readonly" id="savedShipmentCarrier">—</div>
+        </div>
+
+        <div class="order-modal-field-group">
+          <label class="order-modal-field-label">Shipping Service</label>
+          <div class="order-modal-readonly" id="savedShipmentService">—</div>
+        </div>
+
+        <div class="order-modal-field-group">
+          <label class="order-modal-field-label">Tracking Number</label>
+          <div class="order-modal-readonly order-modal-readonly-row">
+            <span id="savedShipmentTrackingNumber">—</span>
+            <button
+              type="button"
+              class="dashboard-btn dashboard-btn-secondary order-modal-copy-btn"
+              id="copyTrackingNumberBtn"
+            >
+              Copy
+            </button>
+          </div>
+        </div>
+
+        <div class="order-modal-field-group">
+          <label class="order-modal-field-label">Tracking URL</label>
+          <div class="order-modal-readonly order-modal-readonly-row">
+            <a
+              href="#"
+              id="savedShipmentTrackingUrl"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              —
+            </a>
+            <button
+              type="button"
+              class="dashboard-btn dashboard-btn-secondary order-modal-copy-btn"
+              id="copyTrackingUrlBtn"
+            >
+              Copy
+            </button>
+          </div>
+        </div>
+
+        <div class="order-modal-action-stack">
+          <button
+            type="button"
+            class="dashboard-btn dashboard-btn-primary"
+            id="closeShipmentSavedBtn"
+          >
+            Done
           </button>
         </div>
       </div>
