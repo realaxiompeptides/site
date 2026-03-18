@@ -1,27 +1,65 @@
 window.AXIOM_ORDER_DETAIL = {
-  currentSession: null,
+  currentOrder: null,
 
-  setSession(session) {
-    this.currentSession = session;
-    this.renderOverview(session);
-    this.renderPayment(session);
-    this.renderShipping(session);
-    this.renderBilling(session);
-    this.renderCartItems(session);
+  setOrder(order) {
+    this.currentOrder = order;
+    this.renderOverview(order);
+    this.renderShipping(order);
+    this.renderBilling(order);
+    this.renderCartItems(order);
   },
 
-  renderOverview(session) {
+  clear() {
+    this.currentOrder = null;
+
+    const ids = [
+      "orderDetailNumber",
+      "orderDetailStatus",
+      "orderDetailPaymentStatus",
+      "orderDetailFulfillmentStatus",
+      "orderDetailEmail",
+      "orderDetailPhone",
+      "orderDetailCreated",
+      "orderDetailSubtotal",
+      "orderDetailShipping",
+      "orderDetailTax",
+      "orderDetailTotal"
+    ];
+
+    ids.forEach(function (id) {
+      const el = document.getElementById(id);
+      if (el) el.textContent = "—";
+    });
+
+    const shippingMount = document.getElementById("orderDetailShippingAddress");
+    if (shippingMount) {
+      shippingMount.innerHTML = "—";
+    }
+
+    const billingMount = document.getElementById("orderDetailBillingAddress");
+    if (billingMount) {
+      billingMount.innerHTML = "—";
+    }
+
+    const itemsMount = document.getElementById("orderDetailItemsWrap");
+    if (itemsMount) {
+      itemsMount.innerHTML = `<div class="dashboard-empty">No items found.</div>`;
+    }
+  },
+
+  renderOverview(order) {
     const map = {
-      detailSessionId: session?.session_id || "—",
-      detailStatus: session?.session_status || "—",
-      detailEmail: session?.customer_email || "—",
-      detailPhone: session?.customer_phone || "—",
-      detailCreated: session?.created_at ? new Date(session.created_at).toLocaleString() : "—",
-      detailLastActivity: session?.last_activity_at ? new Date(session.last_activity_at).toLocaleString() : "—",
-      detailSubtotal: window.AXIOM_HELPERS.formatMoney(session?.subtotal || 0),
-      detailShipping: window.AXIOM_HELPERS.formatMoney(session?.shipping_amount || 0),
-      detailTax: window.AXIOM_HELPERS.formatMoney(session?.tax_amount || 0),
-      detailTotal: window.AXIOM_HELPERS.formatMoney(session?.total_amount || 0)
+      orderDetailNumber: order?.order_number ? `#${order.order_number}` : "—",
+      orderDetailStatus: order?.order_status || "—",
+      orderDetailPaymentStatus: order?.payment_status || "—",
+      orderDetailFulfillmentStatus: order?.fulfillment_status || "—",
+      orderDetailEmail: order?.customer_email || "—",
+      orderDetailPhone: order?.customer_phone || "—",
+      orderDetailCreated: order?.created_at ? new Date(order.created_at).toLocaleString() : "—",
+      orderDetailSubtotal: window.AXIOM_HELPERS.formatMoney(order?.subtotal || 0),
+      orderDetailShipping: window.AXIOM_HELPERS.formatMoney(order?.shipping_amount || 0),
+      orderDetailTax: window.AXIOM_HELPERS.formatMoney(order?.tax_amount || 0),
+      orderDetailTotal: window.AXIOM_HELPERS.formatMoney(order?.total_amount || 0)
     };
 
     Object.keys(map).forEach(function (id) {
@@ -30,88 +68,116 @@ window.AXIOM_ORDER_DETAIL = {
     });
   },
 
-  renderPayment(session) {
-    const paymentMethod = document.getElementById("detailPaymentMethod");
-    const shippingMethod = document.getElementById("detailShippingMethod");
-    const shippingCode = document.getElementById("detailShippingCode");
-
-    if (paymentMethod) paymentMethod.textContent = session?.payment_method || "—";
-    if (shippingMethod) {
-      shippingMethod.textContent =
-        session?.shipping_selection?.label ||
-        session?.shipping_selection?.service ||
-        "—";
-    }
-    if (shippingCode) {
-      shippingCode.textContent =
-        session?.shipping_selection?.code ||
-        session?.shipping_selection?.rate_id ||
-        "—";
-    }
-  },
-
-  renderShipping(session) {
-    const mount = document.getElementById("detailShippingAddress");
+  renderShipping(order) {
+    const mount = document.getElementById("orderDetailShippingAddress");
     if (!mount) return;
 
-    const address = session?.shipping_address;
-    if (!address) {
+    const address = order?.shipping_address;
+    if (!address || typeof address !== "object") {
       mount.innerHTML = "—";
       return;
     }
 
-    mount.innerHTML = `
-      <p>${address.first_name || ""} ${address.last_name || ""}</p>
-      <p>${address.address1 || ""}</p>
-      ${address.address2 ? `<p>${address.address2}</p>` : ""}
-      <p>${address.city || ""}, ${address.state || ""} ${address.zip || ""}</p>
-      <p>${address.country || "US"}</p>
-    `;
+    const firstName = address.first_name || address.firstName || "";
+    const lastName = address.last_name || address.lastName || "";
+    const address1 = address.address1 || address.line1 || "";
+    const address2 = address.address2 || address.line2 || "";
+    const city = address.city || "";
+    const state = address.state || address.province || "";
+    const zip = address.zip || address.postal_code || address.postalCode || "";
+    const country = address.country || "US";
+
+    const cityStateZip = [city, state, zip].filter(Boolean).join(", ");
+
+    const lines = [
+      [firstName, lastName].filter(Boolean).join(" ").trim(),
+      address1,
+      address2,
+      cityStateZip,
+      country
+    ].filter(Boolean);
+
+    mount.innerHTML = lines.length ? `<p>${lines.join("<br>")}</p>` : "—";
   },
 
-  renderBilling(session) {
-    const mount = document.getElementById("detailBillingAddress");
+  renderBilling(order) {
+    const mount = document.getElementById("orderDetailBillingAddress");
     if (!mount) return;
 
-    const address = session?.billing_address;
-    if (!address) {
+    const address = order?.billing_address;
+    if (!address || typeof address !== "object") {
       mount.innerHTML = "—";
       return;
     }
 
-    mount.innerHTML = `
-      <p>${address.first_name || ""} ${address.last_name || ""}</p>
-      <p>${address.address1 || ""}</p>
-      ${address.address2 ? `<p>${address.address2}</p>` : ""}
-      <p>${address.city || ""}, ${address.state || ""} ${address.zip || ""}</p>
-      <p>${address.country || "US"}</p>
-    `;
+    const firstName = address.first_name || address.firstName || "";
+    const lastName = address.last_name || address.lastName || "";
+    const address1 = address.address1 || address.line1 || "";
+    const address2 = address.address2 || address.line2 || "";
+    const city = address.city || "";
+    const state = address.state || address.province || "";
+    const zip = address.zip || address.postal_code || address.postalCode || "";
+    const country = address.country || "US";
+
+    const cityStateZip = [city, state, zip].filter(Boolean).join(", ");
+
+    const lines = [
+      [firstName, lastName].filter(Boolean).join(" ").trim(),
+      address1,
+      address2,
+      cityStateZip,
+      country
+    ].filter(Boolean);
+
+    mount.innerHTML = lines.length ? `<p>${lines.join("<br>")}</p>` : "—";
   },
 
-  renderCartItems(session) {
-    const mount = document.getElementById("detailCartItems");
+  renderCartItems(order) {
+    const mount = document.getElementById("orderDetailItemsWrap");
     if (!mount) return;
 
-    const items = Array.isArray(session?.cart_items) ? session.cart_items : [];
+    const items = Array.isArray(order?.cart_items) ? order.cart_items : [];
 
     if (!items.length) {
-      mount.innerHTML = `<p class="dashboard-empty">—</p>`;
+      mount.innerHTML = `<div class="dashboard-empty">No items found.</div>`;
       return;
     }
 
     mount.innerHTML = items.map(function (item) {
-      const lineTotal = Number(item.price || 0) * Number(item.quantity || 1);
+      const name = item.product_name || item.name || "Product";
+      const variant =
+        item.variant_label ||
+        item.variantLabel ||
+        item.variant ||
+        "";
+      const quantity = Number(item.quantity || item.qty || 1);
+
+      const unitPrice =
+        item.unit_price !== undefined && item.unit_price !== null
+          ? Number(item.unit_price || 0)
+          : Number(item.price || 0);
+
+      const lineTotal =
+        item.line_total !== undefined && item.line_total !== null
+          ? Number(item.line_total || 0)
+          : unitPrice * quantity;
+
+      const image = item.image || "../images/products/placeholder.PNG";
 
       return `
         <div class="dashboard-item-row">
           <div class="dashboard-item-image">
-            <img src="${item.image || ""}" alt="${item.name || "Product"}" />
+            <img
+              src="${image}"
+              alt="${name}"
+              onerror="this.onerror=null;this.src='../images/products/placeholder.PNG';"
+            />
           </div>
 
           <div class="dashboard-item-info">
-            <h4>${item.name || "Product"}</h4>
-            <p>${item.variant_label || ""}</p>
-            <p>Qty: ${Number(item.quantity || 1)}</p>
+            <h4>${name}</h4>
+            <p>${variant}</p>
+            <p>Qty: ${quantity}</p>
           </div>
 
           <div class="dashboard-item-price">
