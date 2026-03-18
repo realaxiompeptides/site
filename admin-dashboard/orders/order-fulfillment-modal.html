@@ -1,89 +1,91 @@
-<div class="dashboard-modal" id="orderFulfillmentModal" hidden aria-hidden="true">
-  <div class="dashboard-modal-backdrop" data-modal-close="true"></div>
-
-  <div class="dashboard-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="orderFulfillmentTitle">
+<div class="order-modal-overlay" id="orderFulfillmentModalOverlay" hidden>
+  <div class="order-modal-card" id="orderFulfillmentModalCard" role="dialog" aria-modal="true" aria-labelledby="orderFulfillmentModalTitle">
     <button
       type="button"
-      class="dashboard-modal-close"
-      id="orderFulfillmentCloseBtn"
-      aria-label="Close fulfillment modal"
+      class="order-modal-close"
+      id="orderFulfillmentModalClose"
+      aria-label="Close order action modal"
     >
       &times;
     </button>
 
-    <div class="dashboard-modal-content">
+    <p class="order-modal-kicker" id="orderFulfillmentModalKicker">ORDER ACTION</p>
+    <h2 class="order-modal-title" id="orderFulfillmentModalTitle">Fulfill Order</h2>
 
-      <!-- FULFILL ORDER STEP -->
-      <div id="fulfillmentStep" hidden>
-        <div class="dashboard-modal-header">
-          <p class="dashboard-kicker">Order Action</p>
-          <h3 id="orderFulfillmentTitle">Fulfill Order</h3>
+    <div class="order-modal-body">
+      <!-- FULFILL STEP -->
+      <div id="fulfillmentPaymentStep">
+        <p class="order-modal-label">How did the customer pay?</p>
+
+        <div class="order-payment-grid">
+          <button type="button" class="order-payment-option" data-payment-method="Cash App">Cash App</button>
+          <button type="button" class="order-payment-option" data-payment-method="Crypto">Crypto</button>
+          <button type="button" class="order-payment-option" data-payment-method="Credit / Debit Card">Credit / Debit Card</button>
+          <button type="button" class="order-payment-option" data-payment-method="Venmo">Venmo</button>
+          <button type="button" class="order-payment-option" data-payment-method="Zelle">Zelle</button>
+          <button type="button" class="order-payment-option" data-payment-method="Bank Transfer">Bank Transfer</button>
         </div>
-
-        <p class="dashboard-modal-copy">How did the customer pay?</p>
-
-        <div class="dashboard-payment-method-grid">
-          <button type="button" class="dashboard-pill-option" data-payment-method="Cash App">Cash App</button>
-          <button type="button" class="dashboard-pill-option" data-payment-method="Crypto">Crypto</button>
-          <button type="button" class="dashboard-pill-option" data-payment-method="Credit / Debit Card">Credit / Debit Card</button>
-          <button type="button" class="dashboard-pill-option" data-payment-method="Venmo">Venmo</button>
-          <button type="button" class="dashboard-pill-option" data-payment-method="Zelle">Zelle</button>
-          <button type="button" class="dashboard-pill-option" data-payment-method="Bank Transfer">Bank Transfer</button>
-        </div>
-
-        <div class="dashboard-modal-status" id="fulfillmentStatusMessage"></div>
       </div>
 
-      <!-- MARK SHIPPED STEP -->
-      <div id="shippedStep" hidden>
-        <div class="dashboard-modal-header">
-          <p class="dashboard-kicker">Order Action</p>
-          <h3>Mark Order Shipped</h3>
+      <!-- SHIPPED STEP -->
+      <div id="shipmentFieldsStep" hidden>
+        <div class="order-modal-field-group">
+          <label class="order-modal-field-label" for="shipmentCarrierInput">Carrier</label>
+          <input
+            id="shipmentCarrierInput"
+            class="order-modal-input"
+            type="text"
+            placeholder="USPS, UPS, FedEx"
+          />
         </div>
 
-        <div class="dashboard-form-stack">
-          <div class="dashboard-form-group">
-            <label for="shipmentTrackingNumber">Tracking Number</label>
-            <input
-              type="text"
-              id="shipmentTrackingNumber"
-              class="dashboard-input"
-              placeholder="Enter tracking number"
-            />
-          </div>
-
-          <div class="dashboard-form-group">
-            <label for="shipmentTrackingUrl">Tracking URL</label>
-            <input
-              type="text"
-              id="shipmentTrackingUrl"
-              class="dashboard-input"
-              placeholder="Enter tracking URL"
-            />
-          </div>
+        <div class="order-modal-field-group">
+          <label class="order-modal-field-label" for="shipmentServiceInput">Shipping Service</label>
+          <input
+            id="shipmentServiceInput"
+            class="order-modal-input"
+            type="text"
+            placeholder="Ground Advantage, Priority Mail"
+          />
         </div>
 
-        <div class="dashboard-modal-actions">
-          <button
-            type="button"
-            class="dashboard-btn dashboard-btn-primary"
-            id="saveShipmentBtn"
-          >
+        <div class="order-modal-field-group">
+          <label class="order-modal-field-label" for="shipmentTrackingNumberInput">Tracking Number</label>
+          <input
+            id="shipmentTrackingNumberInput"
+            class="order-modal-input"
+            type="text"
+            placeholder="Enter tracking number"
+          />
+        </div>
+
+        <div class="order-modal-field-group">
+          <label class="order-modal-field-label" for="shipmentTrackingUrlInput">Tracking URL</label>
+          <input
+            id="shipmentTrackingUrlInput"
+            class="order-modal-input"
+            type="url"
+            placeholder="Enter tracking URL"
+          />
+        </div>
+
+        <div class="order-modal-action-stack">
+          <button type="button" class="dashboard-btn dashboard-btn-secondary" id="buyShippingLabelBtn">
+            Buy Shipping Label
+          </button>
+
+          <button type="button" class="dashboard-btn dashboard-btn-primary" id="saveShipmentBtn">
             Save Shipment
           </button>
 
-          <button
-            type="button"
-            class="dashboard-btn dashboard-btn-secondary"
-            id="cancelShipmentBtn"
-          >
+          <button type="button" class="dashboard-btn dashboard-btn-secondary" id="cancelShipmentBtn">
             Cancel
           </button>
         </div>
-
-        <div class="dashboard-modal-status" id="shipmentStatusMessage"></div>
       </div>
 
+      <p class="order-modal-error" id="orderFulfillmentModalError" hidden></p>
+      <p class="order-modal-success" id="orderFulfillmentModalSuccess" hidden></p>
     </div>
   </div>
 </div>
