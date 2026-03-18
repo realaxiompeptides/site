@@ -351,6 +351,27 @@
   <script src="../js/app.js" defer></script>
   <script src="../footer/footer-loader.js" defer></script>
 
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const footerTarget = document.getElementById("site-footer");
+      if (!footerTarget) return;
+
+      fetch("../footer/footer.html", { cache: "no-store" })
+        .then(function (response) {
+          if (!response.ok) {
+            throw new Error("Could not load ../footer/footer.html");
+          }
+          return response.text();
+        })
+        .then(function (html) {
+          footerTarget.innerHTML = html;
+        })
+        .catch(function (error) {
+          console.error("Footer load failed:", error);
+        });
+    });
+  </script>
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="../admin-dashboard/dashboard-config.js" defer></script>
   <script src="../admin-dashboard/shared/tracking-config.js" defer></script>
