@@ -8,18 +8,41 @@ document.addEventListener("DOMContentLoaded", async function () {
   }
 
   const supabase = window.axiomSupabase;
+  let authHandled = false;
 
-  async function redirectToLogin() {
+  function goToLogin() {
     window.location.href = LOGIN_PATH;
   }
 
-  async function signOutAndRedirect() {
+  async function signOutAndGoToLogin() {
     try {
       await supabase.auth.signOut();
-    } catch (signOutError) {
-      console.error("Sign out failed:", signOutError);
+    } catch (error) {
+      console.error("Sign out failed:", error);
     }
-    await redirectToLogin();
+    goToLogin();
+  }
+
+  async function getStableSession() {
+    for (let i = 0; i < 8; i += 1) {
+      const {
+        data: { session },
+        error
+      } = await supabase.auth.getSession();
+
+      if (error) {
+        console.error("getSession error:", error);
+        return null;
+      }
+
+      if (session?.user) {
+        return session;
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, 250));
+    }
+
+    return null;
   }
 
   async function getActiveAdminRow(email) {
@@ -30,7 +53,7 @@ document.addEventListener("DOMContentLoaded", async function () {
     const { data, error } = await supabase
       .from("admin_users")
       .select("id, email, full_name, is_active")
-      .eq("email", normalizedEmail)
+      .ilike("email", normalizedEmail)
       .eq("is_active", true)
       .maybeSingle();
 
@@ -41,28 +64,15 @@ document.addEventListener("DOMContentLoaded", async function () {
     return data || null;
   }
 
-  try {
-    const {
-      data: { session },
-      error: sessionError
-    } = await supabase.auth.getSession();
+  async function handleAuthenticatedSession(session) {
+    if (authHandled) return;
+    authHandled = true;
 
-    if (sessionError) {
-      console.error("Admin session check failed:", sessionError);
-      await redirectToLogin();
-      return;
-    }
-
-    if (!session || !session.user) {
-      await redirectToLogin();
-      return;
-    }
-
-    const userEmail = String(session.user.email || "").trim().toLowerCase();
+    const userEmail = String(session?.user?.email || "").trim().toLowerCase();
 
     if (!userEmail) {
       console.error("Authenticated user has no email.");
-      await signOutAndRedirect();
+      await signOutAndGoToLogin();
       return;
     }
 
@@ -70,15 +80,15 @@ document.addEventListener("DOMContentLoaded", async function () {
 
     try {
       adminRow = await getActiveAdminRow(userEmail);
-    } catch (adminLookupError) {
-      console.error("Admin user lookup failed:", adminLookupError);
-      await signOutAndRedirect();
+    } catch (lookupError) {
+      console.error("Admin lookup failed:", lookupError);
+      await signOutAndGoToLogin();
       return;
     }
 
     if (!adminRow) {
-      console.error("User is not an active admin:", userEmail);
-      await signOutAndRedirect();
+      console.error("No active admin row found for:", userEmail);
+      await signOutAndGoToLogin();
       return;
     }
 
@@ -104,26 +114,33 @@ document.addEventListener("DOMContentLoaded", async function () {
         } catch (logoutError) {
           console.error("Logout failed:", logoutError);
         }
-        await redirectToLogin();
+        goToLogin();
       });
     }
+  }
 
-    supabase.auth.onAuthStateChange(async function (event, newSession) {
-      if (event === "SIGNED_OUT") {
-        await redirectToLogin();
-        return;
-      }
+  supabase.auth.onAuthStateChange(async function (event, session) {
+    if (event === "SIGNED_OUT") {
+      goToLogin();
+      return;
+    }
 
-      if (
-        (event === "TOKEN_REFRESHED" || event === "USER_UPDATED" || event === "SIGNED_IN") &&
-        (!newSession || !newSession.user)
-      ) {
-        await redirectToLogin();
-        return;
-      }
-    });
+    if ((event === "INITIAL_SESSION" || event === "SIGNED_IN" || event === "TOKEN_REFRESHED") && session?.user) {
+      await handleAuthenticatedSession(session);
+    }
+  });
+
+  try {
+    const session = await getStableSession();
+
+    if (!session?.user) {
+      goToLogin();
+      return;
+    }
+
+    await handleAuthenticatedSession(session);
   } catch (error) {
     console.error("Admin auth guard failed:", error);
-    await redirectToLogin();
+    goToLogin();
   }
 });
