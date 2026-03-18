@@ -1,5 +1,5 @@
 document.addEventListener("DOMContentLoaded", async function () {
-  const LOGIN_PATH = "/site/admin-dashboard/login.html";
+  const LOGIN_PATH = "login.html";
 
   if (!window.axiomSupabase) {
     console.error("Supabase client missing.");
@@ -11,7 +11,10 @@ document.addEventListener("DOMContentLoaded", async function () {
   let authHandled = false;
 
   function goToLogin() {
-    window.location.href = LOGIN_PATH;
+    const currentPath = window.location.pathname || "";
+    if (!currentPath.endsWith("/login.html") && !currentPath.endsWith("login.html")) {
+      window.location.href = LOGIN_PATH;
+    }
   }
 
   async function signOutAndGoToLogin() {
@@ -23,8 +26,8 @@ document.addEventListener("DOMContentLoaded", async function () {
     goToLogin();
   }
 
-  async function getStableSession() {
-    for (let i = 0; i < 8; i += 1) {
+  async function getStableSession(maxAttempts = 10, delayMs = 250) {
+    for (let i = 0; i < maxAttempts; i += 1) {
       const {
         data: { session },
         error
@@ -39,7 +42,7 @@ document.addEventListener("DOMContentLoaded", async function () {
         return session;
       }
 
-      await new Promise((resolve) => setTimeout(resolve, 250));
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
     }
 
     return null;
@@ -65,15 +68,14 @@ document.addEventListener("DOMContentLoaded", async function () {
   }
 
   async function handleAuthenticatedSession(session) {
-    if (authHandled) return;
-    authHandled = true;
+    if (authHandled) return true;
 
     const userEmail = String(session?.user?.email || "").trim().toLowerCase();
 
     if (!userEmail) {
       console.error("Authenticated user has no email.");
       await signOutAndGoToLogin();
-      return;
+      return false;
     }
 
     let adminRow = null;
@@ -83,14 +85,16 @@ document.addEventListener("DOMContentLoaded", async function () {
     } catch (lookupError) {
       console.error("Admin lookup failed:", lookupError);
       await signOutAndGoToLogin();
-      return;
+      return false;
     }
 
     if (!adminRow) {
       console.error("No active admin row found for:", userEmail);
       await signOutAndGoToLogin();
-      return;
+      return false;
     }
+
+    authHandled = true;
 
     window.AXIOM_ADMIN = {
       id: adminRow.id,
@@ -117,15 +121,21 @@ document.addEventListener("DOMContentLoaded", async function () {
         goToLogin();
       });
     }
+
+    return true;
   }
 
   supabase.auth.onAuthStateChange(async function (event, session) {
     if (event === "SIGNED_OUT") {
+      authHandled = false;
       goToLogin();
       return;
     }
 
-    if ((event === "INITIAL_SESSION" || event === "SIGNED_IN" || event === "TOKEN_REFRESHED") && session?.user) {
+    if (
+      (event === "INITIAL_SESSION" || event === "SIGNED_IN" || event === "TOKEN_REFRESHED" || event === "USER_UPDATED") &&
+      session?.user
+    ) {
       await handleAuthenticatedSession(session);
     }
   });
