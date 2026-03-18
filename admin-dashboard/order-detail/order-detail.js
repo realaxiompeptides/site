@@ -95,18 +95,13 @@ window.AXIOM_ORDER_DETAIL = {
         );
         if (!confirmed) return;
 
-        const originalPaymentStatus = String(this.currentOrder?.payment_status || "").toLowerCase();
-
-        const resetPaymentStatus =
-          originalPaymentStatus === "paid" ? "pending" : (this.currentOrder?.payment_status || "pending");
+        const resetPaymentStatus = "pending";
 
         const updatedOrder = {
           ...this.currentOrder,
           order_status: "cancelled",
           payment_status: resetPaymentStatus,
           fulfillment_status: "unfulfilled",
-          shipping_carrier: "",
-          shipping_service: "",
           tracking_number: "",
           tracking_url: ""
         };
@@ -230,8 +225,6 @@ window.AXIOM_ORDER_DETAIL = {
         payment_status: updatedOrder.payment_status || null,
         payment_method: paymentMethod,
         fulfillment_status: updatedOrder.fulfillment_status || null,
-        shipping_carrier: updatedOrder.shipping_carrier || null,
-        shipping_service: updatedOrder.shipping_service || null,
         tracking_number: updatedOrder.tracking_number || null,
         tracking_url: updatedOrder.tracking_url || null,
         updated_at: new Date().toISOString()
@@ -298,10 +291,7 @@ window.AXIOM_ORDER_DETAIL = {
         await window.AXIOM_DASHBOARD_APP.refreshHomeDashboard();
       }
 
-      if (
-        updatedOrder?.id &&
-        this.currentOrder?.id === updatedOrder.id
-      ) {
+      if (updatedOrder?.id && this.currentOrder?.id === updatedOrder.id) {
         const latest = await this.fetchLatestOrder(updatedOrder.id);
         if (latest) {
           this.currentOrder = latest;
@@ -445,6 +435,7 @@ window.AXIOM_ORDER_DETAIL = {
 
     if (shippedBtn) {
       shippedBtn.hidden = isCancelled;
+
       if (isShipped) {
         shippedBtn.textContent = "Order Shipped";
         shippedBtn.disabled = true;
