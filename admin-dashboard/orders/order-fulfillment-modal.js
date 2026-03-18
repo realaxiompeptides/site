@@ -1,59 +1,72 @@
 window.AXIOM_ORDER_FULFILLMENT_MODAL = (function () {
-  let currentOrder = null;
+  let currentFulfillmentOrder = null;
+  let currentShipmentOrder = null;
 
-  function getModal() {
+  function fulfillmentModal() {
     return document.getElementById("orderFulfillmentModal");
   }
 
-  function open(order) {
-    currentOrder = order || null;
-    const modal = getModal();
+  function shippedModal() {
+    return document.getElementById("orderShippedModal");
+  }
+
+  function openFulfillment(order) {
+    currentFulfillmentOrder = order || null;
+    const modal = fulfillmentModal();
     if (!modal) return;
     modal.hidden = false;
     document.body.classList.add("axiom-modal-open");
   }
 
-  function close() {
-    currentOrder = null;
-    const modal = getModal();
+  function closeFulfillment() {
+    currentFulfillmentOrder = null;
+    const modal = fulfillmentModal();
     if (!modal) return;
     modal.hidden = true;
     document.body.classList.remove("axiom-modal-open");
   }
 
-  function getCurrentOrder() {
-    return currentOrder;
+  function openShipped(order) {
+    currentShipmentOrder = order || null;
+
+    const trackingNumberInput = document.getElementById("shipmentTrackingNumber");
+    const trackingUrlInput = document.getElementById("shipmentTrackingUrl");
+
+    if (trackingNumberInput) {
+      trackingNumberInput.value = order?.tracking_number || "";
+    }
+
+    if (trackingUrlInput) {
+      trackingUrlInput.value = order?.tracking_url || "";
+    }
+
+    const modal = shippedModal();
+    if (!modal) return;
+    modal.hidden = false;
+    document.body.classList.add("axiom-modal-open");
+  }
+
+  function closeShipped() {
+    currentShipmentOrder = null;
+    const modal = shippedModal();
+    if (!modal) return;
+    modal.hidden = true;
+    document.body.classList.remove("axiom-modal-open");
+  }
+
+  function bindClose(selector, closeFn, root) {
+    root.querySelectorAll(selector).forEach((el) => {
+      if (el.dataset.bound === "true") return;
+      el.dataset.bound = "true";
+      el.addEventListener("click", closeFn);
+    });
   }
 
   function init() {
-    const modal = getModal();
-    if (!modal) return;
+    const fulfillRoot = fulfillmentModal();
+    const shippedRoot = shippedModal();
 
-    modal.querySelectorAll("[data-close-order-fulfillment-modal]").forEach((el) => {
-      el.addEventListener("click", close);
-    });
+    if (fulfillRoot) {
+      bindClose("[data-close-order-fulfillment-modal]", closeFulfillment, fulfillRoot);
 
-    modal.querySelectorAll("[data-payment-method]").forEach((button) => {
-      button.addEventListener("click", async function () {
-        const paymentMethod = button.getAttribute("data-payment-method");
-        if (!paymentMethod || !currentOrder) return;
-
-        if (
-          window.AXIOM_ORDER_ACTIONS &&
-          typeof window.AXIOM_ORDER_ACTIONS.fulfillOrder === "function"
-        ) {
-          await window.AXIOM_ORDER_ACTIONS.fulfillOrder(currentOrder, paymentMethod);
-        }
-
-        close();
-      });
-    });
-  }
-
-  return {
-    init,
-    open,
-    close,
-    getCurrentOrder
-  };
-})();
+      fulfillRoot.querySelectorAll("[data-payment-method]").for
