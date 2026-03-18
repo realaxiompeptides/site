@@ -3,9 +3,60 @@ window.AXIOM_ORDER_DETAIL = {
 
   init() {
     const backBtn = document.getElementById("orderDetailBackBtn");
-    if (backBtn) {
+    if (backBtn && !backBtn.dataset.bound) {
+      backBtn.dataset.bound = "true";
       backBtn.addEventListener("click", () => {
         this.hide();
+      });
+    }
+
+    const fulfillBtn = document.getElementById("fulfillOrderBtn");
+    if (fulfillBtn && !fulfillBtn.dataset.bound) {
+      fulfillBtn.dataset.bound = "true";
+      fulfillBtn.addEventListener("click", () => {
+        if (!this.currentOrder) {
+          alert("No order selected.");
+          return;
+        }
+
+        if (
+          window.AXIOM_ORDER_FULFILLMENT_MODAL &&
+          typeof window.AXIOM_ORDER_FULFILLMENT_MODAL.open === "function"
+        ) {
+          window.AXIOM_ORDER_FULFILLMENT_MODAL.open(this.currentOrder);
+        }
+      });
+    }
+
+    const shippedBtn = document.getElementById("markShippedBtn");
+    if (shippedBtn && !shippedBtn.dataset.bound) {
+      shippedBtn.dataset.bound = "true";
+      shippedBtn.addEventListener("click", async () => {
+        if (!this.currentOrder) {
+          alert("No order selected.");
+          return;
+        }
+
+        const trackingNumber = prompt(
+          "Enter tracking number (optional):",
+          this.currentOrder.tracking_number || ""
+        ) || "";
+
+        const trackingUrl = prompt(
+          "Enter tracking URL (optional):",
+          this.currentOrder.tracking_url || ""
+        ) || "";
+
+        if (
+          window.AXIOM_ORDER_ACTIONS &&
+          typeof window.AXIOM_ORDER_ACTIONS.markShipped === "function"
+        ) {
+          await window.AXIOM_ORDER_ACTIONS.markShipped(
+            this.currentOrder,
+            trackingNumber,
+            trackingUrl
+          );
+        }
       });
     }
   },
@@ -29,7 +80,14 @@ window.AXIOM_ORDER_DETAIL = {
   },
 
   setOrder(order) {
-    this.currentOrder = order;
+    this.currentOrder = order || null;
+
+    if (!order) {
+      this.clear();
+      this.hide();
+      return;
+    }
+
     this.renderOverview(order);
     this.renderShipping(order);
     this.renderBilling(order);
@@ -60,14 +118,10 @@ window.AXIOM_ORDER_DETAIL = {
     });
 
     const shippingMount = document.getElementById("orderDetailShippingAddress");
-    if (shippingMount) {
-      shippingMount.innerHTML = "—";
-    }
+    if (shippingMount) shippingMount.innerHTML = "—";
 
     const billingMount = document.getElementById("orderDetailBillingAddress");
-    if (billingMount) {
-      billingMount.innerHTML = "—";
-    }
+    if (billingMount) billingMount.innerHTML = "—";
 
     const itemsMount = document.getElementById("orderDetailItemsWrap");
     if (itemsMount) {
@@ -130,14 +184,12 @@ window.AXIOM_ORDER_DETAIL = {
   renderShipping(order) {
     const mount = document.getElementById("orderDetailShippingAddress");
     if (!mount) return;
-
     mount.innerHTML = this.formatAddressBlock(order?.shipping_address);
   },
 
   renderBilling(order) {
     const mount = document.getElementById("orderDetailBillingAddress");
     if (!mount) return;
-
     mount.innerHTML = this.formatAddressBlock(order?.billing_address);
   },
 
