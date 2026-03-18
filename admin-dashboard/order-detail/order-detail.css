@@ -1,0 +1,264 @@
+/* =========================
+   ORDER DETAIL PANEL
+========================= */
+
+.dashboard-address-list {
+  display: grid;
+  gap: 12px;
+}
+
+.dashboard-address-list p {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.6;
+  color: #0f172a;
+}
+
+.dashboard-address-list strong {
+  color: #0b1635;
+}
+
+#orderDetailTrackingUrl a {
+  color: #2563eb;
+  text-decoration: none;
+  font-weight: 700;
+}
+
+#orderDetailTrackingUrl a:hover {
+  text-decoration: underline;
+}
+
+/* =========================
+   ORDER ACTIONS / SHIPMENT
+========================= */
+
+#orderDetailPanel .dashboard-action-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+#orderDetailPanel .dashboard-quick-link {
+  min-height: 54px;
+  padding: 0 22px;
+  border-radius: 999px;
+  border: 1px solid #d7e1ee;
+  background: #f8fbff;
+  color: #0b1635;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+#orderDetailPanel .dashboard-quick-link:hover {
+  border-color: #5ea5de;
+  color: #2563eb;
+  background: #ffffff;
+}
+
+#orderDetailPanel .dashboard-quick-link span {
+  pointer-events: none;
+}
+
+/* =========================
+   ORDER MODAL OVERLAY
+========================= */
+
+.order-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(15, 23, 42, 0.42);
+  backdrop-filter: blur(8px);
+}
+
+.order-modal-card {
+  position: relative;
+  width: min(760px, 100%);
+  max-height: min(88vh, 900px);
+  overflow-y: auto;
+  background: #ffffff;
+  border: 1px solid #d7e1ee;
+  border-radius: 34px;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.24);
+  padding: 28px;
+}
+
+.order-modal-close {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  width: 76px;
+  height: 76px;
+  border-radius: 999px;
+  border: 1px solid #d7e1ee;
+  background: #ffffff;
+  color: #6b7a90;
+  font-size: 44px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.order-modal-kicker {
+  margin: 0 0 10px;
+  color: #5ea5de;
+  font-size: 14px;
+  font-weight: 900;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+.order-modal-title {
+  margin: 0 0 24px;
+  font-size: 64px;
+  line-height: 0.95;
+  color: #0b1635;
+  font-weight: 900;
+}
+
+.order-modal-body {
+  margin-top: 8px;
+}
+
+.order-modal-label,
+.order-modal-field-label {
+  display: block;
+  margin: 0 0 14px;
+  color: #4a5568;
+  font-size: 28px;
+  font-weight: 500;
+}
+
+.order-payment-grid {
+  display: grid;
+  gap: 18px;
+}
+
+.order-payment-option {
+  min-height: 110px;
+  padding: 18px 24px;
+  border-radius: 999px;
+  border: 2px solid #d4ddea;
+  background: #ffffff;
+  color: #0b1635;
+  font-size: 28px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.order-payment-option.active,
+.order-payment-option:hover {
+  border-color: #5ea5de;
+  color: #2563eb;
+}
+
+.order-modal-field-group {
+  margin-bottom: 22px;
+}
+
+.order-modal-input {
+  width: 100%;
+  min-height: 92px;
+  padding: 20px 24px;
+  border-radius: 28px;
+  border: 2px solid #d4ddea;
+  background: #ffffff;
+  color: #0b1635;
+  font-size: 24px;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.order-modal-input:focus {
+  border-color: #5ea5de;
+}
+
+.order-modal-action-stack {
+  display: grid;
+  gap: 16px;
+  margin-top: 18px;
+}
+
+.order-modal-error {
+  margin: 22px 0 0;
+  color: #dc2626;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.order-modal-success {
+  margin: 22px 0 0;
+  color: #15803d;
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+/* =========================
+   MOBILE
+========================= */
+
+@media (max-width: 640px) {
+  .dashboard-address-list p {
+    font-size: 16px;
+  }
+
+  #orderDetailPanel .dashboard-action-list {
+    gap: 12px;
+  }
+
+  #orderDetailPanel .dashboard-quick-link {
+    min-height: 48px;
+    padding: 0 18px;
+    font-size: 15px;
+  }
+
+  .order-modal-card {
+    padding: 22px;
+    border-radius: 28px;
+    max-height: 86vh;
+  }
+
+  .order-modal-close {
+    width: 60px;
+    height: 60px;
+    font-size: 34px;
+    top: 16px;
+    right: 16px;
+  }
+
+  .order-modal-title {
+    font-size: 36px;
+    line-height: 1;
+    padding-right: 70px;
+  }
+
+  .order-modal-label,
+  .order-modal-field-label {
+    font-size: 22px;
+  }
+
+  .order-payment-option {
+    min-height: 78px;
+    font-size: 20px;
+    padding: 16px 18px;
+  }
+
+  .order-modal-input {
+    min-height: 70px;
+    font-size: 18px;
+    border-radius: 22px;
+    padding: 16px 18px;
+  }
+
+  .order-modal-error,
+  .order-modal-success {
+    font-size: 16px;
+  }
+}
