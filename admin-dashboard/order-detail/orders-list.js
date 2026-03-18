@@ -1,70 +1,171 @@
-window.AXIOM_ORDERS_LIST = {
-  selectedOrderId: null,
+window.AXIOM_ORDER_DETAIL = {
+  currentOrder: null,
 
-  render(allOrders) {
-    const wrap = document.getElementById("ordersListWrap");
-    if (!wrap) return;
+  setOrder(order) {
+    this.currentOrder = order;
+    this.renderOverview(order);
+    this.renderShipping(order);
+    this.renderBilling(order);
+    this.renderCartItems(order);
+  },
 
-    if (!Array.isArray(allOrders) || !allOrders.length) {
-      wrap.innerHTML = `<div class="dashboard-empty">No orders found.</div>`;
-      if (window.AXIOM_ORDER_DETAIL) window.AXIOM_ORDER_DETAIL.clear();
-      return;
+  clear() {
+    this.currentOrder = null;
+
+    const ids = [
+      "orderDetailNumber",
+      "orderDetailStatus",
+      "orderDetailPaymentStatus",
+      "orderDetailFulfillmentStatus",
+      "orderDetailEmail",
+      "orderDetailPhone",
+      "orderDetailCreated",
+      "orderDetailSubtotal",
+      "orderDetailShipping",
+      "orderDetailTax",
+      "orderDetailTotal"
+    ];
+
+    ids.forEach(function (id) {
+      const el = document.getElementById(id);
+      if (el) el.textContent = "—";
+    });
+
+    const shippingMount = document.getElementById("orderDetailShippingAddress");
+    if (shippingMount) {
+      shippingMount.innerHTML = "—";
     }
 
-    if (!this.selectedOrderId) {
-      this.selectedOrderId = allOrders[0].id;
+    const billingMount = document.getElementById("orderDetailBillingAddress");
+    if (billingMount) {
+      billingMount.innerHTML = "—";
     }
 
-    if (!allOrders.some((entry) => entry.id === this.selectedOrderId)) {
-      this.selectedOrderId = allOrders[0].id;
+    const itemsMount = document.getElementById("orderDetailItemsWrap");
+    if (itemsMount) {
+      itemsMount.innerHTML = `<div class="dashboard-empty">No items found.</div>`;
     }
+  },
 
-    wrap.innerHTML = allOrders.map((order) => {
-      const fullName = [order.customer_first_name, order.customer_last_name]
-        .filter(Boolean)
-        .join(" ")
-        .trim();
+  renderOverview(order) {
+    const map = {
+      orderDetailNumber: order?.order_number ? `#${order.order_number}` : "—",
+      orderDetailStatus: order?.order_status || "—",
+      orderDetailPaymentStatus: order?.payment_status || "—",
+      orderDetailFulfillmentStatus: order?.fulfillment_status || "—",
+      orderDetailEmail: order?.customer_email || "—",
+      orderDetailPhone: order?.customer_phone || "—",
+      orderDetailCreated: order?.created_at ? new Date(order.created_at).toLocaleString() : "—",
+      orderDetailSubtotal: window.AXIOM_HELPERS.formatMoney(order?.subtotal || 0),
+      orderDetailShipping: window.AXIOM_HELPERS.formatMoney(order?.shipping_amount || 0),
+      orderDetailTax: window.AXIOM_HELPERS.formatMoney(order?.tax_amount || 0),
+      orderDetailTotal: window.AXIOM_HELPERS.formatMoney(order?.total_amount || 0)
+    };
 
-      const isActive = order.id === this.selectedOrderId;
-
-      return `
-        <div class="dashboard-session-card ${isActive ? "active" : ""}" data-order-id="${order.id}">
-          <h4>Order #${order.order_number || "—"}</h4>
-          <p>${fullName || order.customer_email || "Unknown customer"}</p>
-          <p>${window.AXIOM_DASHBOARD_UTILS.formatDateTime(order.created_at)}</p>
-          <p>Status: ${order.order_status || "—"} | Payment: ${order.payment_status || "—"} | Fulfillment: ${order.fulfillment_status || "—"}</p>
-          <p>Total: ${window.AXIOM_DASHBOARD_UTILS.formatMoney(order.total_amount)}</p>
-        </div>
-      `;
-    }).join("");
-
-    const selectedOrder = allOrders.find((order) => order.id === this.selectedOrderId);
-    if (window.AXIOM_ORDER_DETAIL) {
-      window.AXIOM_ORDER_DETAIL.render(selectedOrder);
-    }
-
-    wrap.querySelectorAll("[data-order-id]").forEach((card) => {
-      card.addEventListener("click", () => {
-        this.selectedOrderId = card.getAttribute("data-order-id");
-        this.render(allOrders);
-
-        const detailMount = document.getElementById("orderDetailMount");
-        if (detailMount) {
-          detailMount.scrollIntoView({ behavior: "smooth", block: "start" });
-        }
-      });
+    Object.keys(map).forEach(function (id) {
+      const el = document.getElementById(id);
+      if (el) el.textContent = map[id];
     });
   },
 
-  openFromHome(orderId, allOrders, showOrdersView) {
-    this.selectedOrderId = orderId;
-    showOrdersView().then(() => {
-      this.render(allOrders);
+  formatAddressBlock(address) {
+    if (!address || typeof address !== "object") {
+      return "—";
+    }
 
-      const detailMount = document.getElementById("orderDetailMount");
-      if (detailMount) {
-        detailMount.scrollIntoView({ behavior: "smooth", block: "start" });
-      }
-    });
+    const firstName = address.first_name || address.firstName || "";
+    const lastName = address.last_name || address.lastName || "";
+    const fullName = [firstName, lastName].filter(Boolean).join(" ").trim();
+
+    const address1 = address.address1 || address.line1 || "";
+    const address2 = address.address2 || address.line2 || "";
+    const city = address.city || "";
+    const state = address.state || address.province || "";
+    const zip = address.zip || address.postal_code || address.postalCode || "";
+    const country = address.country || "US";
+    const phone = address.phone || "";
+
+    return `
+      <div class="dashboard-address-list">
+        <p><strong>Name:</strong> ${fullName || "—"}</p>
+        <p><strong>Address:</strong> ${address1 || "—"}</p>
+        <p><strong>Address 2:</strong> ${address2 || "—"}</p>
+        <p><strong>City:</strong> ${city || "—"}</p>
+        <p><strong>State:</strong> ${state || "—"}</p>
+        <p><strong>ZIP:</strong> ${zip || "—"}</p>
+        <p><strong>Country:</strong> ${country || "—"}</p>
+        <p><strong>Phone:</strong> ${phone || "—"}</p>
+      </div>
+    `;
+  },
+
+  renderShipping(order) {
+    const mount = document.getElementById("orderDetailShippingAddress");
+    if (!mount) return;
+
+    mount.innerHTML = this.formatAddressBlock(order?.shipping_address);
+  },
+
+  renderBilling(order) {
+    const mount = document.getElementById("orderDetailBillingAddress");
+    if (!mount) return;
+
+    mount.innerHTML = this.formatAddressBlock(order?.billing_address);
+  },
+
+  renderCartItems(order) {
+    const mount = document.getElementById("orderDetailItemsWrap");
+    if (!mount) return;
+
+    const items = Array.isArray(order?.cart_items) ? order.cart_items : [];
+
+    if (!items.length) {
+      mount.innerHTML = `<div class="dashboard-empty">No items found.</div>`;
+      return;
+    }
+
+    mount.innerHTML = items.map(function (item) {
+      const name = item.product_name || item.name || "Product";
+      const variant =
+        item.variant_label ||
+        item.variantLabel ||
+        item.variant ||
+        "";
+      const quantity = Number(item.quantity || item.qty || 1);
+
+      const unitPrice =
+        item.unit_price !== undefined && item.unit_price !== null
+          ? Number(item.unit_price || 0)
+          : Number(item.price || 0);
+
+      const lineTotal =
+        item.line_total !== undefined && item.line_total !== null
+          ? Number(item.line_total || 0)
+          : unitPrice * quantity;
+
+      const image = item.image || "../images/products/placeholder.PNG";
+
+      return `
+        <div class="dashboard-item-row">
+          <div class="dashboard-item-image">
+            <img
+              src="${image}"
+              alt="${name}"
+              onerror="this.onerror=null;this.src='../images/products/placeholder.PNG';"
+            />
+          </div>
+
+          <div class="dashboard-item-info">
+            <h4>${name}</h4>
+            <p>${variant}</p>
+            <p>Qty: ${quantity}</p>
+          </div>
+
+          <div class="dashboard-item-price">
+            ${window.AXIOM_HELPERS.formatMoney(lineTotal)}
+          </div>
+        </div>
+      `;
+    }).join("");
   }
 };
