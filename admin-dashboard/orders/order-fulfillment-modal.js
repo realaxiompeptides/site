@@ -69,4 +69,85 @@ window.AXIOM_ORDER_FULFILLMENT_MODAL = (function () {
     if (fulfillRoot) {
       bindClose("[data-close-order-fulfillment-modal]", closeFulfillment, fulfillRoot);
 
-      fulfillRoot.querySelectorAll("[data-payment-method]").for
+      fulfillRoot.querySelectorAll("[data-payment-method]").forEach((button) => {
+        if (button.dataset.bound === "true") return;
+        button.dataset.bound = "true";
+
+        button.addEventListener("click", async function () {
+          const paymentMethod = button.getAttribute("data-payment-method");
+          if (!paymentMethod || !currentFulfillmentOrder) return;
+
+          button.disabled = true;
+
+          try {
+            if (
+              window.AXIOM_ORDER_ACTIONS &&
+              typeof window.AXIOM_ORDER_ACTIONS.fulfillOrder === "function"
+            ) {
+              const result = await window.AXIOM_ORDER_ACTIONS.fulfillOrder(
+                currentFulfillmentOrder,
+                paymentMethod
+              );
+
+              if (result?.ok) {
+                closeFulfillment();
+                alert("Order marked as paid and fulfilled.");
+              }
+            }
+          } finally {
+            button.disabled = false;
+          }
+        });
+      });
+    }
+
+    if (shippedRoot) {
+      bindClose("[data-close-order-shipped-modal]", closeShipped, shippedRoot);
+
+      const confirmBtn = document.getElementById("confirmMarkShippedBtn");
+      if (confirmBtn && confirmBtn.dataset.bound !== "true") {
+        confirmBtn.dataset.bound = "true";
+
+        confirmBtn.addEventListener("click", async function () {
+          if (!currentShipmentOrder) return;
+
+          const trackingNumber =
+            document.getElementById("shipmentTrackingNumber")?.value.trim() || "";
+
+          const trackingUrl =
+            document.getElementById("shipmentTrackingUrl")?.value.trim() || "";
+
+          confirmBtn.disabled = true;
+
+          try {
+            if (
+              window.AXIOM_ORDER_ACTIONS &&
+              typeof window.AXIOM_ORDER_ACTIONS.markShipped === "function"
+            ) {
+              const result = await window.AXIOM_ORDER_ACTIONS.markShipped(
+                currentShipmentOrder,
+                trackingNumber,
+                trackingUrl
+              );
+
+              if (result?.ok) {
+                closeShipped();
+                alert("Order marked as shipped.");
+              }
+            }
+          } finally {
+            confirmBtn.disabled = false;
+          }
+        });
+      }
+    }
+  }
+
+  return {
+    init,
+    open: openFulfillment,
+    close: closeFulfillment,
+    openShipped,
+    closeShipped
+  };
+})();
