@@ -26,9 +26,9 @@ window.AXIOM_PAYMENT_TRACKING = {
     window.addEventListener("resize", () => {
       if (
         window.AXIOM_DASHBOARD_APP &&
-        Array.isArray(window.AXIOM_DASHBOARD_APP.orders)
+        Array.isArray(window.AXIOM_DASHBOARD_APP.checkoutSessionsForTracking)
       ) {
-        this.render(window.AXIOM_DASHBOARD_APP.orders);
+        this.render(window.AXIOM_DASHBOARD_APP.checkoutSessionsForTracking);
       }
     });
   },
@@ -75,31 +75,28 @@ window.AXIOM_PAYMENT_TRACKING = {
     return { now, start, bucket };
   },
 
-  getCompletedOrders(orders) {
-    return (Array.isArray(orders) ? orders : []).filter((order) => {
-      const paymentStatus = String(order?.payment_status || "").toLowerCase();
-      const orderStatus = String(order?.order_status || "").toLowerCase();
-      const fulfillmentStatus = String(order?.fulfillment_status || "").toLowerCase();
-
-      if (orderStatus === "cancelled") return false;
+  getCompletedPayments(sessions) {
+    return (Array.isArray(sessions) ? sessions : []).filter((session) => {
+      const paymentStatus = String(session?.payment_status || "").toLowerCase();
+      const fulfillmentStatus = String(session?.fulfillment_status || "").toLowerCase();
+      const sessionStatus = String(session?.session_status || "").toLowerCase();
 
       return (
         paymentStatus === "paid" ||
         fulfillmentStatus === "fulfilled" ||
         fulfillmentStatus === "shipped" ||
-        orderStatus === "fulfilled" ||
-        orderStatus === "shipped"
+        sessionStatus === "converted"
       );
     });
   },
 
-  getSaleDate(order) {
+  getSaleDate(session) {
     const rawValue =
-      order?.payment_collected_at ||
-      order?.completed_at ||
-      order?.shipped_at ||
-      order?.updated_at ||
-      order?.created_at ||
+      session?.payment_collected_at ||
+      session?.completed_at ||
+      session?.confirmed_at ||
+      session?.updated_at ||
+      session?.created_at ||
       null;
 
     if (!rawValue) return null;
@@ -234,30 +231,30 @@ window.AXIOM_PAYMENT_TRACKING = {
     return keys;
   },
 
-  buildSeries(orders, range) {
+  buildSeries(sessions, range) {
     const config = this.getRangeConfig(range);
-    const completedOrders = this.getCompletedOrders(orders);
+    const completedPayments = this.getCompletedPayments(sessions);
 
-    const filtered = completedOrders.filter((order) => {
-      const saleDate = this.getSaleDate(order);
+    const filtered = completedPayments.filter((session) => {
+      const saleDate = this.getSaleDate(session);
       return saleDate && saleDate >= config.start && saleDate <= config.now;
     });
 
     const totalsByBucket = {};
 
-    filtered.forEach((order) => {
-      const saleDate = this.getSaleDate(order);
+    filtered.forEach((session) => {
+      const saleDate = this.getSaleDate(session);
       if (!saleDate) return;
 
       const key = this.getBucketKey(saleDate, config.bucket);
-      const total = Number(order?.total_amount || 0);
+      const total = Number(session?.total_amount || 0);
       totalsByBucket[key] = Number(totalsByBucket[key] || 0) + total;
     });
 
     const fullKeys = this.createFullBucketSeries(range, config.bucket);
 
-    const totalSales = filtered.reduce((sum, order) => {
-      return sum + Number(order?.total_amount || 0);
+    const totalSales = filtered.reduce((sum, session) => {
+      return sum + Number(session?.total_amount || 0);
     }, 0);
 
     return {
@@ -369,10 +366,10 @@ window.AXIOM_PAYMENT_TRACKING = {
     });
   },
 
-  render(orders) {
+  render(sessions) {
     this.setRange(this.currentRange);
 
-    const series = this.buildSeries(orders, this.currentRange);
+    const series = this.buildSeries(sessions, this.currentRange);
 
     const completedCountEl = document.getElementById("paymentTrackingCompletedCount");
     const totalSalesEl = document.getElementById("paymentTrackingTotalSales");
