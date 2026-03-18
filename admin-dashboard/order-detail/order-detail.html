@@ -29,9 +29,9 @@
       </div>
 
       <div class="dashboard-info-row">
-  <span>Payment Type</span>
-  <strong id="orderDetailPaymentMethod">—</strong>
-</div>
+        <span>Payment Type</span>
+        <strong id="orderDetailPaymentMethod">—</strong>
+      </div>
 
       <div class="dashboard-info-row">
         <span>Fulfillment Status</span>
@@ -95,6 +95,52 @@
         id="markShippedBtn"
       >
         Mark Shipped
+      </button>
+
+      <button
+        type="button"
+        class="dashboard-btn dashboard-btn-danger"
+        id="cancelOrderBtn"
+      >
+        Cancel Order
+      </button>
+    </div>
+  </div>
+
+  <div class="dashboard-card dashboard-span-2">
+    <div class="dashboard-card-header">
+      <h3>Shipment Details</h3>
+    </div>
+
+    <div class="dashboard-info-list">
+      <div class="dashboard-info-row">
+        <span>Carrier</span>
+        <strong id="orderDetailShippingCarrier">—</strong>
+      </div>
+
+      <div class="dashboard-info-row">
+        <span>Service</span>
+        <strong id="orderDetailShippingService">—</strong>
+      </div>
+
+      <div class="dashboard-info-row">
+        <span>Tracking Number</span>
+        <strong id="orderDetailTrackingNumber">—</strong>
+      </div>
+
+      <div class="dashboard-info-row">
+        <span>Tracking Link</span>
+        <strong id="orderDetailTrackingUrl">—</strong>
+      </div>
+    </div>
+
+    <div class="dashboard-action-list" style="margin-top: 16px;">
+      <button
+        type="button"
+        class="dashboard-btn dashboard-btn-secondary"
+        id="copyTrackingBtn"
+      >
+        Copy Tracking
       </button>
     </div>
   </div>
