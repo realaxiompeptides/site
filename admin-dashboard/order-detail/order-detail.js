@@ -26,6 +26,19 @@ window.AXIOM_ORDER_DETAIL = {
           return;
         }
 
+        const fulfillmentStatus = String(this.currentOrder?.fulfillment_status || "").toLowerCase();
+        const orderStatus = String(this.currentOrder?.order_status || "").toLowerCase();
+
+        const isFulfilled =
+          fulfillmentStatus === "fulfilled" ||
+          fulfillmentStatus === "shipped" ||
+          orderStatus === "fulfilled" ||
+          orderStatus === "shipped";
+
+        if (isFulfilled) {
+          return;
+        }
+
         if (
           window.AXIOM_ORDER_FULFILLMENT_MODAL &&
           typeof window.AXIOM_ORDER_FULFILLMENT_MODAL.open === "function"
@@ -41,6 +54,17 @@ window.AXIOM_ORDER_DETAIL = {
       shippedBtn.addEventListener("click", () => {
         if (!this.currentOrder) {
           alert("No order selected.");
+          return;
+        }
+
+        const fulfillmentStatus = String(this.currentOrder?.fulfillment_status || "").toLowerCase();
+        const orderStatus = String(this.currentOrder?.order_status || "").toLowerCase();
+
+        const isShipped =
+          fulfillmentStatus === "shipped" ||
+          orderStatus === "shipped";
+
+        if (isShipped) {
           return;
         }
 
@@ -101,6 +125,7 @@ window.AXIOM_ORDER_DETAIL = {
     }
 
     this.renderOverview(order);
+    this.updateActionButtons(order);
     this.renderShipment(order);
     this.renderShipping(order);
     this.renderBilling(order);
@@ -115,6 +140,7 @@ window.AXIOM_ORDER_DETAIL = {
       "orderDetailNumber",
       "orderDetailStatus",
       "orderDetailPaymentStatus",
+      "orderDetailPaymentMethod",
       "orderDetailFulfillmentStatus",
       "orderDetailEmail",
       "orderDetailPhone",
@@ -144,13 +170,23 @@ window.AXIOM_ORDER_DETAIL = {
     if (itemsMount) {
       itemsMount.innerHTML = `<div class="dashboard-empty">No items found.</div>`;
     }
+
+    this.updateActionButtons(null);
   },
 
   renderOverview(order) {
+    const paymentMethod =
+      order?.payment_method ||
+      order?.payment_type ||
+      order?.payment_provider ||
+      order?.paid_with ||
+      "—";
+
     const map = {
       orderDetailNumber: order?.order_number ? `#${order.order_number}` : "—",
       orderDetailStatus: order?.order_status || "—",
       orderDetailPaymentStatus: order?.payment_status || "—",
+      orderDetailPaymentMethod: paymentMethod,
       orderDetailFulfillmentStatus: order?.fulfillment_status || "—",
       orderDetailEmail: order?.customer_email || "—",
       orderDetailPhone: order?.customer_phone || "—",
@@ -165,6 +201,64 @@ window.AXIOM_ORDER_DETAIL = {
       const el = document.getElementById(id);
       if (el) el.textContent = map[id];
     });
+  },
+
+  updateActionButtons(order) {
+    const fulfillBtn = document.getElementById("fulfillOrderBtn");
+    const shippedBtn = document.getElementById("markShippedBtn");
+
+    if (!order) {
+      if (fulfillBtn) {
+        fulfillBtn.textContent = "Fulfill Order";
+        fulfillBtn.disabled = false;
+        fulfillBtn.classList.remove("dashboard-btn-disabled");
+      }
+
+      if (shippedBtn) {
+        shippedBtn.textContent = "Mark Shipped";
+        shippedBtn.disabled = false;
+        shippedBtn.classList.remove("dashboard-btn-disabled");
+      }
+
+      return;
+    }
+
+    const fulfillmentStatus = String(order?.fulfillment_status || "").toLowerCase();
+    const orderStatus = String(order?.order_status || "").toLowerCase();
+
+    const isFulfilled =
+      fulfillmentStatus === "fulfilled" ||
+      fulfillmentStatus === "shipped" ||
+      orderStatus === "fulfilled" ||
+      orderStatus === "shipped";
+
+    const isShipped =
+      fulfillmentStatus === "shipped" ||
+      orderStatus === "shipped";
+
+    if (fulfillBtn) {
+      if (isFulfilled) {
+        fulfillBtn.textContent = "Order Fulfilled";
+        fulfillBtn.disabled = true;
+        fulfillBtn.classList.add("dashboard-btn-disabled");
+      } else {
+        fulfillBtn.textContent = "Fulfill Order";
+        fulfillBtn.disabled = false;
+        fulfillBtn.classList.remove("dashboard-btn-disabled");
+      }
+    }
+
+    if (shippedBtn) {
+      if (isShipped) {
+        shippedBtn.textContent = "Order Shipped";
+        shippedBtn.disabled = true;
+        shippedBtn.classList.add("dashboard-btn-disabled");
+      } else {
+        shippedBtn.textContent = "Mark Shipped";
+        shippedBtn.disabled = false;
+        shippedBtn.classList.remove("dashboard-btn-disabled");
+      }
+    }
   },
 
   renderShipment(order) {
