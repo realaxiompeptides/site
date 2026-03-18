@@ -174,9 +174,50 @@ function getSessionBadgeClass(status) {
     .replace(/\s+/g, "_");
 }
 
+function getOrderDisplayTitle(order) {
+  const firstName = order.customer_first_name || "";
+  const lastName = order.customer_last_name || "";
+  const fullName = [firstName, lastName].filter(Boolean).join(" ").trim();
+
+  return fullName || order.customer_email || `Order #${order.order_number || "—"}`;
+}
+
+function getOrderFulfillmentState(order) {
+  const orderStatus = String(order?.order_status || "").toLowerCase();
+  const fulfillmentStatus = String(order?.fulfillment_status || "").toLowerCase();
+
+  if (orderStatus === "cancelled") {
+    return "unfulfilled";
+  }
+
+  if (
+    fulfillmentStatus === "fulfilled" ||
+    fulfillmentStatus === "shipped" ||
+    orderStatus === "fulfilled" ||
+    orderStatus === "shipped"
+  ) {
+    return "fulfilled";
+  }
+
+  return "unfulfilled";
+}
+
+function getOrderStatusBadgeHtml(order) {
+  const state = getOrderFulfillmentState(order);
+  const isFulfilled = state === "fulfilled";
+
+  return `
+    <span class="order-status-badge ${isFulfilled ? "is-fulfilled" : "is-unfulfilled"}">
+      ${isFulfilled ? "Fulfilled" : "Unfulfilled"}
+    </span>
+  `;
+}
+
 function isPendingPaymentOrder(order) {
   const paymentStatus = String(order.payment_status || "").toLowerCase();
   const orderStatus = String(order.order_status || "").toLowerCase();
+
+  if (orderStatus === "cancelled") return false;
 
   return (
     paymentStatus === "unpaid" ||
@@ -189,6 +230,8 @@ function isPaidOrProcessingOrder(order) {
   const paymentStatus = String(order.payment_status || "").toLowerCase();
   const fulfillmentStatus = String(order.fulfillment_status || "").toLowerCase();
   const orderStatus = String(order.order_status || "").toLowerCase();
+
+  if (orderStatus === "cancelled") return false;
 
   return (
     paymentStatus === "paid" ||
@@ -238,7 +281,9 @@ window.AXIOM_DASHBOARD_UTILS = {
   getCartItemUnitPrice,
   getCartItemLineTotal,
   getCartItemImage,
-  normalizeImagePath
+  normalizeImagePath,
+  getOrderFulfillmentState,
+  getOrderStatusBadgeHtml
 };
 
 async function loadPartials() {
@@ -564,6 +609,7 @@ function renderOrdersList() {
         <h4>Order #${order.order_number || "—"}</h4>
         <p>${fullName || order.customer_email || "Unknown customer"}</p>
         <p>${formatDateTime(order.created_at)}</p>
+        ${getOrderStatusBadgeHtml(order)}
         <p>Status: ${order.order_status || "—"} | Payment: ${order.payment_status || "—"} | Fulfillment: ${order.fulfillment_status || "—"}</p>
         <p>Total: ${formatMoney(order.total_amount)}</p>
       </div>
@@ -629,7 +675,13 @@ async function refreshHomeDashboard() {
     countPageViewsSince(isoDaysAgo(7))
   ]);
 
-  const unfulfilledOrders = orders.filter((order) => String(order.fulfillment_status || "").toLowerCase() === "unfulfilled").length;
+  const unfulfilledOrders = orders.filter((order) => {
+    const fulfillmentStatus = String(order.fulfillment_status || "").toLowerCase();
+    const orderStatus = String(order.order_status || "").toLowerCase();
+
+    return fulfillmentStatus === "unfulfilled" || orderStatus === "cancelled";
+  }).length;
+
   const pendingPaymentOrders = orders.filter((order) => isPendingPaymentOrder(order)).length;
   const paidOrders = orders.filter((order) => isPaidOrProcessingOrder(order)).length;
 
@@ -660,7 +712,8 @@ async function refreshHomeDashboard() {
         return `
           <div class="dashboard-session-card" data-home-order-id="${order.id}">
             <h4>Order #${order.order_number || "—"}</h4>
-            <p>${order.customer_email || "No email"}</p>
+            <p>${getOrderDisplayTitle(order)}</p>
+            ${getOrderStatusBadgeHtml(order)}
             <p>${formatDateTime(order.created_at)}</p>
             <p>${formatMoney(order.total_amount)}</p>
           </div>
@@ -859,7 +912,10 @@ document.addEventListener("DOMContentLoaded", async function () {
     refreshHomeDashboard,
     refreshDashboard,
     refreshOrders,
-    refreshAllDashboardData
+    refreshAllDashboardData,
+    renderOrdersList,
+    renderRecentOrders: refreshHomeDashboard,
+    orders: allOrders
   };
 
   try {
