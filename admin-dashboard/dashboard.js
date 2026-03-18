@@ -16,6 +16,10 @@ let dashboardRealtimeChannel = null;
 let hasShownCheckoutSessionsError = false;
 let hasShownOrdersError = false;
 
+window.AXIOM_DASHBOARD_STATE = window.AXIOM_DASHBOARD_STATE || {
+  isOrderDetailOpen: false
+};
+
 function formatMoney(value) {
   return `$${Number(value || 0).toFixed(2)}`;
 }
@@ -515,18 +519,37 @@ function renderSelectedSession() {
   }
 }
 
+function openSelectedOrderDetail() {
+  const selectedOrder = allOrders.find((entry) => entry.id === selectedOrderId) || null;
+
+  if (
+    window.AXIOM_ORDER_DETAIL &&
+    typeof window.AXIOM_ORDER_DETAIL.setOrder === "function"
+  ) {
+    window.AXIOM_ORDER_DETAIL.setOrder(selectedOrder);
+  }
+
+  const panel = document.getElementById("orderDetailPanel");
+  if (panel) {
+    panel.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+}
+
 function renderOrdersList() {
   const wrap = document.getElementById("ordersListWrap");
   if (!wrap) return;
 
   if (!Array.isArray(allOrders) || !allOrders.length) {
     wrap.innerHTML = `<div class="dashboard-empty">No orders found.</div>`;
+
     if (window.AXIOM_ORDER_DETAIL && typeof window.AXIOM_ORDER_DETAIL.clear === "function") {
       window.AXIOM_ORDER_DETAIL.clear();
-      if (typeof window.AXIOM_ORDER_DETAIL.hide === "function") {
-        window.AXIOM_ORDER_DETAIL.hide();
-      }
     }
+
+    if (window.AXIOM_ORDER_DETAIL && typeof window.AXIOM_ORDER_DETAIL.hide === "function") {
+      window.AXIOM_ORDER_DETAIL.hide();
+    }
+
     return;
   }
 
@@ -550,18 +573,19 @@ function renderOrdersList() {
   wrap.querySelectorAll("[data-order-id]").forEach((card) => {
     card.addEventListener("click", () => {
       selectedOrderId = card.getAttribute("data-order-id");
-      const selectedOrder = allOrders.find((entry) => entry.id === selectedOrderId);
-
-      if (window.AXIOM_ORDER_DETAIL && typeof window.AXIOM_ORDER_DETAIL.setOrder === "function") {
-        window.AXIOM_ORDER_DETAIL.setOrder(selectedOrder || null);
-      }
-
-      const panel = document.getElementById("orderDetailPanel");
-      if (panel) {
-        panel.scrollIntoView({ behavior: "smooth", block: "start" });
-      }
+      window.AXIOM_DASHBOARD_STATE.isOrderDetailOpen = true;
+      openSelectedOrderDetail();
     });
   });
+
+  if (window.AXIOM_DASHBOARD_STATE.isOrderDetailOpen && selectedOrderId) {
+    openSelectedOrderDetail();
+  } else if (
+    window.AXIOM_ORDER_DETAIL &&
+    typeof window.AXIOM_ORDER_DETAIL.hide === "function"
+  ) {
+    window.AXIOM_ORDER_DETAIL.hide();
+  }
 }
 
 async function refreshOrders() {
@@ -572,12 +596,17 @@ async function refreshOrders() {
 
   allOrders = await fetchOrders();
 
-  if (!selectedOrderId && allOrders.length) {
-    selectedOrderId = allOrders[0].id;
-  }
-
   if (selectedOrderId && !allOrders.some((entry) => entry.id === selectedOrderId)) {
-    selectedOrderId = allOrders.length ? allOrders[0].id : null;
+    selectedOrderId = null;
+    window.AXIOM_DASHBOARD_STATE.isOrderDetailOpen = false;
+
+    if (window.AXIOM_ORDER_DETAIL && typeof window.AXIOM_ORDER_DETAIL.clear === "function") {
+      window.AXIOM_ORDER_DETAIL.clear();
+    }
+
+    if (window.AXIOM_ORDER_DETAIL && typeof window.AXIOM_ORDER_DETAIL.hide === "function") {
+      window.AXIOM_ORDER_DETAIL.hide();
+    }
   }
 
   renderOrdersList();
@@ -641,6 +670,7 @@ async function refreshHomeDashboard() {
       homeRecentOrders.querySelectorAll("[data-home-order-id]").forEach((card) => {
         card.addEventListener("click", async () => {
           selectedOrderId = card.getAttribute("data-home-order-id");
+          window.AXIOM_DASHBOARD_STATE.isOrderDetailOpen = true;
 
           if (window.AXIOM_DASHBOARD_APP && typeof window.AXIOM_DASHBOARD_APP.showView === "function") {
             await window.AXIOM_DASHBOARD_APP.showView("orders");
@@ -652,16 +682,7 @@ async function refreshHomeDashboard() {
             await refreshOrders();
           }
 
-          const selectedOrder = allOrders.find((entry) => entry.id === selectedOrderId);
-
-          if (window.AXIOM_ORDER_DETAIL && typeof window.AXIOM_ORDER_DETAIL.setOrder === "function") {
-            window.AXIOM_ORDER_DETAIL.setOrder(selectedOrder || null);
-          }
-
-          const panel = document.getElementById("orderDetailPanel");
-          if (panel) {
-            panel.scrollIntoView({ behavior: "smooth", block: "start" });
-          }
+          openSelectedOrderDetail();
         });
       });
     }
@@ -669,21 +690,11 @@ async function refreshHomeDashboard() {
 
   const homeRecentSessions = document.getElementById("homeRecentSessions");
   if (homeRecentSessions) {
-    const recentSessions = sessions.slice(0, 5);
-
-    if (!recentSessions.length) {
-      homeRecentSessions.innerHTML = `<div class="dashboard-empty">No checkout sessions found.</div>`;
+    const sessionsCard = homeRecentSessions.closest(".dashboard-card");
+    if (sessionsCard) {
+      sessionsCard.remove();
     } else {
-      homeRecentSessions.innerHTML = recentSessions.map((session) => {
-        return `
-          <div class="dashboard-session-card">
-            <h4>${getSessionDisplayTitle(session)}</h4>
-            <p>${session.session_status || "—"}</p>
-            <p>${formatDateTime(session.created_at)}</p>
-            <p>${formatMoney(session.total_amount)}</p>
-          </div>
-        `;
-      }).join("");
+      homeRecentSessions.innerHTML = "";
     }
   }
 }
@@ -783,6 +794,25 @@ document.addEventListener("DOMContentLoaded", async function () {
     });
   }
 
+  function showOrdersListOnly() {
+    window.AXIOM_DASHBOARD_STATE.isOrderDetailOpen = false;
+
+    if (
+      window.AXIOM_ORDER_DETAIL &&
+      typeof window.AXIOM_ORDER_DETAIL.hide === "function"
+    ) {
+      window.AXIOM_ORDER_DETAIL.hide();
+    }
+
+    const ordersListWrap = document.getElementById("ordersListWrap");
+    const ordersListCard = ordersListWrap ? ordersListWrap.closest(".dashboard-card") : null;
+
+    if (ordersListCard) {
+      ordersListCard.hidden = false;
+      ordersListCard.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }
+
   async function showView(viewKey) {
     Object.values(views).forEach((view) => {
       if (view) view.hidden = true;
@@ -825,6 +855,7 @@ document.addEventListener("DOMContentLoaded", async function () {
 
   window.AXIOM_DASHBOARD_APP = {
     showView,
+    showOrdersListOnly,
     refreshHomeDashboard,
     refreshDashboard,
     refreshOrders,
@@ -833,6 +864,17 @@ document.addEventListener("DOMContentLoaded", async function () {
 
   try {
     await loadPartials();
+
+    if (
+      window.AXIOM_ORDER_DETAIL &&
+      typeof window.AXIOM_ORDER_DETAIL.init === "function"
+    ) {
+      window.AXIOM_ORDER_DETAIL.init();
+      if (typeof window.AXIOM_ORDER_DETAIL.hide === "function") {
+        window.AXIOM_ORDER_DETAIL.hide();
+      }
+    }
+
     await refreshHomeDashboard();
     await refreshDashboard();
     await refreshOrders();
@@ -856,6 +898,10 @@ document.addEventListener("DOMContentLoaded", async function () {
       await refreshOrders();
     });
 
+    document.getElementById("refreshOrdersBtnTop")?.addEventListener("click", async function () {
+      await refreshOrders();
+    });
+
     document.getElementById("refreshHomeDashboardBtn")?.addEventListener("click", async function () {
       await refreshHomeDashboard();
     });
@@ -873,6 +919,7 @@ document.addEventListener("DOMContentLoaded", async function () {
     });
 
     buttons.orders?.addEventListener("click", async function () {
+      window.AXIOM_DASHBOARD_STATE.isOrderDetailOpen = false;
       await showView("orders");
     });
 
@@ -885,6 +932,7 @@ document.addEventListener("DOMContentLoaded", async function () {
     });
 
     document.getElementById("quickOpenOrdersBtn")?.addEventListener("click", async function () {
+      window.AXIOM_DASHBOARD_STATE.isOrderDetailOpen = false;
       await showView("orders");
     });
 
