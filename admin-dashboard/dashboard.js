@@ -683,6 +683,9 @@ async function refreshHomeDashboard() {
     countPageViewsSince(isoDaysAgo(7))
   ]);
 
+  allSessions = sessions;
+  allOrders = orders;
+
   const unfulfilledOrders = orders.filter((order) => {
     const fulfillmentStatus = String(order.fulfillment_status || "").toLowerCase();
     const orderStatus = String(order.order_status || "").toLowerCase();
@@ -713,6 +716,7 @@ async function refreshHomeDashboard() {
     window.AXIOM_DASHBOARD_APP &&
     typeof window.AXIOM_DASHBOARD_APP === "object"
   ) {
+    window.AXIOM_DASHBOARD_APP.orders = orders;
     window.AXIOM_DASHBOARD_APP.checkoutSessionsForTracking = sessions;
   }
 
@@ -720,7 +724,7 @@ async function refreshHomeDashboard() {
     window.AXIOM_PAYMENT_TRACKING &&
     typeof window.AXIOM_PAYMENT_TRACKING.render === "function"
   ) {
-    window.AXIOM_PAYMENT_TRACKING.render(sessions);
+    window.AXIOM_PAYMENT_TRACKING.render(orders);
   }
 
   const homeRecentOrders = document.getElementById("homeRecentOrders");
