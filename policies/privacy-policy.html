@@ -24,18 +24,17 @@
     href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
   />
 
-  <!-- Same core site styles -->
+  <!-- Same site styling -->
   <link rel="stylesheet" href="../css/style.css" />
   <link rel="stylesheet" href="../css/menu.css" />
   <link rel="stylesheet" href="../cart/cart.css" />
   <link rel="stylesheet" href="../footer/footer.css" />
 
-  <!-- Policy page styles -->
+  <!-- Policy page styling -->
   <link rel="stylesheet" href="policies.css" />
 </head>
 <body class="policy-page">
 
-  <!-- SAME announcement bar -->
   <div class="top-announcement-bar">
     <div class="top-announcement-track">
       <span class="announcement-item">🇺🇸 USA Fulfilled Orders</span>
@@ -53,7 +52,6 @@
     </div>
   </div>
 
-  <!-- SAME site header -->
   <header class="site-header">
     <div class="header-inner container">
       <button
@@ -89,7 +87,6 @@
     </div>
   </header>
 
-  <!-- SAME mobile menu -->
   <aside class="mobile-menu" id="mobileMenu" aria-hidden="true">
     <div class="mobile-menu-inner">
       <div class="mobile-menu-header">
@@ -165,7 +162,6 @@
     </div>
   </aside>
 
-  <!-- SAME cart drawer -->
   <aside class="cart-drawer" id="cartDrawer" aria-hidden="true">
     <div class="cart-drawer-inner">
       <div class="cart-drawer-header">
@@ -225,9 +221,7 @@
           </p>
 
           <h2>2. Age Restriction</h2>
-          <p>
-            This website is intended strictly for individuals 21 years of age or older.
-          </p>
+          <p>This website is intended strictly for individuals 21 years of age or older.</p>
           <p>
             By accessing or using this website, you confirm that you are at least 21 years old.
             We do not knowingly collect personal information from individuals under the age of 21.
@@ -389,7 +383,6 @@
   <script src="../cart/cart.js" defer></script>
   <script src="../js/app.js" defer></script>
 
-  <!-- Manual footer loader for nested policy pages -->
   <script>
     document.addEventListener("DOMContentLoaded", function () {
       const footerTarget = document.getElementById("site-footer");
@@ -411,7 +404,6 @@
     });
   </script>
 
-  <!-- Tracking -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="../admin-dashboard/dashboard-config.js" defer></script>
   <script src="../admin-dashboard/shared/tracking-config.js" defer></script>
