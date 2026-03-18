@@ -558,7 +558,7 @@ function renderOrdersList() {
 
       const detailMount = document.getElementById("orderDetailMount");
       if (detailMount) {
-        detailMount.scrollIntoView({ behavior": "smooth", block: "start" });
+        detailMount.scrollIntoView({ behavior: "smooth", block: "start" });
       }
     });
   });
