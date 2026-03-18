@@ -955,5 +955,3 @@ document.addEventListener("DOMContentLoaded", async function () {
     alert("Dashboard failed to initialize: " + (error.message || "Unknown error"));
   }
 });
-
-I added the order detail mount. And why does the js have to be so long? Can’t we make multiple files so it isn’t such a long code file
