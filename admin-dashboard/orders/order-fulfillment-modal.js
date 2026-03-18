@@ -1,153 +1,267 @@
-window.AXIOM_ORDER_FULFILLMENT_MODAL = (function () {
-  let currentFulfillmentOrder = null;
-  let currentShipmentOrder = null;
+window.AXIOM_ORDER_FULFILLMENT_MODAL = {
+  currentOrder: null,
+  currentMode: null,
 
-  function fulfillmentModal() {
-    return document.getElementById("orderFulfillmentModal");
-  }
+  init() {
+    const modal = document.getElementById("orderFulfillmentModal");
+    const closeBtn = document.getElementById("orderFulfillmentCloseBtn");
+    const cancelBtn = document.getElementById("cancelShipmentBtn");
 
-  function shippedModal() {
-    return document.getElementById("orderShippedModal");
-  }
-
-  function openFulfillment(order) {
-    currentFulfillmentOrder = order || null;
-    const modal = fulfillmentModal();
-    if (!modal) return;
-    modal.hidden = false;
-    document.body.classList.add("axiom-modal-open");
-  }
-
-  function closeFulfillment() {
-    currentFulfillmentOrder = null;
-    const modal = fulfillmentModal();
-    if (!modal) return;
-    modal.hidden = true;
-    document.body.classList.remove("axiom-modal-open");
-  }
-
-  function openShipped(order) {
-    currentShipmentOrder = order || null;
-
-    const trackingNumberInput = document.getElementById("shipmentTrackingNumber");
-    const trackingUrlInput = document.getElementById("shipmentTrackingUrl");
-
-    if (trackingNumberInput) {
-      trackingNumberInput.value = order?.tracking_number || "";
+    if (closeBtn && !closeBtn.dataset.bound) {
+      closeBtn.dataset.bound = "true";
+      closeBtn.addEventListener("click", () => this.close());
     }
 
-    if (trackingUrlInput) {
-      trackingUrlInput.value = order?.tracking_url || "";
+    if (cancelBtn && !cancelBtn.dataset.bound) {
+      cancelBtn.dataset.bound = "true";
+      cancelBtn.addEventListener("click", () => this.close());
     }
 
-    const modal = shippedModal();
-    if (!modal) return;
-    modal.hidden = false;
-    document.body.classList.add("axiom-modal-open");
-  }
-
-  function closeShipped() {
-    currentShipmentOrder = null;
-    const modal = shippedModal();
-    if (!modal) return;
-    modal.hidden = true;
-    document.body.classList.remove("axiom-modal-open");
-  }
-
-  function bindClose(selector, closeFn, root) {
-    root.querySelectorAll(selector).forEach((el) => {
-      if (el.dataset.bound === "true") return;
-      el.dataset.bound = "true";
-      el.addEventListener("click", closeFn);
-    });
-  }
-
-  function init() {
-    const fulfillRoot = fulfillmentModal();
-    const shippedRoot = shippedModal();
-
-    if (fulfillRoot) {
-      bindClose("[data-close-order-fulfillment-modal]", closeFulfillment, fulfillRoot);
-
-      fulfillRoot.querySelectorAll("[data-payment-method]").forEach((button) => {
-        if (button.dataset.bound === "true") return;
-        button.dataset.bound = "true";
-
-        button.addEventListener("click", async function () {
-          const paymentMethod = button.getAttribute("data-payment-method");
-          if (!paymentMethod || !currentFulfillmentOrder) return;
-
-          button.disabled = true;
-
-          try {
-            if (
-              window.AXIOM_ORDER_ACTIONS &&
-              typeof window.AXIOM_ORDER_ACTIONS.fulfillOrder === "function"
-            ) {
-              const result = await window.AXIOM_ORDER_ACTIONS.fulfillOrder(
-                currentFulfillmentOrder,
-                paymentMethod
-              );
-
-              if (result?.ok) {
-                closeFulfillment();
-                alert("Order marked as paid and fulfilled.");
-              }
-            }
-          } finally {
-            button.disabled = false;
-          }
-        });
+    if (modal && !modal.dataset.bound) {
+      modal.dataset.bound = "true";
+      modal.addEventListener("click", (event) => {
+        const closeTarget = event.target.closest("[data-modal-close='true']");
+        if (closeTarget) {
+          this.close();
+        }
       });
     }
 
-    if (shippedRoot) {
-      bindClose("[data-close-order-shipped-modal]", closeShipped, shippedRoot);
+    document.querySelectorAll("[data-payment-method]").forEach((btn) => {
+      if (btn.dataset.bound) return;
+      btn.dataset.bound = "true";
 
-      const confirmBtn = document.getElementById("confirmMarkShippedBtn");
-      if (confirmBtn && confirmBtn.dataset.bound !== "true") {
-        confirmBtn.dataset.bound = "true";
+      btn.addEventListener("click", async () => {
+        const paymentMethod = btn.getAttribute("data-payment-method");
+        await this.fulfillOrder(paymentMethod);
+      });
+    });
 
-        confirmBtn.addEventListener("click", async function () {
-          if (!currentShipmentOrder) return;
+    const saveShipmentBtn = document.getElementById("saveShipmentBtn");
+    if (saveShipmentBtn && !saveShipmentBtn.dataset.bound) {
+      saveShipmentBtn.dataset.bound = "true";
+      saveShipmentBtn.addEventListener("click", async () => {
+        await this.markShipped();
+      });
+    }
 
-          const trackingNumber =
-            document.getElementById("shipmentTrackingNumber")?.value.trim() || "";
+    if (!window.__axiomFulfillmentEscapeBound) {
+      window.__axiomFulfillmentEscapeBound = true;
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") {
+          this.close();
+        }
+      });
+    }
+  },
 
-          const trackingUrl =
-            document.getElementById("shipmentTrackingUrl")?.value.trim() || "";
+  open(order) {
+    this.currentOrder = order || null;
+    this.currentMode = "fulfill";
 
-          confirmBtn.disabled = true;
+    this.resetMessages();
+    this.showStep("fulfillment");
+    this.showModal();
+  },
 
-          try {
-            if (
-              window.AXIOM_ORDER_ACTIONS &&
-              typeof window.AXIOM_ORDER_ACTIONS.markShipped === "function"
-            ) {
-              const result = await window.AXIOM_ORDER_ACTIONS.markShipped(
-                currentShipmentOrder,
-                trackingNumber,
-                trackingUrl
-              );
+  openShipped(order) {
+    this.currentOrder = order || null;
+    this.currentMode = "shipped";
 
-              if (result?.ok) {
-                closeShipped();
-                alert("Order marked as shipped.");
-              }
-            }
-          } finally {
-            confirmBtn.disabled = false;
-          }
-        });
+    this.resetMessages();
+    this.resetShipmentFields();
+    this.showStep("shipped");
+    this.showModal();
+  },
+
+  showModal() {
+    const modal = document.getElementById("orderFulfillmentModal");
+    if (!modal) return;
+
+    modal.hidden = false;
+    modal.setAttribute("aria-hidden", "false");
+    document.body.classList.add("dashboard-modal-open");
+  },
+
+  close() {
+    const modal = document.getElementById("orderFulfillmentModal");
+    if (!modal) return;
+
+    modal.hidden = true;
+    modal.setAttribute("aria-hidden", "true");
+    document.body.classList.remove("dashboard-modal-open");
+
+    this.currentOrder = null;
+    this.currentMode = null;
+    this.resetMessages();
+  },
+
+  showStep(step) {
+    const fulfillmentStep = document.getElementById("fulfillmentStep");
+    const shippedStep = document.getElementById("shippedStep");
+
+    if (fulfillmentStep) fulfillmentStep.hidden = step !== "fulfillment";
+    if (shippedStep) shippedStep.hidden = step !== "shipped";
+  },
+
+  resetMessages() {
+    const fulfillmentMessage = document.getElementById("fulfillmentStatusMessage");
+    const shipmentMessage = document.getElementById("shipmentStatusMessage");
+
+    if (fulfillmentMessage) {
+      fulfillmentMessage.textContent = "";
+      fulfillmentMessage.className = "dashboard-modal-status";
+    }
+
+    if (shipmentMessage) {
+      shipmentMessage.textContent = "";
+      shipmentMessage.className = "dashboard-modal-status";
+    }
+  },
+
+  resetShipmentFields() {
+    const trackingNumber = document.getElementById("shipmentTrackingNumber");
+    const trackingUrl = document.getElementById("shipmentTrackingUrl");
+
+    if (trackingNumber) trackingNumber.value = "";
+    if (trackingUrl) trackingUrl.value = "";
+  },
+
+  setMessage(id, text, type) {
+    const el = document.getElementById(id);
+    if (!el) return;
+
+    el.textContent = text || "";
+    el.className = `dashboard-modal-status ${type || ""}`.trim();
+  },
+
+  async fulfillOrder(paymentMethod) {
+    if (!this.currentOrder?.id) {
+      this.setMessage("fulfillmentStatusMessage", "No order selected.", "error");
+      return;
+    }
+
+    if (!window.axiomSupabase) {
+      this.setMessage("fulfillmentStatusMessage", "Supabase client not found.", "error");
+      return;
+    }
+
+    this.setMessage("fulfillmentStatusMessage", "Saving order update...", "loading");
+
+    try {
+      const updatePayload = {
+        payment_method: paymentMethod,
+        payment_status: "paid",
+        fulfillment_status: "fulfilled",
+        order_status: "fulfilled",
+        fulfilled_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+
+      const { data, error } = await window.axiomSupabase
+        .from("orders")
+        .update(updatePayload)
+        .eq("id", this.currentOrder.id)
+        .select()
+        .single();
+
+      if (error) {
+        throw error;
       }
+
+      this.currentOrder = data || { ...this.currentOrder, ...updatePayload };
+
+      this.setMessage("fulfillmentStatusMessage", "Order marked as fulfilled.", "success");
+
+      if (window.AXIOM_ORDER_DETAIL && typeof window.AXIOM_ORDER_DETAIL.setOrder === "function") {
+        window.AXIOM_ORDER_DETAIL.setOrder(this.currentOrder);
+      }
+
+      if (window.AXIOM_DASHBOARD_APP && typeof window.AXIOM_DASHBOARD_APP.refreshOrders === "function") {
+        await window.AXIOM_DASHBOARD_APP.refreshOrders();
+      }
+
+      setTimeout(() => {
+        this.close();
+      }, 700);
+    } catch (error) {
+      console.error("Failed to fulfill order:", error);
+      this.setMessage(
+        "fulfillmentStatusMessage",
+        "Failed to update order. Check your orders table columns and Supabase policies.",
+        "error"
+      );
+    }
+  },
+
+  async markShipped() {
+    if (!this.currentOrder?.id) {
+      this.setMessage("shipmentStatusMessage", "No order selected.", "error");
+      return;
+    }
+
+    if (!window.axiomSupabase) {
+      this.setMessage("shipmentStatusMessage", "Supabase client not found.", "error");
+      return;
+    }
+
+    const trackingNumber = document.getElementById("shipmentTrackingNumber")?.value.trim() || "";
+    const trackingUrl = document.getElementById("shipmentTrackingUrl")?.value.trim() || "";
+
+    this.setMessage("shipmentStatusMessage", "Saving shipment...", "loading");
+
+    try {
+      const updatePayload = {
+        fulfillment_status: "shipped",
+        order_status: "shipped",
+        tracking_number: trackingNumber || null,
+        tracking_url: trackingUrl || null,
+        shipped_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+
+      const { data, error } = await window.axiomSupabase
+        .from("orders")
+        .update(updatePayload)
+        .eq("id", this.currentOrder.id)
+        .select()
+        .single();
+
+      if (error) {
+        throw error;
+      }
+
+      this.currentOrder = data || { ...this.currentOrder, ...updatePayload };
+
+      this.setMessage("shipmentStatusMessage", "Shipment saved successfully.", "success");
+
+      if (window.AXIOM_ORDER_DETAIL && typeof window.AXIOM_ORDER_DETAIL.setOrder === "function") {
+        window.AXIOM_ORDER_DETAIL.setOrder(this.currentOrder);
+      }
+
+      if (window.AXIOM_DASHBOARD_APP && typeof window.AXIOM_DASHBOARD_APP.refreshOrders === "function") {
+        await window.AXIOM_DASHBOARD_APP.refreshOrders();
+      }
+
+      setTimeout(() => {
+        this.close();
+      }, 700);
+    } catch (error) {
+      console.error("Failed to mark order shipped:", error);
+      this.setMessage(
+        "shipmentStatusMessage",
+        "Failed to update order. Check your orders table columns and Supabase policies.",
+        "error"
+      );
     }
   }
+};
 
-  return {
-    init,
-    open: openFulfillment,
-    close: closeFulfillment,
-    openShipped,
-    closeShipped
-  };
-})();
+document.addEventListener("DOMContentLoaded", function () {
+  if (
+    window.AXIOM_ORDER_FULFILLMENT_MODAL &&
+    typeof window.AXIOM_ORDER_FULFILLMENT_MODAL.init === "function"
+  ) {
+    window.AXIOM_ORDER_FULFILLMENT_MODAL.init();
+  }
+});
