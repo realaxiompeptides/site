@@ -7,6 +7,13 @@ window.AXIOM_ORDER_DETAIL = {
       backBtn.dataset.bound = "true";
       backBtn.addEventListener("click", () => {
         this.hide();
+
+        if (
+          window.AXIOM_DASHBOARD_APP &&
+          typeof window.AXIOM_DASHBOARD_APP.showOrdersListOnly === "function"
+        ) {
+          window.AXIOM_DASHBOARD_APP.showOrdersListOnly();
+        }
       });
     }
 
@@ -51,26 +58,29 @@ window.AXIOM_ORDER_DETAIL = {
     const panel = document.getElementById("orderDetailPanel");
     const ordersListWrap = document.getElementById("ordersListWrap");
     const ordersListCard = ordersListWrap ? ordersListWrap.closest(".dashboard-card") : null;
-    const ordersHeader = document.querySelector("#dashboardOrdersView .dashboard-main-header");
+
+    if (window.AXIOM_DASHBOARD_STATE) {
+      window.AXIOM_DASHBOARD_STATE.isOrderDetailOpen = true;
+    }
 
     if (panel) panel.hidden = false;
     if (ordersListCard) ordersListCard.hidden = true;
-    if (ordersHeader) ordersHeader.hidden = true;
   },
 
   hide() {
     const panel = document.getElementById("orderDetailPanel");
     const ordersListWrap = document.getElementById("ordersListWrap");
     const ordersListCard = ordersListWrap ? ordersListWrap.closest(".dashboard-card") : null;
-    const ordersHeader = document.querySelector("#dashboardOrdersView .dashboard-main-header");
+
+    if (window.AXIOM_DASHBOARD_STATE) {
+      window.AXIOM_DASHBOARD_STATE.isOrderDetailOpen = false;
+    }
 
     if (panel) panel.hidden = true;
     if (ordersListCard) ordersListCard.hidden = false;
-    if (ordersHeader) ordersHeader.hidden = false;
 
-    const ordersListSection = ordersListWrap ? ordersListWrap.closest(".dashboard-card") : null;
-    if (ordersListSection) {
-      ordersListSection.scrollIntoView({ behavior: "smooth", block: "start" });
+    if (ordersListCard) {
+      ordersListCard.scrollIntoView({ behavior: "smooth", block: "start" });
     }
   },
 
@@ -88,11 +98,6 @@ window.AXIOM_ORDER_DETAIL = {
     this.renderBilling(order);
     this.renderCartItems(order);
     this.show();
-
-    const panel = document.getElementById("orderDetailPanel");
-    if (panel) {
-      panel.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
   },
 
   clear() {
@@ -130,6 +135,13 @@ window.AXIOM_ORDER_DETAIL = {
   },
 
   renderOverview(order) {
+    const formatMoney =
+      window.AXIOM_HELPERS && typeof window.AXIOM_HELPERS.formatMoney === "function"
+        ? window.AXIOM_HELPERS.formatMoney
+        : function (value) {
+            return `$${Number(value || 0).toFixed(2)}`;
+          };
+
     const map = {
       orderDetailNumber: order?.order_number ? `#${order.order_number}` : "—",
       orderDetailStatus: order?.order_status || "—",
@@ -138,10 +150,10 @@ window.AXIOM_ORDER_DETAIL = {
       orderDetailEmail: order?.customer_email || "—",
       orderDetailPhone: order?.customer_phone || "—",
       orderDetailCreated: order?.created_at ? new Date(order.created_at).toLocaleString() : "—",
-      orderDetailSubtotal: window.AXIOM_HELPERS.formatMoney(order?.subtotal || 0),
-      orderDetailShipping: window.AXIOM_HELPERS.formatMoney(order?.shipping_amount || 0),
-      orderDetailTax: window.AXIOM_HELPERS.formatMoney(order?.tax_amount || 0),
-      orderDetailTotal: window.AXIOM_HELPERS.formatMoney(order?.total_amount || 0)
+      orderDetailSubtotal: formatMoney(order?.subtotal || 0),
+      orderDetailShipping: formatMoney(order?.shipping_amount || 0),
+      orderDetailTax: formatMoney(order?.tax_amount || 0),
+      orderDetailTotal: formatMoney(order?.total_amount || 0)
     };
 
     Object.keys(map).forEach(function (id) {
@@ -204,45 +216,54 @@ window.AXIOM_ORDER_DETAIL = {
       return;
     }
 
-    mount.innerHTML = items.map(function (item) {
-      const name = item.product_name || item.name || "Product";
-      const variant = item.variant_label || item.variantLabel || item.variant || "";
-      const quantity = Number(item.quantity || item.qty || 1);
+    const formatMoney =
+      window.AXIOM_HELPERS && typeof window.AXIOM_HELPERS.formatMoney === "function"
+        ? window.AXIOM_HELPERS.formatMoney
+        : function (value) {
+            return `$${Number(value || 0).toFixed(2)}`;
+          };
 
-      const unitPrice =
-        item.unit_price !== undefined && item.unit_price !== null
-          ? Number(item.unit_price || 0)
-          : Number(item.price || 0);
+    mount.innerHTML = items
+      .map(function (item) {
+        const name = item.product_name || item.name || "Product";
+        const variant = item.variant_label || item.variantLabel || item.variant || "";
+        const quantity = Number(item.quantity || item.qty || 1);
 
-      const lineTotal =
-        item.line_total !== undefined && item.line_total !== null
-          ? Number(item.line_total || 0)
-          : unitPrice * quantity;
+        const unitPrice =
+          item.unit_price !== undefined && item.unit_price !== null
+            ? Number(item.unit_price || 0)
+            : Number(item.price || 0);
 
-      const image = item.image || "../images/products/placeholder.PNG";
+        const lineTotal =
+          item.line_total !== undefined && item.line_total !== null
+            ? Number(item.line_total || 0)
+            : unitPrice * quantity;
 
-      return `
-        <div class="dashboard-item-row">
-          <div class="dashboard-item-image">
-            <img
-              src="${image}"
-              alt="${name}"
-              onerror="this.onerror=null;this.src='../images/products/placeholder.PNG';"
-            />
+        const image = item.image || "../images/products/placeholder.PNG";
+
+        return `
+          <div class="dashboard-item-row">
+            <div class="dashboard-item-image">
+              <img
+                src="${image}"
+                alt="${name}"
+                onerror="this.onerror=null;this.src='../images/products/placeholder.PNG';"
+              />
+            </div>
+
+            <div class="dashboard-item-info">
+              <h4>${name}</h4>
+              <p>${variant}</p>
+              <p>Qty: ${quantity}</p>
+            </div>
+
+            <div class="dashboard-item-price">
+              ${formatMoney(lineTotal)}
+            </div>
           </div>
-
-          <div class="dashboard-item-info">
-            <h4>${name}</h4>
-            <p>${variant}</p>
-            <p>Qty: ${quantity}</p>
-          </div>
-
-          <div class="dashboard-item-price">
-            ${window.AXIOM_HELPERS.formatMoney(lineTotal)}
-          </div>
-        </div>
-      `;
-    }).join("");
+        `;
+      })
+      .join("");
   }
 };
 
