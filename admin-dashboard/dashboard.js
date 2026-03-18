@@ -5,7 +5,8 @@ const DASHBOARD_PARTIALS = [
   { mountId: "billingInfoMount", file: "billing-info/billing.html" },
   { mountId: "cartItemsMount", file: "cart-items/cart-items.html" },
   { mountId: "analyticsMount", file: "analytics/analytics.html" },
-  { mountId: "orderDetailMount", file: "order-detail/order-detail.html" }
+  { mountId: "orderDetailMount", file: "order-detail/order-detail.html" },
+  { mountId: "paymentTrackingMount", file: "payment-tracking/payment-tracking.html" }
 ];
 
 let allSessions = [];
@@ -642,6 +643,13 @@ async function refreshOrders() {
 
   allOrders = await fetchOrders();
 
+  if (
+    window.AXIOM_DASHBOARD_APP &&
+    typeof window.AXIOM_DASHBOARD_APP === "object"
+  ) {
+    window.AXIOM_DASHBOARD_APP.orders = allOrders;
+  }
+
   if (selectedOrderId && !allOrders.some((entry) => entry.id === selectedOrderId)) {
     selectedOrderId = null;
     window.AXIOM_DASHBOARD_STATE.isOrderDetailOpen = false;
@@ -700,6 +708,20 @@ async function refreshHomeDashboard() {
   setText("homePageViewsToday", todayViews);
   setText("homeVisitorsToday", todayVisitors);
   setText("homePageViews7Days", sevenDayViews);
+
+  if (
+    window.AXIOM_DASHBOARD_APP &&
+    typeof window.AXIOM_DASHBOARD_APP === "object"
+  ) {
+    window.AXIOM_DASHBOARD_APP.checkoutSessionsForTracking = sessions;
+  }
+
+  if (
+    window.AXIOM_PAYMENT_TRACKING &&
+    typeof window.AXIOM_PAYMENT_TRACKING.render === "function"
+  ) {
+    window.AXIOM_PAYMENT_TRACKING.render(sessions);
+  }
 
   const homeRecentOrders = document.getElementById("homeRecentOrders");
   if (homeRecentOrders) {
@@ -765,6 +787,13 @@ async function refreshDashboard() {
   }
 
   allSessions = await fetchCheckoutSessions();
+
+  if (
+    window.AXIOM_DASHBOARD_APP &&
+    typeof window.AXIOM_DASHBOARD_APP === "object"
+  ) {
+    window.AXIOM_DASHBOARD_APP.checkoutSessionsForTracking = allSessions;
+  }
 
   if (!selectedSessionId && allSessions.length) {
     selectedSessionId = allSessions[0].id;
@@ -915,11 +944,19 @@ document.addEventListener("DOMContentLoaded", async function () {
     refreshAllDashboardData,
     renderOrdersList,
     renderRecentOrders: refreshHomeDashboard,
-    orders: allOrders
+    orders: allOrders,
+    checkoutSessionsForTracking: allSessions
   };
 
   try {
     await loadPartials();
+
+    if (
+      window.AXIOM_PAYMENT_TRACKING &&
+      typeof window.AXIOM_PAYMENT_TRACKING.init === "function"
+    ) {
+      window.AXIOM_PAYMENT_TRACKING.init();
+    }
 
     if (
       window.AXIOM_ORDER_DETAIL &&
