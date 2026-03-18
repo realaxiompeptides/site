@@ -32,7 +32,7 @@ window.AXIOM_PRODUCTS = [
       "images/products/tb-500-5mg-main.PNG"
     ],
     variants: [
-      { id: "tb500-5mg", label: "5MG", price: 22, compareAtPrice: 28, weightOz: 1.2, inStock: true }
+      { id: "tb500-5mg", label: "5MG", price: 44, compareAtPrice: 50, weightOz: 1.2, inStock: true }
     ]
   },
   {
