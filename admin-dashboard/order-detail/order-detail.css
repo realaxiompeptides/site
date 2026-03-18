@@ -1,6 +1,15 @@
 /* =========================
    ORDER DETAIL PANEL
 ========================= */
+.order-modal-overlay[hidden],
+.order-modal-card[hidden],
+#fulfillmentPaymentStep[hidden],
+#shipmentFieldsStep[hidden],
+#shipmentSavedStep[hidden],
+#orderFulfillmentModalError[hidden],
+#orderFulfillmentModalSuccess[hidden] {
+  display: none !important;
+}
 
 .dashboard-address-list {
   display: grid;
