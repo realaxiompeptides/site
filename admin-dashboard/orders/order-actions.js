@@ -76,7 +76,7 @@ window.AXIOM_ORDER_ACTIONS = (function () {
   async function fulfillOrder(order, paymentMethod) {
     if (!order?.id) {
       alert("Missing order.");
-      return;
+      return { ok: false };
     }
 
     const orderUpdate = await updateOrder(order.id, {
@@ -88,7 +88,7 @@ window.AXIOM_ORDER_ACTIONS = (function () {
       completed_at: nowIso()
     });
 
-    if (!orderUpdate.ok) return;
+    if (!orderUpdate.ok) return orderUpdate;
 
     await updateCheckoutSessionByLinkedOrder(order, {
       payment_method: paymentMethod,
@@ -106,36 +106,36 @@ window.AXIOM_ORDER_ACTIONS = (function () {
       order_status: "processing"
     });
 
-    alert("Order marked as paid and fulfilled.");
-
     if (
       window.AXIOM_DASHBOARD_APP &&
       typeof window.AXIOM_DASHBOARD_APP.refreshAllDashboardData === "function"
     ) {
       await window.AXIOM_DASHBOARD_APP.refreshAllDashboardData();
     }
+
+    return { ok: true };
   }
 
   async function markShipped(order, trackingNumber = "", trackingUrl = "") {
     if (!order?.id) {
       alert("Missing order.");
-      return;
+      return { ok: false };
     }
 
     const orderUpdate = await updateOrder(order.id, {
       fulfillment_status: "shipped",
       order_status: "completed",
-      tracking_number: trackingNumber || order.tracking_number || null,
-      tracking_url: trackingUrl || order.tracking_url || null,
+      tracking_number: trackingNumber || null,
+      tracking_url: trackingUrl || null,
       shipped_at: nowIso()
     });
 
-    if (!orderUpdate.ok) return;
+    if (!orderUpdate.ok) return orderUpdate;
 
     await updateCheckoutSessionByLinkedOrder(order, {
       fulfillment_status: "shipped",
-      tracking_number: trackingNumber || order.tracking_number || null,
-      tracking_url: trackingUrl || order.tracking_url || null,
+      tracking_number: trackingNumber || null,
+      tracking_url: trackingUrl || null,
       shipped_at: nowIso()
     });
 
@@ -144,14 +144,14 @@ window.AXIOM_ORDER_ACTIONS = (function () {
       tracking_url: trackingUrl || null
     });
 
-    alert("Order marked as shipped.");
-
     if (
       window.AXIOM_DASHBOARD_APP &&
       typeof window.AXIOM_DASHBOARD_APP.refreshAllDashboardData === "function"
     ) {
       await window.AXIOM_DASHBOARD_APP.refreshAllDashboardData();
     }
+
+    return { ok: true };
   }
 
   return {
