@@ -24,7 +24,7 @@
     href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
   />
 
-  <!-- Same main site styles -->
+  <!-- Same core site styles -->
   <link rel="stylesheet" href="../css/style.css" />
   <link rel="stylesheet" href="../css/menu.css" />
   <link rel="stylesheet" href="../cart/cart.css" />
@@ -35,7 +35,7 @@
 </head>
 <body class="policy-page">
 
-  <!-- Same announcement bar style as homepage -->
+  <!-- SAME announcement bar -->
   <div class="top-announcement-bar">
     <div class="top-announcement-track">
       <span class="announcement-item">🇺🇸 USA Fulfilled Orders</span>
@@ -53,7 +53,7 @@
     </div>
   </div>
 
-  <!-- Same header as homepage -->
+  <!-- SAME site header -->
   <header class="site-header">
     <div class="header-inner container">
       <button
@@ -89,7 +89,7 @@
     </div>
   </header>
 
-  <!-- Same mobile menu as homepage -->
+  <!-- SAME mobile menu -->
   <aside class="mobile-menu" id="mobileMenu" aria-hidden="true">
     <div class="mobile-menu-inner">
       <div class="mobile-menu-header">
@@ -165,7 +165,7 @@
     </div>
   </aside>
 
-  <!-- Same cart drawer as homepage -->
+  <!-- SAME cart drawer -->
   <aside class="cart-drawer" id="cartDrawer" aria-hidden="true">
     <div class="cart-drawer-inner">
       <div class="cart-drawer-header">
@@ -191,8 +191,8 @@
         </div>
 
         <div class="cart-action-stack">
-          <a href="../cart.html" class="cart-pill-btn cart-muted-btn">View Cart</a>
-          <a href="../checkout.html" class="cart-pill-btn cart-outline-btn">Checkout</a>
+          <a href="../cart/cart-page.html" class="cart-pill-btn cart-muted-btn">View Cart</a>
+          <a href="../checkout/checkout.html" class="cart-pill-btn cart-outline-btn">Checkout</a>
         </div>
       </div>
     </div>
@@ -385,11 +385,31 @@
 
   <div id="site-footer"></div>
 
-  <!-- Same site JS -->
   <script src="../js/menu.js" defer></script>
   <script src="../cart/cart.js" defer></script>
   <script src="../js/app.js" defer></script>
-  <script src="../footer/footer-loader.js" defer></script>
+
+  <!-- Manual footer loader for nested policy pages -->
+  <script>
+    document.addEventListener("DOMContentLoaded", function () {
+      const footerTarget = document.getElementById("site-footer");
+      if (!footerTarget) return;
+
+      fetch("../footer/footer.html")
+        .then(function (response) {
+          if (!response.ok) {
+            throw new Error("Could not load ../footer/footer.html");
+          }
+          return response.text();
+        })
+        .then(function (html) {
+          footerTarget.innerHTML = html;
+        })
+        .catch(function (error) {
+          console.error("Footer load failed:", error);
+        });
+    });
+  </script>
 
   <!-- Tracking -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
