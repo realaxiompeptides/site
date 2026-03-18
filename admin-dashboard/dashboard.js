@@ -11,6 +11,7 @@ const DASHBOARD_PARTIALS = [
 let allSessions = [];
 let allOrders = [];
 let selectedSessionId = null;
+let selectedOrderId = null;
 let dashboardRealtimeChannel = null;
 let hasShownCheckoutSessionsError = false;
 let hasShownOrdersError = false;
@@ -204,8 +205,7 @@ function isPaidOrProcessingOrder(order) {
 }
 
 function isActiveCheckoutSession(session) {
-  const status = String(session.session_status || "").toLowerCase();
-  return status === "active";
+  return String(session.session_status || "").toLowerCase() === "active";
 }
 
 function isPendingCheckoutSession(session) {
@@ -214,8 +214,7 @@ function isPendingCheckoutSession(session) {
 }
 
 function isAbandonedCheckoutSession(session) {
-  const status = String(session.session_status || "").toLowerCase();
-  return status === "abandoned";
+  return String(session.session_status || "").toLowerCase() === "abandoned";
 }
 
 function showOneTimeError(type, message, extra) {
@@ -270,7 +269,6 @@ async function fetchCheckoutSessions() {
       return [];
     }
 
-    console.log("checkout_sessions loaded:", data?.length || 0, data);
     return data || [];
   } catch (error) {
     showOneTimeError(
@@ -303,7 +301,6 @@ async function fetchOrders() {
       return [];
     }
 
-    console.log("orders loaded:", data?.length || 0, data);
     return data || [];
   } catch (error) {
     showOneTimeError(
@@ -324,14 +321,9 @@ async function countPageViewsSince(dateIso) {
       .select("*", { count: "exact", head: true })
       .gte("viewed_at", dateIso);
 
-    if (error) {
-      console.error("Failed to count page views:", error);
-      return 0;
-    }
-
+    if (error) return 0;
     return Number(count || 0);
-  } catch (error) {
-    console.error("Failed to count page views:", error);
+  } catch {
     return 0;
   }
 }
@@ -345,18 +337,14 @@ async function countUniqueVisitorsSince(dateIso) {
       .select("visitor_id")
       .gte("viewed_at", dateIso);
 
-    if (error) {
-      console.error("Failed to count unique visitors:", error);
-      return 0;
-    }
+    if (error) return 0;
 
     return new Set(
       safeArray(data)
         .map((row) => row.visitor_id)
         .filter(Boolean)
     ).size;
-  } catch (error) {
-    console.error("Failed to count unique visitors:", error);
+  } catch {
     return 0;
   }
 }
@@ -391,7 +379,6 @@ function getFilteredSessions() {
 
 function clearSelectedSessionDisplay() {
   setText("dashboardSessionTitle", "Select a session");
-
   setText("overviewSessionId", "—");
   setText("overviewStatus", "—");
   setText("overviewEmail", "—");
@@ -402,24 +389,44 @@ function clearSelectedSessionDisplay() {
   setText("overviewShipping", "—");
   setText("overviewTax", "—");
   setText("overviewTotal", "—");
-
   setText("paymentMethodValue", "—");
   setText("paymentShippingMethodValue", "—");
   setText("paymentShippingCodeValue", "—");
 
   const shippingInfoBlock = document.getElementById("shippingInfoBlock");
-  if (shippingInfoBlock) {
-    shippingInfoBlock.innerHTML = `<p>—</p>`;
-  }
+  if (shippingInfoBlock) shippingInfoBlock.innerHTML = `<p>—</p>`;
 
   const billingInfoBlock = document.getElementById("billingInfoBlock");
-  if (billingInfoBlock) {
-    billingInfoBlock.innerHTML = `<p>—</p>`;
-  }
+  if (billingInfoBlock) billingInfoBlock.innerHTML = `<p>—</p>`;
 
   const cartItemsTableWrap = document.getElementById("cartItemsTableWrap");
   if (cartItemsTableWrap) {
     cartItemsTableWrap.innerHTML = `<div class="dashboard-empty">No cart items saved.</div>`;
+  }
+}
+
+function clearSelectedOrderDisplay() {
+  setText("orderDetailNumber", "—");
+  setText("orderDetailStatus", "—");
+  setText("orderDetailPaymentStatus", "—");
+  setText("orderDetailFulfillmentStatus", "—");
+  setText("orderDetailEmail", "—");
+  setText("orderDetailPhone", "—");
+  setText("orderDetailCreated", "—");
+  setText("orderDetailSubtotal", "—");
+  setText("orderDetailShipping", "—");
+  setText("orderDetailTax", "—");
+  setText("orderDetailTotal", "—");
+
+  const shippingMount = document.getElementById("orderDetailShippingAddress");
+  if (shippingMount) shippingMount.innerHTML = "—";
+
+  const billingMount = document.getElementById("orderDetailBillingAddress");
+  if (billingMount) billingMount.innerHTML = "—";
+
+  const itemsWrap = document.getElementById("orderDetailItemsWrap");
+  if (itemsWrap) {
+    itemsWrap.innerHTML = `<div class="dashboard-empty">No items found.</div>`;
   }
 }
 
@@ -453,6 +460,11 @@ function renderSessionsList() {
       selectedSessionId = card.getAttribute("data-session-id");
       renderSessionsList();
       renderSelectedSession();
+
+      const detailTitle = document.getElementById("dashboardSessionTitle");
+      if (detailTitle) {
+        detailTitle.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
     });
   });
 }
@@ -486,14 +498,10 @@ function renderSelectedSession() {
   setText("paymentShippingCodeValue", getShippingMethodCode(session, shippingSelection));
 
   const shippingInfoBlock = document.getElementById("shippingInfoBlock");
-  if (shippingInfoBlock) {
-    shippingInfoBlock.innerHTML = renderAddress(session.shipping_address);
-  }
+  if (shippingInfoBlock) shippingInfoBlock.innerHTML = renderAddress(session.shipping_address);
 
   const billingInfoBlock = document.getElementById("billingInfoBlock");
-  if (billingInfoBlock) {
-    billingInfoBlock.innerHTML = renderAddress(session.billing_address);
-  }
+  if (billingInfoBlock) billingInfoBlock.innerHTML = renderAddress(session.billing_address);
 
   const cartItemsTableWrap = document.getElementById("cartItemsTableWrap");
   if (cartItemsTableWrap) {
@@ -501,6 +509,66 @@ function renderSelectedSession() {
       cartItemsTableWrap.innerHTML = `<div class="dashboard-empty">No cart items saved.</div>`;
     } else {
       cartItemsTableWrap.innerHTML = cartItems.map((item) => {
+        const qty = getCartItemQty(item);
+        const lineTotal = getCartItemLineTotal(item);
+        const image = getCartItemImage(item);
+
+        return `
+          <div class="dashboard-item-row">
+            <div class="dashboard-item-image">
+              <img src="${image}" alt="${getCartItemName(item)}" onerror="this.onerror=null;this.src='../images/products/placeholder.PNG';">
+            </div>
+
+            <div class="dashboard-item-info">
+              <h4>${getCartItemName(item)}</h4>
+              <p>${getCartItemVariant(item)}</p>
+              <p>Qty: ${qty}</p>
+            </div>
+
+            <div class="dashboard-item-price">
+              ${formatMoney(lineTotal)}
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+  }
+}
+
+function renderSelectedOrder() {
+  const order = allOrders.find((entry) => entry.id === selectedOrderId);
+
+  if (!order) {
+    clearSelectedOrderDisplay();
+    return;
+  }
+
+  setText("orderDetailNumber", `#${order.order_number || "—"}`);
+  setText("orderDetailStatus", order.order_status || "—");
+  setText("orderDetailPaymentStatus", order.payment_status || "—");
+  setText("orderDetailFulfillmentStatus", order.fulfillment_status || "—");
+  setText("orderDetailEmail", order.customer_email || "—");
+  setText("orderDetailPhone", order.customer_phone || "—");
+  setText("orderDetailCreated", formatDateTime(order.created_at));
+  setText("orderDetailSubtotal", formatMoney(order.subtotal));
+  setText("orderDetailShipping", formatMoney(order.shipping_amount));
+  setText("orderDetailTax", formatMoney(order.tax_amount));
+  setText("orderDetailTotal", formatMoney(order.total_amount));
+
+  const shippingMount = document.getElementById("orderDetailShippingAddress");
+  if (shippingMount) shippingMount.innerHTML = renderAddress(order.shipping_address);
+
+  const billingMount = document.getElementById("orderDetailBillingAddress");
+  if (billingMount) billingMount.innerHTML = renderAddress(order.billing_address);
+
+  const itemsWrap = document.getElementById("orderDetailItemsWrap");
+  if (itemsWrap) {
+    const items = safeArray(order.cart_items);
+
+    if (!items.length) {
+      itemsWrap.innerHTML = `<div class="dashboard-empty">No items found.</div>`;
+    } else {
+      itemsWrap.innerHTML = items.map((item) => {
         const qty = getCartItemQty(item);
         const lineTotal = getCartItemLineTotal(item);
         const image = getCartItemImage(item);
@@ -542,8 +610,10 @@ function renderOrdersList() {
       .join(" ")
       .trim();
 
+    const isActive = order.id === selectedOrderId;
+
     return `
-      <div class="dashboard-session-card">
+      <div class="dashboard-session-card ${isActive ? "active" : ""}" data-order-id="${order.id}">
         <h4>Order #${order.order_number || "—"}</h4>
         <p>${fullName || order.customer_email || "Unknown customer"}</p>
         <p>${formatDateTime(order.created_at)}</p>
@@ -552,6 +622,19 @@ function renderOrdersList() {
       </div>
     `;
   }).join("");
+
+  wrap.querySelectorAll("[data-order-id]").forEach((card) => {
+    card.addEventListener("click", () => {
+      selectedOrderId = card.getAttribute("data-order-id");
+      renderOrdersList();
+      renderSelectedOrder();
+
+      const detailMount = document.getElementById("orderDetailMount");
+      if (detailMount) {
+        detailMount.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    });
+  });
 }
 
 async function refreshOrders() {
@@ -561,7 +644,17 @@ async function refreshOrders() {
   }
 
   allOrders = await fetchOrders();
+
+  if (!selectedOrderId && allOrders.length) {
+    selectedOrderId = allOrders[0].id;
+  }
+
+  if (selectedOrderId && !allOrders.some((entry) => entry.id === selectedOrderId)) {
+    selectedOrderId = allOrders.length ? allOrders[0].id : null;
+  }
+
   renderOrdersList();
+  renderSelectedOrder();
 }
 
 async function refreshHomeDashboard() {
@@ -626,7 +719,7 @@ async function refreshHomeDashboard() {
     } else {
       homeRecentOrders.innerHTML = recentOrders.map((order) => {
         return `
-          <div class="dashboard-session-card">
+          <div class="dashboard-session-card" data-home-order-id="${order.id}">
             <h4>Order #${order.order_number || "—"}</h4>
             <p>${order.customer_email || "No email"}</p>
             <p>${formatDateTime(order.created_at)}</p>
@@ -634,6 +727,20 @@ async function refreshHomeDashboard() {
           </div>
         `;
       }).join("");
+
+      homeRecentOrders.querySelectorAll("[data-home-order-id]").forEach((card) => {
+        card.addEventListener("click", async () => {
+          selectedOrderId = card.getAttribute("data-home-order-id");
+          await showView("orders");
+          renderOrdersList();
+          renderSelectedOrder();
+
+          const detailMount = document.getElementById("orderDetailMount");
+          if (detailMount) {
+            detailMount.scrollIntoView({ behavior: "smooth", block: "start" });
+          }
+        });
+      });
     }
   }
 
@@ -848,3 +955,5 @@ document.addEventListener("DOMContentLoaded", async function () {
     alert("Dashboard failed to initialize: " + (error.message || "Unknown error"));
   }
 });
+
+I added the order detail mount. And why does the js have to be so long? Can’t we make multiple files so it isn’t such a long code file
