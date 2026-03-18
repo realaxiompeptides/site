@@ -1,0 +1,36 @@
+<div id="orderFulfillmentModal" class="axiom-modal" hidden>
+  <div class="axiom-modal-backdrop" data-close-order-fulfillment-modal></div>
+
+  <div
+    class="axiom-modal-dialog"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="orderFulfillmentModalTitle"
+  >
+    <div class="axiom-modal-header">
+      <h3 id="orderFulfillmentModalTitle">Fulfill Order</h3>
+
+      <button
+        type="button"
+        class="axiom-modal-close"
+        data-close-order-fulfillment-modal
+        aria-label="Close"
+      >
+        &times;
+      </button>
+    </div>
+
+    <div class="axiom-modal-body">
+      <p class="axiom-modal-text">How did the customer pay?</p>
+
+      <div class="axiom-payment-method-grid">
+        <button type="button" class="dashboard-btn" data-payment-method="cash_app">Cash App</button>
+        <button type="button" class="dashboard-btn" data-payment-method="crypto">Crypto</button>
+        <button type="button" class="dashboard-btn" data-payment-method="credit_debit_card">Credit / Debit Card</button>
+        <button type="button" class="dashboard-btn" data-payment-method="venmo">Venmo</button>
+        <button type="button" class="dashboard-btn" data-payment-method="zelle">Zelle</button>
+        <button type="button" class="dashboard-btn" data-payment-method="bank_transfer">Bank Transfer</button>
+      </div>
+    </div>
+  </div>
+</div>
