@@ -51,18 +51,27 @@ window.AXIOM_ORDER_DETAIL = {
     const panel = document.getElementById("orderDetailPanel");
     const ordersListWrap = document.getElementById("ordersListWrap");
     const ordersListCard = ordersListWrap ? ordersListWrap.closest(".dashboard-card") : null;
+    const ordersHeader = document.querySelector("#dashboardOrdersView .dashboard-main-header");
 
     if (panel) panel.hidden = false;
     if (ordersListCard) ordersListCard.hidden = true;
+    if (ordersHeader) ordersHeader.hidden = true;
   },
 
   hide() {
     const panel = document.getElementById("orderDetailPanel");
     const ordersListWrap = document.getElementById("ordersListWrap");
     const ordersListCard = ordersListWrap ? ordersListWrap.closest(".dashboard-card") : null;
+    const ordersHeader = document.querySelector("#dashboardOrdersView .dashboard-main-header");
 
     if (panel) panel.hidden = true;
     if (ordersListCard) ordersListCard.hidden = false;
+    if (ordersHeader) ordersHeader.hidden = false;
+
+    const ordersListSection = ordersListWrap ? ordersListWrap.closest(".dashboard-card") : null;
+    if (ordersListSection) {
+      ordersListSection.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
   },
 
   setOrder(order) {
@@ -79,6 +88,11 @@ window.AXIOM_ORDER_DETAIL = {
     this.renderBilling(order);
     this.renderCartItems(order);
     this.show();
+
+    const panel = document.getElementById("orderDetailPanel");
+    if (panel) {
+      panel.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
   },
 
   clear() {
