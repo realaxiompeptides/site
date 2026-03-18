@@ -12,6 +12,10 @@ window.AXIOM_ORDER_FULFILLMENT_MODAL = {
     const copyTrackingNumberBtn = document.getElementById("copyTrackingNumberBtn");
     const copyTrackingUrlBtn = document.getElementById("copyTrackingUrlBtn");
 
+    if (overlay) {
+      overlay.hidden = true;
+    }
+
     if (closeBtn && !closeBtn.dataset.bound) {
       closeBtn.dataset.bound = "true";
       closeBtn.addEventListener("click", () => this.close());
@@ -43,7 +47,7 @@ window.AXIOM_ORDER_FULFILLMENT_MODAL = {
 
         this.setMessage(
           "orderFulfillmentModalSuccess",
-          "Label buying is not connected yet. Enter the shipment details and save for now.",
+          "Shipping label buying is not connected yet. Enter the shipment details and save for now.",
           "success"
         );
       });
@@ -59,7 +63,8 @@ window.AXIOM_ORDER_FULFILLMENT_MODAL = {
     if (copyTrackingNumberBtn && !copyTrackingNumberBtn.dataset.bound) {
       copyTrackingNumberBtn.dataset.bound = "true";
       copyTrackingNumberBtn.addEventListener("click", async () => {
-        const value = document.getElementById("savedShipmentTrackingNumber")?.textContent?.trim() || "";
+        const value =
+          document.getElementById("savedShipmentTrackingNumber")?.textContent?.trim() || "";
         await this.copyText(value, "Tracking number copied.");
       });
     }
@@ -67,7 +72,8 @@ window.AXIOM_ORDER_FULFILLMENT_MODAL = {
     if (copyTrackingUrlBtn && !copyTrackingUrlBtn.dataset.bound) {
       copyTrackingUrlBtn.dataset.bound = "true";
       copyTrackingUrlBtn.addEventListener("click", async () => {
-        const value = document.getElementById("savedShipmentTrackingUrl")?.getAttribute("href") || "";
+        const value =
+          document.getElementById("savedShipmentTrackingUrl")?.getAttribute("href") || "";
         await this.copyText(value === "#" ? "" : value, "Tracking URL copied.");
       });
     }
@@ -172,11 +178,13 @@ window.AXIOM_ORDER_FULFILLMENT_MODAL = {
     if (errorEl) {
       errorEl.hidden = true;
       errorEl.textContent = "";
+      errorEl.className = "order-modal-error";
     }
 
     if (successEl) {
       successEl.hidden = true;
       successEl.textContent = "";
+      successEl.className = "order-modal-success";
     }
   },
 
@@ -329,9 +337,13 @@ window.AXIOM_ORDER_FULFILLMENT_MODAL = {
       if (shipment.trackingUrl) {
         savedTrackingUrl.textContent = shipment.trackingUrl;
         savedTrackingUrl.setAttribute("href", shipment.trackingUrl);
+        savedTrackingUrl.setAttribute("target", "_blank");
+        savedTrackingUrl.setAttribute("rel", "noopener noreferrer");
       } else {
         savedTrackingUrl.textContent = "—";
         savedTrackingUrl.setAttribute("href", "#");
+        savedTrackingUrl.removeAttribute("target");
+        savedTrackingUrl.removeAttribute("rel");
       }
     }
   },
@@ -372,10 +384,9 @@ window.AXIOM_ORDER_FULFILLMENT_MODAL = {
       ];
 
       const updatedOrder = await this.updateOrderWithFallback(payloadVariants);
-
       await this.refreshOrderViews(updatedOrder);
 
-      this.setMessage("orderFulfillmentModalSuccess", "Order marked as fulfilled.", "success");
+      this.setMessage("orderFulfillmentModalSuccess", "Order fulfilled successfully.", "success");
 
       setTimeout(() => {
         this.close();
@@ -398,8 +409,10 @@ window.AXIOM_ORDER_FULFILLMENT_MODAL = {
 
     const carrier = document.getElementById("shipmentCarrierInput")?.value.trim() || "";
     const service = document.getElementById("shipmentServiceInput")?.value.trim() || "";
-    const trackingNumber = document.getElementById("shipmentTrackingNumberInput")?.value.trim() || "";
-    const trackingUrl = document.getElementById("shipmentTrackingUrlInput")?.value.trim() || "";
+    const trackingNumber =
+      document.getElementById("shipmentTrackingNumberInput")?.value.trim() || "";
+    const trackingUrl =
+      document.getElementById("shipmentTrackingUrlInput")?.value.trim() || "";
 
     this.setMessage("orderFulfillmentModalSuccess", "Saving shipment...", "success");
 
