@@ -8,7 +8,6 @@ document.addEventListener("DOMContentLoaded", async function () {
   }
 
   const supabase = window.axiomSupabase;
-  let authHandled = false;
 
   function goToLogin() {
     const currentPath = window.location.pathname || "";
@@ -17,29 +16,24 @@ document.addEventListener("DOMContentLoaded", async function () {
     }
   }
 
-  async function signOutAndGoToLogin() {
-    try {
-      await supabase.auth.signOut();
-    } catch (error) {
-      console.error("Sign out failed:", error);
-    }
-    goToLogin();
-  }
-
-  async function getStableSession(maxAttempts = 10, delayMs = 250) {
+  async function getStableSession(maxAttempts = 12, delayMs = 250) {
     for (let i = 0; i < maxAttempts; i += 1) {
-      const {
-        data: { session },
-        error
-      } = await supabase.auth.getSession();
+      try {
+        const {
+          data: { session },
+          error
+        } = await supabase.auth.getSession();
 
-      if (error) {
-        console.error("getSession error:", error);
-        return null;
-      }
+        if (error) {
+          console.error("getSession error:", error);
+          return null;
+        }
 
-      if (session?.user) {
-        return session;
+        if (session?.user) {
+          return session;
+        }
+      } catch (error) {
+        console.error("Session polling failed:", error);
       }
 
       await new Promise((resolve) => setTimeout(resolve, delayMs));
@@ -49,9 +43,8 @@ document.addEventListener("DOMContentLoaded", async function () {
   }
 
   async function getActiveAdminRow(email) {
-    if (!email) return null;
-
-    const normalizedEmail = String(email).trim().toLowerCase();
+    const normalizedEmail = String(email || "").trim().toLowerCase();
+    if (!normalizedEmail) return null;
 
     const { data, error } = await supabase
       .from("admin_users")
@@ -61,49 +54,54 @@ document.addEventListener("DOMContentLoaded", async function () {
       .maybeSingle();
 
     if (error) {
-      throw error;
+      console.error("Admin lookup failed:", error);
+      return null;
     }
 
     return data || null;
   }
 
-  async function handleAuthenticatedSession(session) {
-    if (authHandled) return true;
-
-    const userEmail = String(session?.user?.email || "").trim().toLowerCase();
-
-    if (!userEmail) {
-      console.error("Authenticated user has no email.");
-      await signOutAndGoToLogin();
-      return false;
-    }
-
+  function setAdminLabel(value) {
     const adminEmailEl = document.getElementById("dashboardAdminEmail");
     if (adminEmailEl) {
-      adminEmailEl.textContent = userEmail || "Admin";
+      adminEmailEl.textContent = value || "Admin";
     }
+  }
 
-    let adminRow = null;
+  async function bindLogout() {
+    const logoutBtn = document.getElementById("dashboardLogoutBtn");
+    if (!logoutBtn || logoutBtn.dataset.bound === "true") return;
 
-    try {
-      adminRow = await getActiveAdminRow(userEmail);
-    } catch (lookupError) {
-      console.error("Admin lookup failed:", lookupError);
-      if (adminEmailEl) {
-        adminEmailEl.textContent = userEmail || "Admin";
+    logoutBtn.dataset.bound = "true";
+    logoutBtn.addEventListener("click", async function () {
+      try {
+        await supabase.auth.signOut();
+      } catch (error) {
+        console.error("Logout failed:", error);
       }
-      return false;
+      goToLogin();
+    });
+  }
+
+  async function hydrateAdmin() {
+    const session = await getStableSession();
+
+    if (!session?.user?.email) {
+      goToLogin();
+      return;
     }
+
+    const userEmail = String(session.user.email || "").trim().toLowerCase();
+    setAdminLabel(userEmail);
+    await bindLogout();
+
+    const adminRow = await getActiveAdminRow(userEmail);
 
     if (!adminRow) {
       console.error("No active admin row found for:", userEmail);
-      if (adminEmailEl) {
-        adminEmailEl.textContent = userEmail || "Admin";
-      }
-      return false;
+      goToLogin();
+      return;
     }
-
-    authHandled = true;
 
     window.AXIOM_ADMIN = {
       id: adminRow.id,
@@ -112,51 +110,32 @@ document.addEventListener("DOMContentLoaded", async function () {
       is_active: adminRow.is_active === true
     };
 
-    if (adminEmailEl) {
-      adminEmailEl.textContent =
-        adminRow.full_name?.trim() || adminRow.email || userEmail || "Admin";
-    }
-
-    const logoutBtn = document.getElementById("dashboardLogoutBtn");
-    if (logoutBtn && !logoutBtn.dataset.bound) {
-      logoutBtn.dataset.bound = "true";
-      logoutBtn.addEventListener("click", async function () {
-        try {
-          await supabase.auth.signOut();
-        } catch (logoutError) {
-          console.error("Logout failed:", logoutError);
-        }
-        goToLogin();
-      });
-    }
-
-    return true;
+    setAdminLabel(adminRow.full_name?.trim() || adminRow.email || userEmail);
   }
 
-  supabase.auth.onAuthStateChange(async function (event, session) {
-    if (event === "SIGNED_OUT") {
-      authHandled = false;
-      goToLogin();
-      return;
-    }
-
-    if (
-      (event === "INITIAL_SESSION" || event === "SIGNED_IN" || event === "TOKEN_REFRESHED" || event === "USER_UPDATED") &&
-      session?.user
-    ) {
-      await handleAuthenticatedSession(session);
-    }
-  });
-
   try {
-    const session = await getStableSession();
+    await hydrateAdmin();
 
-    if (!session?.user) {
-      goToLogin();
-      return;
-    }
+    supabase.auth.onAuthStateChange(async function (event, session) {
+      if (event === "SIGNED_OUT") {
+        goToLogin();
+        return;
+      }
 
-    await handleAuthenticatedSession(session);
+      if (
+        (event === "INITIAL_SESSION" || event === "SIGNED_IN" || event === "TOKEN_REFRESHED" || event === "USER_UPDATED") &&
+        session?.user?.email
+      ) {
+        const userEmail = String(session.user.email || "").trim().toLowerCase();
+        setAdminLabel(userEmail);
+        await bindLogout();
+
+        const adminRow = await getActiveAdminRow(userEmail);
+        if (adminRow) {
+          setAdminLabel(adminRow.full_name?.trim() || adminRow.email || userEmail);
+        }
+      }
+    });
   } catch (error) {
     console.error("Admin auth guard failed:", error);
     goToLogin();
