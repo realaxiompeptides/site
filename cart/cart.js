@@ -188,8 +188,14 @@ function initCartDrawer() {
   }
 
   function getPageLink(pathFromRoot) {
-    return isNestedPage ? `../${pathFromRoot}` : pathFromRoot;
+  const cleanPath = String(pathFromRoot || "").replace(/^\/+/, "");
+
+  if (window.location.hostname.includes("github.io")) {
+    return `${BASE_PATH}${cleanPath}`;
   }
+
+  return `/${cleanPath}`;
+}
 
   function bindStaticLinks() {
     const browseProductsLinks = document.querySelectorAll('.cart-empty-state a[href], .cart-outline-btn[href*="catalog"]');
