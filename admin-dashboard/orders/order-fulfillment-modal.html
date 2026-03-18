@@ -24,12 +24,72 @@
       <p class="axiom-modal-text">How did the customer pay?</p>
 
       <div class="axiom-payment-method-grid">
-        <button type="button" class="dashboard-btn" data-payment-method="cash_app">Cash App</button>
-        <button type="button" class="dashboard-btn" data-payment-method="crypto">Crypto</button>
-        <button type="button" class="dashboard-btn" data-payment-method="credit_debit_card">Credit / Debit Card</button>
-        <button type="button" class="dashboard-btn" data-payment-method="venmo">Venmo</button>
-        <button type="button" class="dashboard-btn" data-payment-method="zelle">Zelle</button>
-        <button type="button" class="dashboard-btn" data-payment-method="bank_transfer">Bank Transfer</button>
+        <button type="button" class="dashboard-btn dashboard-btn-secondary" data-payment-method="cash_app">Cash App</button>
+        <button type="button" class="dashboard-btn dashboard-btn-secondary" data-payment-method="crypto">Crypto</button>
+        <button type="button" class="dashboard-btn dashboard-btn-secondary" data-payment-method="credit_debit_card">Credit / Debit Card</button>
+        <button type="button" class="dashboard-btn dashboard-btn-secondary" data-payment-method="venmo">Venmo</button>
+        <button type="button" class="dashboard-btn dashboard-btn-secondary" data-payment-method="zelle">Zelle</button>
+        <button type="button" class="dashboard-btn dashboard-btn-secondary" data-payment-method="bank_transfer">Bank Transfer</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="orderShippedModal" class="axiom-modal" hidden>
+  <div class="axiom-modal-backdrop" data-close-order-shipped-modal></div>
+
+  <div
+    class="axiom-modal-dialog"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="orderShippedModalTitle"
+  >
+    <div class="axiom-modal-header">
+      <h3 id="orderShippedModalTitle">Mark Order Shipped</h3>
+
+      <button
+        type="button"
+        class="axiom-modal-close"
+        data-close-order-shipped-modal
+        aria-label="Close"
+      >
+        &times;
+      </button>
+    </div>
+
+    <div class="axiom-modal-body">
+      <div class="dashboard-field-group">
+        <label class="dashboard-label" for="shipmentTrackingNumber">Tracking Number</label>
+        <input
+          id="shipmentTrackingNumber"
+          type="text"
+          class="dashboard-input"
+          placeholder="Enter tracking number"
+        />
+      </div>
+
+      <div class="dashboard-field-group">
+        <label class="dashboard-label" for="shipmentTrackingUrl">Tracking URL</label>
+        <input
+          id="shipmentTrackingUrl"
+          type="text"
+          class="dashboard-input"
+          placeholder="Enter tracking URL"
+        />
+      </div>
+
+      <div class="dashboard-action-list" style="margin-top: 16px;">
+        <button type="button" class="dashboard-btn" id="confirmMarkShippedBtn">
+          Save Shipment
+        </button>
+
+        <button
+          type="button"
+          class="dashboard-btn dashboard-btn-secondary"
+          data-close-order-shipped-modal
+        >
+          Cancel
+        </button>
       </div>
     </div>
   </div>
