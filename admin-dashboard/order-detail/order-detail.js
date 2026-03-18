@@ -1,12 +1,40 @@
 window.AXIOM_ORDER_DETAIL = {
   currentOrder: null,
 
+  init() {
+    const backBtn = document.getElementById("orderDetailBackBtn");
+    if (backBtn) {
+      backBtn.addEventListener("click", () => {
+        this.hide();
+      });
+    }
+  },
+
+  show() {
+    const panel = document.getElementById("orderDetailPanel");
+    const ordersListWrap = document.getElementById("ordersListWrap");
+    const ordersListCard = ordersListWrap ? ordersListWrap.closest(".dashboard-card") : null;
+
+    if (panel) panel.hidden = false;
+    if (ordersListCard) ordersListCard.hidden = true;
+  },
+
+  hide() {
+    const panel = document.getElementById("orderDetailPanel");
+    const ordersListWrap = document.getElementById("ordersListWrap");
+    const ordersListCard = ordersListWrap ? ordersListWrap.closest(".dashboard-card") : null;
+
+    if (panel) panel.hidden = true;
+    if (ordersListCard) ordersListCard.hidden = false;
+  },
+
   setOrder(order) {
     this.currentOrder = order;
     this.renderOverview(order);
     this.renderShipping(order);
     this.renderBilling(order);
     this.renderCartItems(order);
+    this.show();
   },
 
   clear() {
@@ -68,68 +96,49 @@ window.AXIOM_ORDER_DETAIL = {
     });
   },
 
-  renderShipping(order) {
-    const mount = document.getElementById("orderDetailShippingAddress");
-    if (!mount) return;
-
-    const address = order?.shipping_address;
+  formatAddressBlock(address) {
     if (!address || typeof address !== "object") {
-      mount.innerHTML = "—";
-      return;
+      return "—";
     }
 
     const firstName = address.first_name || address.firstName || "";
     const lastName = address.last_name || address.lastName || "";
+    const fullName = [firstName, lastName].filter(Boolean).join(" ").trim();
+
     const address1 = address.address1 || address.line1 || "";
     const address2 = address.address2 || address.line2 || "";
     const city = address.city || "";
     const state = address.state || address.province || "";
     const zip = address.zip || address.postal_code || address.postalCode || "";
     const country = address.country || "US";
+    const phone = address.phone || "";
 
-    const cityStateZip = [city, state, zip].filter(Boolean).join(", ");
+    return `
+      <div class="dashboard-address-list">
+        <p><strong>Name:</strong> ${fullName || "—"}</p>
+        <p><strong>Address:</strong> ${address1 || "—"}</p>
+        <p><strong>Address 2:</strong> ${address2 || "—"}</p>
+        <p><strong>City:</strong> ${city || "—"}</p>
+        <p><strong>State:</strong> ${state || "—"}</p>
+        <p><strong>ZIP:</strong> ${zip || "—"}</p>
+        <p><strong>Country:</strong> ${country || "—"}</p>
+        <p><strong>Phone:</strong> ${phone || "—"}</p>
+      </div>
+    `;
+  },
 
-    const lines = [
-      [firstName, lastName].filter(Boolean).join(" ").trim(),
-      address1,
-      address2,
-      cityStateZip,
-      country
-    ].filter(Boolean);
+  renderShipping(order) {
+    const mount = document.getElementById("orderDetailShippingAddress");
+    if (!mount) return;
 
-    mount.innerHTML = lines.length ? `<p>${lines.join("<br>")}</p>` : "—";
+    mount.innerHTML = this.formatAddressBlock(order?.shipping_address);
   },
 
   renderBilling(order) {
     const mount = document.getElementById("orderDetailBillingAddress");
     if (!mount) return;
 
-    const address = order?.billing_address;
-    if (!address || typeof address !== "object") {
-      mount.innerHTML = "—";
-      return;
-    }
-
-    const firstName = address.first_name || address.firstName || "";
-    const lastName = address.last_name || address.lastName || "";
-    const address1 = address.address1 || address.line1 || "";
-    const address2 = address.address2 || address.line2 || "";
-    const city = address.city || "";
-    const state = address.state || address.province || "";
-    const zip = address.zip || address.postal_code || address.postalCode || "";
-    const country = address.country || "US";
-
-    const cityStateZip = [city, state, zip].filter(Boolean).join(", ");
-
-    const lines = [
-      [firstName, lastName].filter(Boolean).join(" ").trim(),
-      address1,
-      address2,
-      cityStateZip,
-      country
-    ].filter(Boolean);
-
-    mount.innerHTML = lines.length ? `<p>${lines.join("<br>")}</p>` : "—";
+    mount.innerHTML = this.formatAddressBlock(order?.billing_address);
   },
 
   renderCartItems(order) {
@@ -145,11 +154,7 @@ window.AXIOM_ORDER_DETAIL = {
 
     mount.innerHTML = items.map(function (item) {
       const name = item.product_name || item.name || "Product";
-      const variant =
-        item.variant_label ||
-        item.variantLabel ||
-        item.variant ||
-        "";
+      const variant = item.variant_label || item.variantLabel || item.variant || "";
       const quantity = Number(item.quantity || item.qty || 1);
 
       const unitPrice =
@@ -188,3 +193,10 @@ window.AXIOM_ORDER_DETAIL = {
     }).join("");
   }
 };
+
+document.addEventListener("DOMContentLoaded", function () {
+  if (window.AXIOM_ORDER_DETAIL) {
+    window.AXIOM_ORDER_DETAIL.init();
+    window.AXIOM_ORDER_DETAIL.hide();
+  }
+});
