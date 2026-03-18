@@ -29,11 +29,15 @@ window.AXIOM_ORDER_DETAIL = {
         const fulfillmentStatus = String(this.currentOrder?.fulfillment_status || "").toLowerCase();
         const orderStatus = String(this.currentOrder?.order_status || "").toLowerCase();
 
+        const isCancelled = orderStatus === "cancelled";
         const isFulfilled =
-          fulfillmentStatus === "fulfilled" ||
-          fulfillmentStatus === "shipped" ||
-          orderStatus === "fulfilled" ||
-          orderStatus === "shipped";
+          !isCancelled &&
+          (
+            fulfillmentStatus === "fulfilled" ||
+            fulfillmentStatus === "shipped" ||
+            orderStatus === "fulfilled" ||
+            orderStatus === "shipped"
+          );
 
         if (isFulfilled) {
           return;
@@ -60,9 +64,13 @@ window.AXIOM_ORDER_DETAIL = {
         const fulfillmentStatus = String(this.currentOrder?.fulfillment_status || "").toLowerCase();
         const orderStatus = String(this.currentOrder?.order_status || "").toLowerCase();
 
+        const isCancelled = orderStatus === "cancelled";
         const isShipped =
-          fulfillmentStatus === "shipped" ||
-          orderStatus === "shipped";
+          !isCancelled &&
+          (
+            fulfillmentStatus === "shipped" ||
+            orderStatus === "shipped"
+          );
 
         if (isShipped) {
           return;
@@ -74,6 +82,45 @@ window.AXIOM_ORDER_DETAIL = {
         ) {
           window.AXIOM_ORDER_FULFILLMENT_MODAL.openShipped(this.currentOrder);
         }
+      });
+    }
+
+    const cancelBtn = document.getElementById("cancelOrderBtn");
+    if (cancelBtn && !cancelBtn.dataset.bound) {
+      cancelBtn.dataset.bound = "true";
+      cancelBtn.addEventListener("click", async () => {
+        if (!this.currentOrder) {
+          alert("No order selected.");
+          return;
+        }
+
+        const confirmed = window.confirm(
+          "Cancel this order and reset it back to unfulfilled?"
+        );
+        if (!confirmed) return;
+
+        const updatedOrder = {
+          ...this.currentOrder,
+          order_status: "cancelled",
+          fulfillment_status: "unfulfilled",
+          shipping_carrier: "",
+          shipping_service: "",
+          tracking_number: "",
+          tracking_url: ""
+        };
+
+        const saved = await this.persistOrderUpdate(updatedOrder);
+
+        if (!saved) {
+          alert("Could not cancel this order.");
+          return;
+        }
+
+        this.currentOrder = saved;
+        this.setOrder(saved);
+        this.refreshOrdersUi(saved);
+
+        alert("Order cancelled and reset to unfulfilled.");
       });
     }
 
@@ -131,6 +178,88 @@ window.AXIOM_ORDER_DETAIL = {
     this.renderBilling(order);
     this.renderCartItems(order);
     this.show();
+  },
+
+  async persistOrderUpdate(updatedOrder) {
+    try {
+      if (!updatedOrder?.id) {
+        return updatedOrder;
+      }
+
+      if (window.supabaseClient) {
+        const { data, error } = await window.supabaseClient
+          .from("orders")
+          .update({
+            order_status: updatedOrder.order_status,
+            payment_status: updatedOrder.payment_status,
+            payment_method:
+              updatedOrder.payment_method ||
+              updatedOrder.payment_type ||
+              updatedOrder.payment_provider ||
+              updatedOrder.paid_with ||
+              null,
+            fulfillment_status: updatedOrder.fulfillment_status,
+            shipping_carrier: updatedOrder.shipping_carrier || null,
+            shipping_service: updatedOrder.shipping_service || null,
+            tracking_number: updatedOrder.tracking_number || null,
+            tracking_url: updatedOrder.tracking_url || null,
+            updated_at: new Date().toISOString()
+          })
+          .eq("id", updatedOrder.id)
+          .select()
+          .single();
+
+        if (error) {
+          console.error("Supabase order update failed:", error);
+          return null;
+        }
+
+        return { ...updatedOrder, ...(data || {}) };
+      }
+
+      return updatedOrder;
+    } catch (error) {
+      console.error("persistOrderUpdate error:", error);
+      return null;
+    }
+  },
+
+  refreshOrdersUi(updatedOrder) {
+    try {
+      if (
+        window.AXIOM_DASHBOARD_APP &&
+        Array.isArray(window.AXIOM_DASHBOARD_APP.orders)
+      ) {
+        window.AXIOM_DASHBOARD_APP.orders = window.AXIOM_DASHBOARD_APP.orders.map(function (order) {
+          return order && updatedOrder && order.id === updatedOrder.id ? updatedOrder : order;
+        });
+      }
+
+      if (
+        window.AXIOM_ORDERS_LIST &&
+        typeof window.AXIOM_ORDERS_LIST.render === "function" &&
+        window.AXIOM_DASHBOARD_APP &&
+        Array.isArray(window.AXIOM_DASHBOARD_APP.orders)
+      ) {
+        window.AXIOM_ORDERS_LIST.render(window.AXIOM_DASHBOARD_APP.orders);
+      }
+
+      if (
+        window.AXIOM_DASHBOARD_APP &&
+        typeof window.AXIOM_DASHBOARD_APP.renderRecentOrders === "function"
+      ) {
+        window.AXIOM_DASHBOARD_APP.renderRecentOrders();
+      }
+
+      if (
+        window.AXIOM_DASHBOARD_APP &&
+        typeof window.AXIOM_DASHBOARD_APP.loadDashboardData === "function"
+      ) {
+        window.AXIOM_DASHBOARD_APP.loadDashboardData();
+      }
+    } catch (error) {
+      console.error("refreshOrdersUi error:", error);
+    }
   },
 
   clear() {
@@ -206,6 +335,7 @@ window.AXIOM_ORDER_DETAIL = {
   updateActionButtons(order) {
     const fulfillBtn = document.getElementById("fulfillOrderBtn");
     const shippedBtn = document.getElementById("markShippedBtn");
+    const cancelBtn = document.getElementById("cancelOrderBtn");
 
     if (!order) {
       if (fulfillBtn) {
@@ -220,25 +350,39 @@ window.AXIOM_ORDER_DETAIL = {
         shippedBtn.classList.remove("dashboard-btn-disabled");
       }
 
+      if (cancelBtn) {
+        cancelBtn.textContent = "Cancel Order";
+        cancelBtn.disabled = false;
+        cancelBtn.classList.remove("dashboard-btn-disabled");
+      }
+
       return;
     }
 
     const fulfillmentStatus = String(order?.fulfillment_status || "").toLowerCase();
     const orderStatus = String(order?.order_status || "").toLowerCase();
 
+    const isCancelled = orderStatus === "cancelled";
+
     const isFulfilled =
-      fulfillmentStatus === "fulfilled" ||
-      fulfillmentStatus === "shipped" ||
-      orderStatus === "fulfilled" ||
-      orderStatus === "shipped";
+      !isCancelled &&
+      (
+        fulfillmentStatus === "fulfilled" ||
+        fulfillmentStatus === "shipped" ||
+        orderStatus === "fulfilled" ||
+        orderStatus === "shipped"
+      );
 
     const isShipped =
-      fulfillmentStatus === "shipped" ||
-      orderStatus === "shipped";
+      !isCancelled &&
+      (
+        fulfillmentStatus === "shipped" ||
+        orderStatus === "shipped"
+      );
 
     if (fulfillBtn) {
       if (isFulfilled) {
-        fulfillBtn.textContent = "Order Fulfilled";
+        fulfillBtn.textContent = "Fulfilled";
         fulfillBtn.disabled = true;
         fulfillBtn.classList.add("dashboard-btn-disabled");
       } else {
@@ -257,6 +401,18 @@ window.AXIOM_ORDER_DETAIL = {
         shippedBtn.textContent = "Mark Shipped";
         shippedBtn.disabled = false;
         shippedBtn.classList.remove("dashboard-btn-disabled");
+      }
+    }
+
+    if (cancelBtn) {
+      if (isCancelled) {
+        cancelBtn.textContent = "Cancelled";
+        cancelBtn.disabled = false;
+        cancelBtn.classList.remove("dashboard-btn-disabled");
+      } else {
+        cancelBtn.textContent = "Cancel Order";
+        cancelBtn.disabled = false;
+        cancelBtn.classList.remove("dashboard-btn-disabled");
       }
     }
   },
