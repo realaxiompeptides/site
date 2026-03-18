@@ -38,13 +38,8 @@ function safeObject(value) {
 function setText(id, value) {
   const el = document.getElementById(id);
   if (!el) return;
-
-  if (value === undefined || value === null || value === "") {
-    el.textContent = "—";
-    return;
-  }
-
-  el.textContent = String(value);
+  el.textContent =
+    value === undefined || value === null || value === "" ? "—" : String(value);
 }
 
 function normalizeImagePath(path) {
@@ -162,12 +157,7 @@ function getSessionDisplayTitle(session) {
   const lastName = session.customer_last_name || "";
   const fullName = [firstName, lastName].filter(Boolean).join(" ").trim();
 
-  return (
-    fullName ||
-    session.customer_email ||
-    session.session_id ||
-    "Checkout Session"
-  );
+  return fullName || session.customer_email || session.session_id || "Checkout Session";
 }
 
 function getSessionDisplayPhone(session) {
@@ -231,6 +221,21 @@ function showOneTimeError(type, message, extra) {
   console.error(message, extra || "");
   alert(message);
 }
+
+window.AXIOM_DASHBOARD_UTILS = {
+  formatMoney,
+  formatDateTime,
+  safeArray,
+  safeObject,
+  renderAddress,
+  getCartItemName,
+  getCartItemVariant,
+  getCartItemQty,
+  getCartItemUnitPrice,
+  getCartItemLineTotal,
+  getCartItemImage,
+  normalizeImagePath
+};
 
 async function loadPartials() {
   await Promise.all(
@@ -405,31 +410,6 @@ function clearSelectedSessionDisplay() {
   }
 }
 
-function clearSelectedOrderDisplay() {
-  setText("orderDetailNumber", "—");
-  setText("orderDetailStatus", "—");
-  setText("orderDetailPaymentStatus", "—");
-  setText("orderDetailFulfillmentStatus", "—");
-  setText("orderDetailEmail", "—");
-  setText("orderDetailPhone", "—");
-  setText("orderDetailCreated", "—");
-  setText("orderDetailSubtotal", "—");
-  setText("orderDetailShipping", "—");
-  setText("orderDetailTax", "—");
-  setText("orderDetailTotal", "—");
-
-  const shippingMount = document.getElementById("orderDetailShippingAddress");
-  if (shippingMount) shippingMount.innerHTML = "—";
-
-  const billingMount = document.getElementById("orderDetailBillingAddress");
-  if (billingMount) billingMount.innerHTML = "—";
-
-  const itemsWrap = document.getElementById("orderDetailItemsWrap");
-  if (itemsWrap) {
-    itemsWrap.innerHTML = `<div class="dashboard-empty">No items found.</div>`;
-  }
-}
-
 function renderSessionsList() {
   const list = document.getElementById("sessionsList");
   if (!list) return;
@@ -535,72 +515,15 @@ function renderSelectedSession() {
   }
 }
 
-function renderSelectedOrder() {
-  const order = allOrders.find((entry) => entry.id === selectedOrderId);
-
-  if (!order) {
-    clearSelectedOrderDisplay();
-    return;
-  }
-
-  setText("orderDetailNumber", `#${order.order_number || "—"}`);
-  setText("orderDetailStatus", order.order_status || "—");
-  setText("orderDetailPaymentStatus", order.payment_status || "—");
-  setText("orderDetailFulfillmentStatus", order.fulfillment_status || "—");
-  setText("orderDetailEmail", order.customer_email || "—");
-  setText("orderDetailPhone", order.customer_phone || "—");
-  setText("orderDetailCreated", formatDateTime(order.created_at));
-  setText("orderDetailSubtotal", formatMoney(order.subtotal));
-  setText("orderDetailShipping", formatMoney(order.shipping_amount));
-  setText("orderDetailTax", formatMoney(order.tax_amount));
-  setText("orderDetailTotal", formatMoney(order.total_amount));
-
-  const shippingMount = document.getElementById("orderDetailShippingAddress");
-  if (shippingMount) shippingMount.innerHTML = renderAddress(order.shipping_address);
-
-  const billingMount = document.getElementById("orderDetailBillingAddress");
-  if (billingMount) billingMount.innerHTML = renderAddress(order.billing_address);
-
-  const itemsWrap = document.getElementById("orderDetailItemsWrap");
-  if (itemsWrap) {
-    const items = safeArray(order.cart_items);
-
-    if (!items.length) {
-      itemsWrap.innerHTML = `<div class="dashboard-empty">No items found.</div>`;
-    } else {
-      itemsWrap.innerHTML = items.map((item) => {
-        const qty = getCartItemQty(item);
-        const lineTotal = getCartItemLineTotal(item);
-        const image = getCartItemImage(item);
-
-        return `
-          <div class="dashboard-item-row">
-            <div class="dashboard-item-image">
-              <img src="${image}" alt="${getCartItemName(item)}" onerror="this.onerror=null;this.src='../images/products/placeholder.PNG';">
-            </div>
-
-            <div class="dashboard-item-info">
-              <h4>${getCartItemName(item)}</h4>
-              <p>${getCartItemVariant(item)}</p>
-              <p>Qty: ${qty}</p>
-            </div>
-
-            <div class="dashboard-item-price">
-              ${formatMoney(lineTotal)}
-            </div>
-          </div>
-        `;
-      }).join("");
-    }
-  }
-}
-
 function renderOrdersList() {
   const wrap = document.getElementById("ordersListWrap");
   if (!wrap) return;
 
   if (!Array.isArray(allOrders) || !allOrders.length) {
     wrap.innerHTML = `<div class="dashboard-empty">No orders found.</div>`;
+    if (window.AXIOM_ORDER_DETAIL && typeof window.AXIOM_ORDER_DETAIL.clear === "function") {
+      window.AXIOM_ORDER_DETAIL.clear();
+    }
     return;
   }
 
@@ -623,15 +546,19 @@ function renderOrdersList() {
     `;
   }).join("");
 
+  const selectedOrder = allOrders.find((entry) => entry.id === selectedOrderId);
+  if (window.AXIOM_ORDER_DETAIL && typeof window.AXIOM_ORDER_DETAIL.setOrder === "function") {
+    window.AXIOM_ORDER_DETAIL.setOrder(selectedOrder || null);
+  }
+
   wrap.querySelectorAll("[data-order-id]").forEach((card) => {
     card.addEventListener("click", () => {
       selectedOrderId = card.getAttribute("data-order-id");
       renderOrdersList();
-      renderSelectedOrder();
 
       const detailMount = document.getElementById("orderDetailMount");
       if (detailMount) {
-        detailMount.scrollIntoView({ behavior: "smooth", block: "start" });
+        detailMount.scrollIntoView({ behavior": "smooth", block: "start" });
       }
     });
   });
@@ -654,7 +581,6 @@ async function refreshOrders() {
   }
 
   renderOrdersList();
-  renderSelectedOrder();
 }
 
 async function refreshHomeDashboard() {
@@ -674,29 +600,13 @@ async function refreshHomeDashboard() {
     countPageViewsSince(isoDaysAgo(7))
   ]);
 
-  const unfulfilledOrders = orders.filter((order) => {
-    return String(order.fulfillment_status || "").toLowerCase() === "unfulfilled";
-  }).length;
+  const unfulfilledOrders = orders.filter((order) => String(order.fulfillment_status || "").toLowerCase() === "unfulfilled").length;
+  const pendingPaymentOrders = orders.filter((order) => isPendingPaymentOrder(order)).length;
+  const paidOrders = orders.filter((order) => isPaidOrProcessingOrder(order)).length;
 
-  const pendingPaymentOrders = orders.filter((order) => {
-    return isPendingPaymentOrder(order);
-  }).length;
-
-  const paidOrders = orders.filter((order) => {
-    return isPaidOrProcessingOrder(order);
-  }).length;
-
-  const activeSessions = sessions.filter((session) => {
-    return isActiveCheckoutSession(session);
-  }).length;
-
-  const pendingSessions = sessions.filter((session) => {
-    return isPendingCheckoutSession(session);
-  }).length;
-
-  const abandonedSessions = sessions.filter((session) => {
-    return isAbandonedCheckoutSession(session);
-  }).length;
+  const activeSessions = sessions.filter((session) => isActiveCheckoutSession(session)).length;
+  const pendingSessions = sessions.filter((session) => isPendingCheckoutSession(session)).length;
+  const abandonedSessions = sessions.filter((session) => isAbandonedCheckoutSession(session)).length;
 
   setText("homeUnfulfilledOrders", unfulfilledOrders);
   setText("homePendingPaymentOrders", pendingPaymentOrders);
@@ -731,9 +641,16 @@ async function refreshHomeDashboard() {
       homeRecentOrders.querySelectorAll("[data-home-order-id]").forEach((card) => {
         card.addEventListener("click", async () => {
           selectedOrderId = card.getAttribute("data-home-order-id");
-          await showView("orders");
-          renderOrdersList();
-          renderSelectedOrder();
+
+          if (window.AXIOM_DASHBOARD_APP && typeof window.AXIOM_DASHBOARD_APP.showView === "function") {
+            await window.AXIOM_DASHBOARD_APP.showView("orders");
+          } else {
+            const ordersView = document.getElementById("dashboardOrdersView");
+            if (ordersView) {
+              ordersView.hidden = false;
+            }
+            await refreshOrders();
+          }
 
           const detailMount = document.getElementById("orderDetailMount");
           if (detailMount) {
@@ -851,6 +768,7 @@ document.addEventListener("DOMContentLoaded", async function () {
 
   const sessionsSidebar = document.getElementById("dashboardSessionsSidebar");
   const analyticsSidebar = document.getElementById("dashboardAnalyticsSidebar");
+  const ordersSidebar = document.getElementById("dashboardOrdersSidebar");
 
   function setActiveButton(activeKey) {
     Object.entries(buttons).forEach(([key, btn]) => {
@@ -876,6 +794,10 @@ document.addEventListener("DOMContentLoaded", async function () {
       analyticsSidebar.hidden = viewKey !== "analytics";
     }
 
+    if (ordersSidebar) {
+      ordersSidebar.hidden = viewKey !== "orders";
+    }
+
     setActiveButton(viewKey);
 
     if (viewKey === "home") {
@@ -894,6 +816,14 @@ document.addEventListener("DOMContentLoaded", async function () {
       await refreshOrders();
     }
   }
+
+  window.AXIOM_DASHBOARD_APP = {
+    showView,
+    refreshHomeDashboard,
+    refreshDashboard,
+    refreshOrders,
+    refreshAllDashboardData
+  };
 
   try {
     await loadPartials();
@@ -914,6 +844,10 @@ document.addEventListener("DOMContentLoaded", async function () {
 
     document.getElementById("refreshAnalyticsBtnTop")?.addEventListener("click", async function () {
       await refreshAnalytics();
+    });
+
+    document.getElementById("refreshOrdersBtn")?.addEventListener("click", async function () {
+      await refreshOrders();
     });
 
     document.getElementById("refreshHomeDashboardBtn")?.addEventListener("click", async function () {
