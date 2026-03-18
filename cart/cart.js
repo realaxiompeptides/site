@@ -35,7 +35,8 @@ function initCartDrawer() {
     currentFile.endsWith(".html");
 
   const IMAGE_PREFIX = isNestedPage ? "../" : "";
-
+  const BASE_PATH = window.location.hostname.includes("github.io") ? "/site/" : "/";
+  
   const RECOMMENDED_PRODUCTS = [
     {
       id: "bacwater-10ml",
