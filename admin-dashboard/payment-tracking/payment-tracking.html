@@ -1,0 +1,37 @@
+<div class="dashboard-card dashboard-span-2" id="paymentTrackingCard">
+  <div class="dashboard-card-header dashboard-card-header-stack-mobile">
+    <div>
+      <div class="dashboard-eyebrow">PAYMENT TRACKING</div>
+      <h3>Sales Overview</h3>
+    </div>
+
+    <div class="payment-tracking-range-group" id="paymentTrackingRangeGroup">
+      <button type="button" class="payment-range-btn active" data-range="1d">1D</button>
+      <button type="button" class="payment-range-btn" data-range="7d">7D</button>
+      <button type="button" class="payment-range-btn" data-range="1m">1M</button>
+      <button type="button" class="payment-range-btn" data-range="3m">3M</button>
+      <button type="button" class="payment-range-btn" data-range="1y">1Y</button>
+    </div>
+  </div>
+
+  <div class="payment-tracking-stats">
+    <div class="payment-stat-card">
+      <span class="payment-stat-label">Completed Payments</span>
+      <strong id="paymentTrackingCompletedCount">0</strong>
+    </div>
+
+    <div class="payment-stat-card">
+      <span class="payment-stat-label">Total Sales</span>
+      <strong id="paymentTrackingTotalSales">$0.00</strong>
+    </div>
+
+    <div class="payment-stat-card">
+      <span class="payment-stat-label">Average Order</span>
+      <strong id="paymentTrackingAverageOrder">$0.00</strong>
+    </div>
+  </div>
+
+  <div class="payment-tracking-chart-wrap">
+    <canvas id="paymentTrackingChart" aria-label="Sales chart" role="img"></canvas>
+  </div>
+</div>
