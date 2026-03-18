@@ -523,6 +523,9 @@ function renderOrdersList() {
     wrap.innerHTML = `<div class="dashboard-empty">No orders found.</div>`;
     if (window.AXIOM_ORDER_DETAIL && typeof window.AXIOM_ORDER_DETAIL.clear === "function") {
       window.AXIOM_ORDER_DETAIL.clear();
+      if (typeof window.AXIOM_ORDER_DETAIL.hide === "function") {
+        window.AXIOM_ORDER_DETAIL.hide();
+      }
     }
     return;
   }
@@ -533,10 +536,8 @@ function renderOrdersList() {
       .join(" ")
       .trim();
 
-    const isActive = order.id === selectedOrderId;
-
     return `
-      <div class="dashboard-session-card ${isActive ? "active" : ""}" data-order-id="${order.id}">
+      <div class="dashboard-session-card" data-order-id="${order.id}">
         <h4>Order #${order.order_number || "—"}</h4>
         <p>${fullName || order.customer_email || "Unknown customer"}</p>
         <p>${formatDateTime(order.created_at)}</p>
@@ -546,19 +547,18 @@ function renderOrdersList() {
     `;
   }).join("");
 
-  const selectedOrder = allOrders.find((entry) => entry.id === selectedOrderId);
-  if (window.AXIOM_ORDER_DETAIL && typeof window.AXIOM_ORDER_DETAIL.setOrder === "function") {
-    window.AXIOM_ORDER_DETAIL.setOrder(selectedOrder || null);
-  }
-
   wrap.querySelectorAll("[data-order-id]").forEach((card) => {
     card.addEventListener("click", () => {
       selectedOrderId = card.getAttribute("data-order-id");
-      renderOrdersList();
+      const selectedOrder = allOrders.find((entry) => entry.id === selectedOrderId);
 
-      const detailMount = document.getElementById("orderDetailMount");
-      if (detailMount) {
-        detailMount.scrollIntoView({ behavior: "smooth", block: "start" });
+      if (window.AXIOM_ORDER_DETAIL && typeof window.AXIOM_ORDER_DETAIL.setOrder === "function") {
+        window.AXIOM_ORDER_DETAIL.setOrder(selectedOrder || null);
+      }
+
+      const panel = document.getElementById("orderDetailPanel");
+      if (panel) {
+        panel.scrollIntoView({ behavior: "smooth", block: "start" });
       }
     });
   });
@@ -652,9 +652,15 @@ async function refreshHomeDashboard() {
             await refreshOrders();
           }
 
-          const detailMount = document.getElementById("orderDetailMount");
-          if (detailMount) {
-            detailMount.scrollIntoView({ behavior: "smooth", block: "start" });
+          const selectedOrder = allOrders.find((entry) => entry.id === selectedOrderId);
+
+          if (window.AXIOM_ORDER_DETAIL && typeof window.AXIOM_ORDER_DETAIL.setOrder === "function") {
+            window.AXIOM_ORDER_DETAIL.setOrder(selectedOrder || null);
+          }
+
+          const panel = document.getElementById("orderDetailPanel");
+          if (panel) {
+            panel.scrollIntoView({ behavior: "smooth", block: "start" });
           }
         });
       });
