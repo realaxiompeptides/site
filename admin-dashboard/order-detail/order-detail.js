@@ -31,31 +31,17 @@ window.AXIOM_ORDER_DETAIL = {
     const shippedBtn = document.getElementById("markShippedBtn");
     if (shippedBtn && !shippedBtn.dataset.bound) {
       shippedBtn.dataset.bound = "true";
-      shippedBtn.addEventListener("click", async () => {
+      shippedBtn.addEventListener("click", () => {
         if (!this.currentOrder) {
           alert("No order selected.");
           return;
         }
 
-        const trackingNumber = prompt(
-          "Enter tracking number (optional):",
-          this.currentOrder.tracking_number || ""
-        ) || "";
-
-        const trackingUrl = prompt(
-          "Enter tracking URL (optional):",
-          this.currentOrder.tracking_url || ""
-        ) || "";
-
         if (
-          window.AXIOM_ORDER_ACTIONS &&
-          typeof window.AXIOM_ORDER_ACTIONS.markShipped === "function"
+          window.AXIOM_ORDER_FULFILLMENT_MODAL &&
+          typeof window.AXIOM_ORDER_FULFILLMENT_MODAL.openShipped === "function"
         ) {
-          await window.AXIOM_ORDER_ACTIONS.markShipped(
-            this.currentOrder,
-            trackingNumber,
-            trackingUrl
-          );
+          window.AXIOM_ORDER_FULFILLMENT_MODAL.openShipped(this.currentOrder);
         }
       });
     }
