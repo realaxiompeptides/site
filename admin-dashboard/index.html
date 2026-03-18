@@ -10,7 +10,7 @@
 
   <meta
     name="description"
-    content="Axiom Peptides admin dashboard for orders, checkout sessions, analytics, and tracking."
+    content="Axiom Peptides admin dashboard for orders, checkout sessions, analytics, tracking, and payment reporting."
   />
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -26,8 +26,9 @@
     href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
   />
 
-  <link rel="stylesheet" href="dashboard.css" />
-  <link rel="stylesheet" href="order-detail/order-detail.css?v=61" />
+  <link rel="stylesheet" href="dashboard.css?v=62" />
+  <link rel="stylesheet" href="order-detail/order-detail.css?v=62" />
+  <link rel="stylesheet" href="payment-tracking/payment-tracking.css?v=62" />
 </head>
 
 <body class="axiom-dashboard-page">
@@ -38,7 +39,7 @@
 
       <div class="dashboard-sidebar-top">
         <h1>Axiom Dashboard</h1>
-        <p>Store admin, checkout tracking, visitor analytics, and order operations</p>
+        <p>Store admin, checkout tracking, visitor analytics, order operations, and payment tracking</p>
       </div>
 
       <div class="dashboard-search-wrap">
@@ -169,6 +170,47 @@
         </section>
 
         <section class="dashboard-details-grid">
+
+          <!-- NEW PAYMENT TRACKING CARD -->
+          <div id="paymentTrackingMount" class="dashboard-span-2">
+            <div class="dashboard-card dashboard-span-2">
+              <div class="dashboard-card-header dashboard-card-header-stack-mobile">
+                <div>
+                  <p class="dashboard-kicker">Payment Tracking</p>
+                  <h3>Sales Overview</h3>
+                </div>
+
+                <div class="payment-tracking-range-group" id="paymentTrackingRangeGroup">
+                  <button type="button" class="payment-range-btn active" data-range="1d">1D</button>
+                  <button type="button" class="payment-range-btn" data-range="7d">7D</button>
+                  <button type="button" class="payment-range-btn" data-range="1m">1M</button>
+                  <button type="button" class="payment-range-btn" data-range="3m">3M</button>
+                  <button type="button" class="payment-range-btn" data-range="1y">1Y</button>
+                </div>
+              </div>
+
+              <div class="payment-tracking-stats">
+                <div class="payment-stat-card">
+                  <span class="payment-stat-label">Completed Payments</span>
+                  <strong id="paymentTrackingCompletedCount">0</strong>
+                </div>
+
+                <div class="payment-stat-card">
+                  <span class="payment-stat-label">Total Sales</span>
+                  <strong id="paymentTrackingTotalSales">$0.00</strong>
+                </div>
+
+                <div class="payment-stat-card">
+                  <span class="payment-stat-label">Average Order</span>
+                  <strong id="paymentTrackingAverageOrder">$0.00</strong>
+                </div>
+              </div>
+
+              <div class="payment-tracking-chart-wrap">
+                <canvas id="paymentTrackingChart" aria-label="Sales chart" role="img"></canvas>
+              </div>
+            </div>
+          </div>
 
           <div class="dashboard-card">
             <div class="dashboard-card-header">
@@ -379,16 +421,17 @@
   </script>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="dashboard-config.js?v=61" defer></script>
-  <script src="shared/tracking-config.js?v=61" defer></script>
-  <script src="shared/helpers.js?v=61" defer></script>
-  <script src="supabase-client.js?v=61" defer></script>
-  <script src="auth/admin-auth.js?v=61" defer></script>
-  <script src="analytics/analytics.js?v=61" defer></script>
-  <script src="orders/order-actions.js?v=61" defer></script>
-  <script src="orders/order-fulfillment-modal.js?v=61" defer></script>
-  <script src="order-detail/order-detail.js?v=61" defer></script>
-  <script src="dashboard.js?v=61" defer></script>
+  <script src="dashboard-config.js?v=62" defer></script>
+  <script src="shared/tracking-config.js?v=62" defer></script>
+  <script src="shared/helpers.js?v=62" defer></script>
+  <script src="supabase-client.js?v=62" defer></script>
+  <script src="auth/admin-auth.js?v=62" defer></script>
+  <script src="analytics/analytics.js?v=62" defer></script>
+  <script src="orders/order-actions.js?v=62" defer></script>
+  <script src="orders/order-fulfillment-modal.js?v=62" defer></script>
+  <script src="payment-tracking/payment-tracking.js?v=62" defer></script>
+  <script src="order-detail/order-detail.js?v=62" defer></script>
+  <script src="dashboard.js?v=62" defer></script>
 
 </body>
 </html>
