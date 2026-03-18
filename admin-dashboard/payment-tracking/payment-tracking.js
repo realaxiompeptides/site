@@ -52,7 +52,7 @@ window.AXIOM_PAYMENT_TRACKING = {
     let bucket = "day";
 
     if (range === "1d") {
-      start.setHours(now.getHours() - 23, 0, 0, 0);
+      start.setHours(0, 0, 0, 0);
       bucket = "hour";
     } else if (range === "7d") {
       start.setDate(now.getDate() - 6);
@@ -91,6 +91,23 @@ window.AXIOM_PAYMENT_TRACKING = {
         orderStatus === "shipped"
       );
     });
+  },
+
+  getSaleDate(order) {
+    const rawValue =
+      order?.payment_collected_at ||
+      order?.completed_at ||
+      order?.shipped_at ||
+      order?.updated_at ||
+      order?.created_at ||
+      null;
+
+    if (!rawValue) return null;
+
+    const date = new Date(rawValue);
+    if (Number.isNaN(date.getTime())) return null;
+
+    return date;
   },
 
   formatCurrency(value) {
@@ -222,26 +239,31 @@ window.AXIOM_PAYMENT_TRACKING = {
     const completedOrders = this.getCompletedOrders(orders);
 
     const filtered = completedOrders.filter((order) => {
-      const created = order?.created_at ? new Date(order.created_at) : null;
-      return created && !Number.isNaN(created.getTime()) && created >= config.start && created <= config.now;
+      const saleDate = this.getSaleDate(order);
+      return saleDate && saleDate >= config.start && saleDate <= config.now;
     });
 
     const totalsByBucket = {};
 
     filtered.forEach((order) => {
-      const key = this.getBucketKey(order.created_at, config.bucket);
+      const saleDate = this.getSaleDate(order);
+      if (!saleDate) return;
+
+      const key = this.getBucketKey(saleDate, config.bucket);
       const total = Number(order?.total_amount || 0);
       totalsByBucket[key] = Number(totalsByBucket[key] || 0) + total;
     });
 
     const fullKeys = this.createFullBucketSeries(range, config.bucket);
 
+    const totalSales = filtered.reduce((sum, order) => {
+      return sum + Number(order?.total_amount || 0);
+    }, 0);
+
     return {
       completedCount: filtered.length,
-      totalSales: filtered.reduce((sum, order) => sum + Number(order?.total_amount || 0), 0),
-      averageOrder: filtered.length
-        ? filtered.reduce((sum, order) => sum + Number(order?.total_amount || 0), 0) / filtered.length
-        : 0,
+      totalSales,
+      averageOrder: filtered.length ? totalSales / filtered.length : 0,
       labels: fullKeys.map((key) => this.getBucketLabel(key, config.bucket)),
       values: fullKeys.map((key) => Number(totalsByBucket[key] || 0))
     };
@@ -312,11 +334,8 @@ window.AXIOM_PAYMENT_TRACKING = {
 
     ctx.beginPath();
     points.forEach((point, index) => {
-      if (index === 0) {
-        ctx.moveTo(point.x, point.y);
-      } else {
-        ctx.lineTo(point.x, point.y);
-      }
+      if (index === 0) ctx.moveTo(point.x, point.y);
+      else ctx.lineTo(point.x, point.y);
     });
     ctx.strokeStyle = "#387eb6";
     ctx.lineWidth = 3;
