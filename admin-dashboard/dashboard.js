@@ -4,7 +4,7 @@ const DASHBOARD_PARTIALS = [
   { mountId: "shippingInfoMount", file: "shipping-info/shipping.html" },
   { mountId: "billingInfoMount", file: "billing-info/billing.html" },
   { mountId: "cartItemsMount", file: "cart-items/cart-items.html" },
-  { mountId: "analyticsMount", file: "analytics/analytics.html" }
+  { mountId: "analyticsMount", file: "analytics/analytics.html" },
   { mountId: "orderDetailMount", file: "order-detail/order-detail.html" }
 ];
 
