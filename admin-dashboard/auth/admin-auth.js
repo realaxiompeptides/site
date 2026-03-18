@@ -78,19 +78,28 @@ document.addEventListener("DOMContentLoaded", async function () {
       return false;
     }
 
+    const adminEmailEl = document.getElementById("dashboardAdminEmail");
+    if (adminEmailEl) {
+      adminEmailEl.textContent = userEmail || "Admin";
+    }
+
     let adminRow = null;
 
     try {
       adminRow = await getActiveAdminRow(userEmail);
     } catch (lookupError) {
       console.error("Admin lookup failed:", lookupError);
-      await signOutAndGoToLogin();
+      if (adminEmailEl) {
+        adminEmailEl.textContent = userEmail || "Admin";
+      }
       return false;
     }
 
     if (!adminRow) {
       console.error("No active admin row found for:", userEmail);
-      await signOutAndGoToLogin();
+      if (adminEmailEl) {
+        adminEmailEl.textContent = userEmail || "Admin";
+      }
       return false;
     }
 
@@ -103,7 +112,6 @@ document.addEventListener("DOMContentLoaded", async function () {
       is_active: adminRow.is_active === true
     };
 
-    const adminEmailEl = document.getElementById("dashboardAdminEmail");
     if (adminEmailEl) {
       adminEmailEl.textContent =
         adminRow.full_name?.trim() || adminRow.email || userEmail || "Admin";
