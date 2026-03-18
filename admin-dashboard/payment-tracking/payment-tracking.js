@@ -26,9 +26,9 @@ window.AXIOM_PAYMENT_TRACKING = {
     window.addEventListener("resize", () => {
       if (
         window.AXIOM_DASHBOARD_APP &&
-        Array.isArray(window.AXIOM_DASHBOARD_APP.checkoutSessionsForTracking)
+        Array.isArray(window.AXIOM_DASHBOARD_APP.orders)
       ) {
-        this.render(window.AXIOM_DASHBOARD_APP.checkoutSessionsForTracking);
+        this.render(window.AXIOM_DASHBOARD_APP.orders);
       }
     });
   },
@@ -70,33 +70,37 @@ window.AXIOM_PAYMENT_TRACKING = {
       start.setFullYear(now.getFullYear() - 1);
       start.setHours(0, 0, 0, 0);
       bucket = "month";
+    } else if (range === "all") {
+      start.setFullYear(now.getFullYear() - 10);
+      start.setHours(0, 0, 0, 0);
+      bucket = "month";
     }
 
     return { now, start, bucket };
   },
 
-  getCompletedPayments(sessions) {
-    return (Array.isArray(sessions) ? sessions : []).filter((session) => {
-      const paymentStatus = String(session?.payment_status || "").toLowerCase();
-      const fulfillmentStatus = String(session?.fulfillment_status || "").toLowerCase();
-      const sessionStatus = String(session?.session_status || "").toLowerCase();
+  getCompletedOrders(orders) {
+    return (Array.isArray(orders) ? orders : []).filter((order) => {
+      const paymentStatus = String(order?.payment_status || "").toLowerCase();
+      const orderStatus = String(order?.order_status || "").toLowerCase();
+      const fulfillmentStatus = String(order?.fulfillment_status || "").toLowerCase();
+
+      if (orderStatus === "cancelled") return false;
 
       return (
         paymentStatus === "paid" ||
         fulfillmentStatus === "fulfilled" ||
         fulfillmentStatus === "shipped" ||
-        sessionStatus === "converted"
+        orderStatus === "fulfilled" ||
+        orderStatus === "shipped"
       );
     });
   },
 
-  getSaleDate(session) {
+  getSaleDate(order) {
     const rawValue =
-      session?.payment_collected_at ||
-      session?.completed_at ||
-      session?.confirmed_at ||
-      session?.updated_at ||
-      session?.created_at ||
+      order?.updated_at ||
+      order?.created_at ||
       null;
 
     if (!rawValue) return null;
@@ -231,30 +235,30 @@ window.AXIOM_PAYMENT_TRACKING = {
     return keys;
   },
 
-  buildSeries(sessions, range) {
+  buildSeries(orders, range) {
     const config = this.getRangeConfig(range);
-    const completedPayments = this.getCompletedPayments(sessions);
+    const completedOrders = this.getCompletedOrders(orders);
 
-    const filtered = completedPayments.filter((session) => {
-      const saleDate = this.getSaleDate(session);
+    const filtered = completedOrders.filter((order) => {
+      const saleDate = this.getSaleDate(order);
       return saleDate && saleDate >= config.start && saleDate <= config.now;
     });
 
     const totalsByBucket = {};
 
-    filtered.forEach((session) => {
-      const saleDate = this.getSaleDate(session);
+    filtered.forEach((order) => {
+      const saleDate = this.getSaleDate(order);
       if (!saleDate) return;
 
       const key = this.getBucketKey(saleDate, config.bucket);
-      const total = Number(session?.total_amount || 0);
+      const total = Number(order?.total_amount || 0);
       totalsByBucket[key] = Number(totalsByBucket[key] || 0) + total;
     });
 
     const fullKeys = this.createFullBucketSeries(range, config.bucket);
 
-    const totalSales = filtered.reduce((sum, session) => {
-      return sum + Number(session?.total_amount || 0);
+    const totalSales = filtered.reduce((sum, order) => {
+      return sum + Number(order?.total_amount || 0);
     }, 0);
 
     return {
@@ -309,13 +313,6 @@ window.AXIOM_PAYMENT_TRACKING = {
       ctx.fillText(`$${lineValue}`, 8, y + 4);
     }
 
-    if (!labels.length || !values.length) {
-      ctx.fillStyle = "#73819c";
-      ctx.font = "600 14px Inter, Arial, sans-serif";
-      ctx.fillText("No completed sales yet.", padding.left, padding.top + 40);
-      return;
-    }
-
     const pointCount = values.length;
     const xStep = pointCount > 1 ? chartWidth / (pointCount - 1) : chartWidth / 2;
 
@@ -366,10 +363,10 @@ window.AXIOM_PAYMENT_TRACKING = {
     });
   },
 
-  render(sessions) {
+  render(orders) {
     this.setRange(this.currentRange);
 
-    const series = this.buildSeries(sessions, this.currentRange);
+    const series = this.buildSeries(orders, this.currentRange);
 
     const completedCountEl = document.getElementById("paymentTrackingCompletedCount");
     const totalSalesEl = document.getElementById("paymentTrackingTotalSales");
