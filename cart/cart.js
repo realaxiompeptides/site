@@ -27,8 +27,14 @@ function initCartDrawer() {
   const cartDrawerItemCount = document.getElementById("cartDrawerItemCount");
 
   const FREE_SHIPPING_THRESHOLD = 150;
-  const isProductPage = window.location.pathname.includes("/product-page/");
-  const IMAGE_PREFIX = isProductPage ? "../" : "";
+
+  const pathSegments = window.location.pathname.split("/").filter(Boolean);
+  const currentFile = pathSegments[pathSegments.length - 1] || "";
+  const isNestedPage =
+    pathSegments.length > 1 &&
+    currentFile.endsWith(".html");
+
+  const IMAGE_PREFIX = isNestedPage ? "../" : "";
 
   const RECOMMENDED_PRODUCTS = [
     {
@@ -101,21 +107,29 @@ function initCartDrawer() {
       return cleanPath;
     }
 
-    if (isProductPage) {
-      if (cleanPath.startsWith("../")) return cleanPath;
-      if (cleanPath.startsWith("./")) return cleanPath.replace("./", "../");
-      return `../${cleanPath}`;
+    if (cleanPath.startsWith("../images/")) {
+      return isNestedPage ? cleanPath : cleanPath.replace("../", "");
+    }
+
+    if (cleanPath.startsWith("images/")) {
+      return isNestedPage ? `../${cleanPath}` : cleanPath;
+    }
+
+    if (cleanPath.startsWith("./images/")) {
+      const normalized = cleanPath.replace("./", "");
+      return isNestedPage ? `../${normalized}` : normalized;
     }
 
     if (cleanPath.startsWith("../")) {
-      return cleanPath.replace("../", "");
+      return isNestedPage ? cleanPath : cleanPath.replace("../", "");
     }
 
     if (cleanPath.startsWith("./")) {
-      return cleanPath.replace("./", "");
+      const normalized = cleanPath.replace("./", "");
+      return isNestedPage ? `../${normalized}` : normalized;
     }
 
-    return cleanPath;
+    return isNestedPage ? `../${cleanPath}` : cleanPath;
   }
 
   function normalizeCartItem(item) {
@@ -173,7 +187,7 @@ function initCartDrawer() {
   }
 
   function getPageLink(pathFromRoot) {
-    return isProductPage ? `../${pathFromRoot}` : pathFromRoot;
+    return isNestedPage ? `../${pathFromRoot}` : pathFromRoot;
   }
 
   function bindStaticLinks() {
