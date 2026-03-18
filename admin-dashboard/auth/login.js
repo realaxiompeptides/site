@@ -11,10 +11,11 @@ document.addEventListener("DOMContentLoaded", async function () {
   const submitBtn = document.getElementById("adminLoginSubmit");
   const messageEl = document.getElementById("adminLoginMessage");
 
-  const LOGIN_PATH = "/site/admin-dashboard/login.html";
-  const DASHBOARD_PATH = "/site/admin-dashboard/index.html";
+  const LOGIN_PATH = "login.html";
+  const DASHBOARD_PATH = "index.html";
 
   let isSubmitting = false;
+  let redirecting = false;
 
   function setMessage(message, isError = false) {
     if (!messageEl) return;
@@ -31,7 +32,13 @@ document.addEventListener("DOMContentLoaded", async function () {
     }
   }
 
-  async function getStableSession(maxAttempts = 8, delayMs = 250) {
+  function goToDashboard() {
+    if (redirecting) return;
+    redirecting = true;
+    window.location.href = DASHBOARD_PATH;
+  }
+
+  async function getStableSession(maxAttempts = 10, delayMs = 250) {
     for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
       const {
         data: { session },
@@ -73,16 +80,17 @@ document.addEventListener("DOMContentLoaded", async function () {
 
   async function redirectIfAlreadySignedIn() {
     try {
-      const session = await getStableSession(2, 150);
+      const session = await getStableSession(3, 150);
       if (!session?.user?.email) return false;
 
       const adminRow = await getActiveAdminRow(session.user.email);
+
       if (!adminRow) {
         await supabase.auth.signOut();
         return false;
       }
 
-      window.location.href = DASHBOARD_PATH;
+      goToDashboard();
       return true;
     } catch (error) {
       console.error("Initial login session check failed:", error);
@@ -101,7 +109,7 @@ document.addEventListener("DOMContentLoaded", async function () {
 
   form.addEventListener("submit", async function (event) {
     event.preventDefault();
-    if (isSubmitting) return;
+    if (isSubmitting || redirecting) return;
 
     const email = String(emailInput?.value || "").trim().toLowerCase();
     const password = passwordInput?.value || "";
@@ -150,7 +158,7 @@ document.addEventListener("DOMContentLoaded", async function () {
       }
 
       setMessage("Login successful. Redirecting...");
-      window.location.href = DASHBOARD_PATH;
+      goToDashboard();
     } catch (error) {
       console.error("Unexpected login error:", error);
       setMessage(error.message || "Something went wrong while signing in.", true);
@@ -159,15 +167,20 @@ document.addEventListener("DOMContentLoaded", async function () {
   });
 
   supabase.auth.onAuthStateChange(async function (event, session) {
+    const onLoginPage =
+      window.location.pathname.endsWith("/login.html") ||
+      window.location.pathname.endsWith("login.html");
+
+    if (!onLoginPage || redirecting) return;
+
     if (
-      window.location.pathname === LOGIN_PATH &&
       (event === "SIGNED_IN" || event === "INITIAL_SESSION" || event === "TOKEN_REFRESHED") &&
       session?.user?.email
     ) {
       try {
         const adminRow = await getActiveAdminRow(session.user.email);
         if (adminRow) {
-          window.location.href = DASHBOARD_PATH;
+          goToDashboard();
         }
       } catch (error) {
         console.error("Auth state redirect failed:", error);
