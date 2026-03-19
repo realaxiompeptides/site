@@ -582,3 +582,52 @@
     font-size: 13px;
   }
 }
+
+.cart-page-payment-icons {
+  margin-top: 18px;
+}
+
+.icons-only-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+  align-items: center;
+}
+
+.cart-page-payment-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 56px;
+  padding: 10px;
+  border: 1px solid #dbe4f0;
+  border-radius: 18px;
+  background: #ffffff;
+}
+
+.cart-page-payment-icon img {
+  max-width: 42px;
+  max-height: 24px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  display: block;
+}
+
+@media (max-width: 640px) {
+  .icons-only-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .cart-page-payment-icon {
+    min-height: 52px;
+    padding: 8px;
+    border-radius: 16px;
+  }
+
+  .cart-page-payment-icon img {
+    max-width: 38px;
+    max-height: 22px;
+  }
+}
