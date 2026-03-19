@@ -30,7 +30,7 @@
   <link rel="stylesheet" href="../css/menu.css" />
   <link rel="stylesheet" href="../cart/cart.css" />
   <link rel="stylesheet" href="../footer/footer.css" />
-  <link rel="stylesheet" href="cart.css?v=7" />
+  <link rel="stylesheet" href="cart.css?v=8" />
 </head>
 <body class="axiom-cart-page">
 
@@ -214,7 +214,12 @@
           </div>
 
           <div class="cart-summary-actions">
-            <button type="button" class="cart-btn cart-btn-primary" id="cartCheckoutBtn">
+            <button
+              type="button"
+              class="cart-btn cart-btn-primary"
+              id="cartCheckoutBtn"
+              data-checkout-url="https://realaxiompeptides.github.io/site/checkout/checkout.html"
+            >
               Proceed to Checkout
             </button>
 
@@ -250,11 +255,17 @@
               </div>
 
               <div class="cart-page-payment-icon" title="Solana" aria-label="Solana">
-                <span class="payment-solana">
-                  <span></span>
-                  <span></span>
-                  <span></span>
-                </span>
+                <svg class="solana-icon-svg" viewBox="0 0 397 311" aria-hidden="true">
+                  <defs>
+                    <linearGradient id="solanaGradientCart" x1="100%" y1="0%" x2="0%" y2="100%">
+                      <stop offset="0%" stop-color="#00FFA3"></stop>
+                      <stop offset="100%" stop-color="#DC1FFF"></stop>
+                    </linearGradient>
+                  </defs>
+                  <path fill="url(#solanaGradientCart)" d="M64.6 237.3c2.3-2.3 5.3-3.5 8.6-3.5h310.9c5.4 0 8.1 6.5 4.3 10.3L332 300.5c-2.3 2.3-5.3 3.5-8.6 3.5H12.5c-5.4 0-8.1-6.5-4.3-10.3l56.4-56.4Z"></path>
+                  <path fill="url(#solanaGradientCart)" d="M64.6 3.5C67 1.2 70 0 73.2 0h310.9c5.4 0 8.1 6.5 4.3 10.3l-56.4 56.4c-2.3 2.3-5.3 3.5-8.6 3.5H12.5c-5.4 0-8.1-6.5-4.3-10.3L64.6 3.5Z"></path>
+                  <path fill="url(#solanaGradientCart)" d="M332 119.7c-2.3-2.3-5.3-3.5-8.6-3.5H12.5c-5.4 0-8.1 6.5-4.3 10.3l56.4 56.4c2.3 2.3 5.3 3.5 8.6 3.5h310.9c5.4 0 8.1-6.5 4.3-10.3L332 119.7Z"></path>
+                </svg>
               </div>
 
               <div class="cart-page-payment-icon" title="Apple Pay" aria-label="Apple Pay">
@@ -262,8 +273,8 @@
               </div>
 
               <div class="cart-page-payment-icon" title="Google Pay" aria-label="Google Pay">
-                <span class="payment-gpay">
-                  <span class="gpay-g">G</span><span class="gpay-pay">Pay</span>
+                <span class="gpay-logo-custom" aria-hidden="true">
+                  <span class="gpay-g-blue">G</span><span class="gpay-pay-dark">Pay</span>
                 </span>
               </div>
 
@@ -294,6 +305,8 @@
           }
           const html = await response.text();
           cartDrawerMount.innerHTML = html;
+
+          document.dispatchEvent(new CustomEvent("axiom:cart-drawer-loaded"));
         } catch (error) {
           console.error("Cart drawer load failed:", error);
         }
@@ -316,7 +329,11 @@
       const cartCheckoutBtn = document.getElementById("cartCheckoutBtn");
       if (cartCheckoutBtn) {
         cartCheckoutBtn.addEventListener("click", function () {
-          window.location.href = "https://realaxiompeptides.github.io/site/checkout/checkout.html";
+          const checkoutUrl =
+            cartCheckoutBtn.getAttribute("data-checkout-url") ||
+            "https://realaxiompeptides.github.io/site/checkout/checkout.html";
+
+          window.location.href = checkoutUrl;
         });
       }
     });
@@ -326,7 +343,7 @@
   <script src="../cart/cart.js" defer></script>
   <script src="../js/app.js" defer></script>
   <script src="../footer/footer-loader.js" defer></script>
-  <script src="cart.js?v=7" defer></script>
+  <script src="cart.js?v=8" defer></script>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="../admin-dashboard/dashboard-config.js" defer></script>
