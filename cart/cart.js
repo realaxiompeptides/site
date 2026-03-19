@@ -36,7 +36,7 @@ function initCartDrawer() {
 
   const IMAGE_PREFIX = isNestedPage ? "../" : "";
   const BASE_PATH = window.location.hostname.includes("github.io") ? "/site/" : "/";
-  
+
   const RECOMMENDED_PRODUCTS = [
     {
       id: "bacwater-10ml",
@@ -188,18 +188,18 @@ function initCartDrawer() {
   }
 
   function getPageLink(pathFromRoot) {
-  const cleanPath = String(pathFromRoot || "").replace(/^\/+/, "");
+    const cleanPath = String(pathFromRoot || "").replace(/^\/+/, "");
 
-  if (window.location.hostname.includes("github.io")) {
-    return `${BASE_PATH}${cleanPath}`;
+    if (window.location.hostname.includes("github.io")) {
+      return `${BASE_PATH}${cleanPath}`;
+    }
+
+    return `/${cleanPath}`;
   }
-
-  return `/${cleanPath}`;
-}
 
   function bindStaticLinks() {
     const browseProductsLinks = document.querySelectorAll('.cart-empty-state a[href], .cart-outline-btn[href*="catalog"]');
-    const viewCartLinks = document.querySelectorAll('.cart-action-stack a[href*="cart-page"]');
+    const viewCartLinks = document.querySelectorAll('.cart-action-stack a[href*="cart-page"], .cart-action-stack a[href*="cart.html"]');
     const checkoutLinks = document.querySelectorAll('.cart-action-stack a[href*="checkout"]');
 
     browseProductsLinks.forEach(link => {
