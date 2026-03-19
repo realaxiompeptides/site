@@ -33,9 +33,7 @@
   <link rel="stylesheet" href="trust/trust-strip.css" />
   <link rel="stylesheet" href="faq/faq-section.css" />
   
-  <!-- Add the cart drawer icon styles directly -->
   <style>
-    /* Cart drawer icon styles */
     .cart-btn {
       position: relative !important;
       width: 58px !important;
@@ -106,7 +104,6 @@
       }
     }
 
-    /* Ensure header layout is correct */
     .header-inner {
       display: flex !important;
       align-items: center !important;
@@ -123,7 +120,6 @@
       transform: translateX(-50%) !important;
     }
 
-    /* Ensure proper stacking */
     .hamburger-btn {
       z-index: 10 !important;
     }
@@ -132,7 +128,6 @@
       z-index: 10 !important;
     }
 
-    /* Add specific spacing for cart button to match hamburger */
     .hamburger-btn {
       margin-left: 0 !important;
     }
@@ -180,7 +175,6 @@
         <img src="images/axiom-logo.PNG" alt="Axiom Peptides logo" />
       </a>
 
-      <!-- Hardcoded cart button with exact same HTML as the loader would provide -->
       <button
         class="icon-btn cart-btn"
         id="cartToggle"
@@ -247,7 +241,6 @@
     </div>
   </aside>
 
-  <!-- Original cart drawer - exactly as it was -->
   <aside class="cart-drawer" id="cartDrawer" aria-hidden="true">
     <div class="cart-drawer-inner">
       <div class="cart-drawer-header">
@@ -309,7 +302,6 @@
 
   <div id="site-footer"></div>
 
-  <!-- Original scripts in original order - just added product-data.js -->
   <script src="js/product-data.js" defer></script>
   <script src="trust/trust-strip-loader.js" defer></script>
   <script src="homepage/homepage-collection-data.js" defer></script>
@@ -321,41 +313,102 @@
   <script src="js/app.js" defer></script>
   <script src="footer/footer-loader.js" defer></script>
 
-  <!-- Simple fix to ensure images show in cart drawer - doesn't change cart functionality -->
   <script>
-    // This just ensures cart items have images - doesn't modify cart drawer HTML/structure
-    document.addEventListener('DOMContentLoaded', function() {
-      // Run after cart.js loads
-      setTimeout(function() {
-        // Get cart
-        let cart = JSON.parse(localStorage.getItem('axiomCart')) || [];
-        let needsUpdate = false;
-        
-        // Fix missing images
-        if (window.productData && window.productData.length > 0) {
-          cart.forEach(item => {
-            if (!item.image) {
-              const product = window.productData.find(p => p.id == item.id);
-              if (product && product.image) {
-                item.image = product.image;
-                needsUpdate = true;
+    document.addEventListener("DOMContentLoaded", function () {
+      setTimeout(function () {
+        try {
+          const rawCart = localStorage.getItem("axiom_cart");
+          const cart = JSON.parse(rawCart || "[]");
+          const products = Array.isArray(window.AXIOM_PRODUCTS)
+            ? window.AXIOM_PRODUCTS
+            : Array.isArray(window.productData)
+              ? window.productData
+              : [];
+
+          if (!Array.isArray(cart) || !cart.length || !products.length) return;
+
+          let needsUpdate = false;
+
+          function normalizeImagePath(path) {
+            if (!path || typeof path !== "string") return "";
+            const cleanPath = path.trim();
+
+            if (
+              cleanPath.startsWith("http://") ||
+              cleanPath.startsWith("https://") ||
+              cleanPath.startsWith("/")
+            ) {
+              return cleanPath;
+            }
+
+            if (cleanPath.startsWith("./")) {
+              return cleanPath.replace("./", "");
+            }
+
+            if (cleanPath.startsWith("../")) {
+              return cleanPath.replace("../", "");
+            }
+
+            return cleanPath;
+          }
+
+          function getProductImage(product) {
+            if (!product) return "";
+
+            if (typeof product.image === "string" && product.image.trim()) {
+              return normalizeImagePath(product.image);
+            }
+
+            if (Array.isArray(product.images) && product.images.length) {
+              const firstImage = product.images[0];
+              if (typeof firstImage === "string" && firstImage.trim()) {
+                return normalizeImagePath(firstImage);
               }
             }
-          });
-          
-          if (needsUpdate) {
-            localStorage.setItem('axiomCart', JSON.stringify(cart));
-            // Trigger cart refresh if open
-            if (document.getElementById('cartDrawer').classList.contains('open')) {
-              location.reload(); // Simple refresh to show images
-            }
+
+            return "";
           }
+
+          const fixedCart = cart.map(function (item) {
+            if (item.image && String(item.image).trim()) {
+              return item;
+            }
+
+            const match = products.find(function (product) {
+              if (item.slug && product.slug && item.slug === product.slug) return true;
+              if (item.id && product.id && String(item.id) === String(product.id)) return true;
+
+              if (Array.isArray(product.variants)) {
+                return product.variants.some(function (variant) {
+                  return item.id && variant.id && String(item.id) === String(variant.id);
+                });
+              }
+
+              return false;
+            });
+
+            const image = getProductImage(match);
+            if (!image) return item;
+
+            needsUpdate = true;
+            return {
+              ...item,
+              image: image
+            };
+          });
+
+          if (needsUpdate) {
+            localStorage.setItem("axiom_cart", JSON.stringify(fixedCart));
+            window.dispatchEvent(new Event("axiom-cart-updated"));
+            window.dispatchEvent(new Event("storage"));
+          }
+        } catch (error) {
+          console.error("Failed to repair cart images:", error);
         }
       }, 500);
     });
   </script>
 
-  <!-- Tracking -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="admin-dashboard/dashboard-config.js" defer></script>
   <script src="admin-dashboard/shared/tracking-config.js" defer></script>
