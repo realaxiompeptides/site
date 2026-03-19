@@ -30,7 +30,7 @@
   <link rel="stylesheet" href="../css/menu.css" />
   <link rel="stylesheet" href="../cart/cart.css" />
   <link rel="stylesheet" href="../footer/footer.css" />
-  <link rel="stylesheet" href="cart.css?v=5" />
+  <link rel="stylesheet" href="cart.css?v=6" />
 </head>
 <body class="axiom-cart-page">
 
@@ -141,7 +141,7 @@
       <div class="cart-drawer-header">
         <div class="cart-drawer-title-group">
           <div class="cart-drawer-title-icon" aria-hidden="true">
-            <i class="fa-solid fa-cart-shopping"></i>
+            <img src="../images/cart-icon-circle.PNG" alt="" />
           </div>
 
           <div class="cart-drawer-title-copy">
@@ -298,10 +298,11 @@
               <input
                 type="text"
                 id="cartPageCouponCode"
+                class="cart-page-coupon-input"
                 placeholder="Enter coupon code"
                 autocomplete="off"
               />
-              <button type="button" id="cartPageApplyCouponBtn">
+              <button type="button" id="cartPageApplyCouponBtn" class="cart-page-coupon-btn">
                 Apply Coupon
               </button>
             </div>
@@ -318,46 +319,46 @@
             </a>
           </div>
 
-          <div class="cart-page-payment-icons">
+          <div class="cart-page-payment-icons" aria-label="Accepted payment methods">
             <div class="cart-page-payment-grid icons-only-grid">
-              <div class="cart-page-payment-icon">
-                <img src="./payment-icons/visa.PNG" alt="Visa" />
+              <div class="cart-page-payment-icon" title="Visa" aria-label="Visa">
+                <i class="fa-brands fa-cc-visa" aria-hidden="true"></i>
               </div>
 
-              <div class="cart-page-payment-icon">
-                <img src="./payment-icons/mastercard.PNG" alt="Mastercard" />
+              <div class="cart-page-payment-icon" title="Mastercard" aria-label="Mastercard">
+                <i class="fa-brands fa-cc-mastercard" aria-hidden="true"></i>
               </div>
 
-              <div class="cart-page-payment-icon">
-                <img src="./payment-icons/amex.PNG" alt="American Express" />
+              <div class="cart-page-payment-icon" title="American Express" aria-label="American Express">
+                <i class="fa-brands fa-cc-amex" aria-hidden="true"></i>
               </div>
 
-              <div class="cart-page-payment-icon">
-                <img src="./payment-icons/discover.PNG" alt="Discover" />
+              <div class="cart-page-payment-icon" title="Discover" aria-label="Discover">
+                <i class="fa-brands fa-cc-discover" aria-hidden="true"></i>
               </div>
 
-              <div class="cart-page-payment-icon">
-                <img src="./payment-icons/bitcoin.PNG" alt="Bitcoin" />
+              <div class="cart-page-payment-icon" title="Bitcoin" aria-label="Bitcoin">
+                <i class="fa-brands fa-bitcoin" aria-hidden="true"></i>
               </div>
 
-              <div class="cart-page-payment-icon">
-                <img src="./payment-icons/ethereum.PNG" alt="Ethereum" />
+              <div class="cart-page-payment-icon" title="Ethereum" aria-label="Ethereum">
+                <i class="fa-brands fa-ethereum" aria-hidden="true"></i>
               </div>
 
-              <div class="cart-page-payment-icon">
-                <img src="./payment-icons/solana.PNG" alt="Solana" />
+              <div class="cart-page-payment-icon" title="Solana" aria-label="Solana">
+                <span class="payment-wordmark">S</span>
               </div>
 
-              <div class="cart-page-payment-icon">
-                <img src="./payment-icons/applepay.PNG" alt="Apple Pay" />
+              <div class="cart-page-payment-icon" title="Apple Pay" aria-label="Apple Pay">
+                <i class="fa-brands fa-apple-pay" aria-hidden="true"></i>
               </div>
 
-              <div class="cart-page-payment-icon">
-                <img src="./payment-icons/gpay.PNG" alt="Google Pay" />
+              <div class="cart-page-payment-icon" title="Google Pay" aria-label="Google Pay">
+                <span class="payment-wordmark">G&nbsp;Pay</span>
               </div>
 
-              <div class="cart-page-payment-icon">
-                <img src="./payment-icons/ach.PNG" alt="ACH" />
+              <div class="cart-page-payment-icon" title="ACH" aria-label="ACH">
+                <span class="payment-wordmark">ACH</span>
               </div>
             </div>
           </div>
@@ -376,7 +377,7 @@
   <script src="../cart/cart.js" defer></script>
   <script src="../js/app.js" defer></script>
   <script src="../footer/footer-loader.js" defer></script>
-  <script src="cart.js?v=5" defer></script>
+  <script src="cart.js?v=6" defer></script>
 
   <script>
     document.addEventListener("DOMContentLoaded", function () {
