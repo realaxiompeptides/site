@@ -66,3 +66,10 @@
     right: -5px;
   }
 }
+
+#cartTriggerMount .cart-fa-icon {
+  font-size: 24px;
+  line-height: 1;
+  display: block;
+  transform: translateY(1px);
+}
