@@ -30,7 +30,7 @@
   <link rel="stylesheet" href="../css/menu.css" />
   <link rel="stylesheet" href="../cart/cart.css" />
   <link rel="stylesheet" href="../footer/footer.css" />
-  <link rel="stylesheet" href="cart.css?v=3" />
+  <link rel="stylesheet" href="cart.css?v=4" />
 </head>
 <body class="axiom-cart-page">
 
@@ -227,8 +227,8 @@
         </div>
 
         <div class="cart-action-stack">
-          <a href="/site/cart-page/cart.html" class="cart-pill-btn cart-muted-btn">View Cart</a>
-          <a href="/site/checkout/checkout.html" class="cart-pill-btn cart-primary-btn">Checkout</a>
+          <a href="../cart-page/cart.html" class="cart-pill-btn cart-muted-btn">View Cart</a>
+          <a href="../checkout/checkout.html" class="cart-pill-btn cart-primary-btn">Checkout</a>
         </div>
       </div>
     </div>
@@ -240,7 +240,7 @@
     <section class="cart-page-hero">
       <p class="cart-page-kicker">YOUR CART</p>
       <h1>Review Your Order</h1>
-      <p>Update quantities, remove items, and continue to checkout when you are ready.</p>
+      <p>Update quantities, remove items, apply discounts, and continue to checkout when you are ready.</p>
     </section>
 
     <section class="cart-page-layout">
@@ -252,6 +252,12 @@
 
           <div id="cartPageItemsWrap" class="cart-page-items-wrap">
             <div class="cart-page-loading">Loading cart...</div>
+          </div>
+        </div>
+
+        <div class="cart-card cart-card-summary">
+          <div class="cart-card-header">
+            <h2>Cart Total</h2>
           </div>
 
           <div class="cart-summary-list cart-summary-list-page">
@@ -265,15 +271,41 @@
               <strong id="cartSummarySubtotal">$0.00</strong>
             </div>
 
+            <div class="cart-summary-row cart-summary-discount" id="cartPageDiscountRow" hidden>
+              <span>Discount</span>
+              <strong id="cartPageDiscountAmount">-$0.00</strong>
+            </div>
+
             <div class="cart-summary-row">
               <span>Estimated Shipping</span>
               <strong id="cartSummaryShipping">Calculated at checkout</strong>
+            </div>
+
+            <div class="cart-summary-row">
+              <span>Estimated Tax</span>
+              <strong id="cartSummaryTax">Calculated at checkout</strong>
             </div>
           </div>
 
           <div class="cart-summary-total">
             <span>Total</span>
             <strong id="cartSummaryTotal">$0.00</strong>
+          </div>
+
+          <div class="cart-page-coupon-box">
+            <label for="cartPageCouponCode" class="cart-page-coupon-label">Coupon Code</label>
+            <div class="cart-page-coupon-row">
+              <input
+                type="text"
+                id="cartPageCouponCode"
+                placeholder="Enter coupon code"
+                autocomplete="off"
+              />
+              <button type="button" id="cartPageApplyCouponBtn">
+                Apply Coupon
+              </button>
+            </div>
+            <p id="cartPageCouponMessage" class="cart-page-coupon-message"></p>
           </div>
 
           <div class="cart-summary-actions">
@@ -290,16 +322,55 @@
             <p class="cart-page-payment-title">Accepted Payment Methods</p>
 
             <div class="cart-page-payment-grid">
-              <div class="cart-page-payment-pill">VISA</div>
-              <div class="cart-page-payment-pill">MC</div>
-              <div class="cart-page-payment-pill">AMEX</div>
-              <div class="cart-page-payment-pill">DISC</div>
-              <div class="cart-page-payment-pill">BTC</div>
-              <div class="cart-page-payment-pill">ETH</div>
-              <div class="cart-page-payment-pill">SOL</div>
-              <div class="cart-page-payment-pill">Apple Pay</div>
-              <div class="cart-page-payment-pill">G Pay</div>
-              <div class="cart-page-payment-pill">ACH</div>
+              <div class="cart-page-payment-chip">
+                <img src="./payment-icons/visa.PNG" alt="Visa" />
+                <span>Visa</span>
+              </div>
+
+              <div class="cart-page-payment-chip">
+                <img src="./payment-icons/mastercard.PNG" alt="Mastercard" />
+                <span>Mastercard</span>
+              </div>
+
+              <div class="cart-page-payment-chip">
+                <img src="./payment-icons/amex.PNG" alt="American Express" />
+                <span>Amex</span>
+              </div>
+
+              <div class="cart-page-payment-chip">
+                <img src="./payment-icons/discover.PNG" alt="Discover" />
+                <span>Discover</span>
+              </div>
+
+              <div class="cart-page-payment-chip">
+                <img src="./payment-icons/bitcoin.PNG" alt="Bitcoin" />
+                <span>Bitcoin</span>
+              </div>
+
+              <div class="cart-page-payment-chip">
+                <img src="./payment-icons/ethereum.PNG" alt="Ethereum" />
+                <span>Ethereum</span>
+              </div>
+
+              <div class="cart-page-payment-chip">
+                <img src="./payment-icons/solana.PNG" alt="Solana" />
+                <span>Solana</span>
+              </div>
+
+              <div class="cart-page-payment-chip">
+                <img src="./payment-icons/applepay.PNG" alt="Apple Pay" />
+                <span>Apple Pay</span>
+              </div>
+
+              <div class="cart-page-payment-chip">
+                <img src="./payment-icons/gpay.PNG" alt="Google Pay" />
+                <span>Google Pay</span>
+              </div>
+
+              <div class="cart-page-payment-chip">
+                <img src="./payment-icons/ach.PNG" alt="ACH" />
+                <span>ACH</span>
+              </div>
             </div>
           </div>
 
@@ -326,7 +397,7 @@
   <script src="../cart/cart.js" defer></script>
   <script src="../js/app.js" defer></script>
   <script src="../footer/footer-loader.js" defer></script>
-  <script src="cart.js?v=3" defer></script>
+  <script src="cart.js?v=4" defer></script>
 
   <script>
     document.addEventListener("DOMContentLoaded", function () {
