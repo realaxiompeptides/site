@@ -133,6 +133,79 @@ function initCartDrawer() {
     return isNestedPage ? `../${cleanPath}` : cleanPath;
   }
 
+  function getAllProducts() {
+    if (Array.isArray(window.AXIOM_PRODUCTS) && window.AXIOM_PRODUCTS.length) {
+      return window.AXIOM_PRODUCTS;
+    }
+
+    if (Array.isArray(window.productData) && window.productData.length) {
+      return window.productData;
+    }
+
+    return [];
+  }
+
+  function getProductImage(product) {
+    if (!product || typeof product !== "object") {
+      return `${IMAGE_PREFIX}images/products/placeholder.PNG`;
+    }
+
+    if (typeof product.image === "string" && product.image.trim()) {
+      return normalizeImagePath(product.image);
+    }
+
+    if (Array.isArray(product.images) && product.images.length) {
+      const firstImage = product.images.find(function (img) {
+        return typeof img === "string" && img.trim();
+      });
+
+      if (firstImage) {
+        return normalizeImagePath(firstImage);
+      }
+    }
+
+    return `${IMAGE_PREFIX}images/products/placeholder.PNG`;
+  }
+
+  function findMatchingProduct(item) {
+    const products = getAllProducts();
+    if (!products.length || !item) return null;
+
+    return products.find(function (product) {
+      if (!product || typeof product !== "object") return false;
+
+      if (item.slug && product.slug && String(item.slug) === String(product.slug)) {
+        return true;
+      }
+
+      if (item.id && product.id && String(item.id) === String(product.id)) {
+        return true;
+      }
+
+      if (Array.isArray(product.variants)) {
+        return product.variants.some(function (variant) {
+          if (!variant) return false;
+          return item.id && variant.id && String(item.id) === String(variant.id);
+        });
+      }
+
+      return false;
+    }) || null;
+  }
+
+  function resolveCartItemImage(item) {
+    if (item && typeof item.image === "string" && item.image.trim()) {
+      return normalizeImagePath(item.image);
+    }
+
+    const matchingProduct = findMatchingProduct(item);
+    if (matchingProduct) {
+      return getProductImage(matchingProduct);
+    }
+
+    return `${IMAGE_PREFIX}images/products/placeholder.PNG`;
+  }
+
   function normalizeCartItem(item) {
     const normalizedQty = getItemQuantity(item);
 
@@ -162,7 +235,7 @@ function initCartDrawer() {
             : item.oldPrice !== undefined && item.oldPrice !== null
               ? Number(item.oldPrice) || null
               : null,
-      image: normalizeImagePath(item.image || ""),
+      image: resolveCartItemImage(item),
       quantity: normalizedQty,
       qty: normalizedQty,
       line_total: (Number(item.price) || 0) * normalizedQty,
@@ -425,8 +498,33 @@ function initCartDrawer() {
   function renderCart() {
     const cart = getCart().map(normalizeCartItem);
 
-    const itemCount = cart.reduce((sum, item) => sum + getItemQuantity(item), 0);
-    const subtotalValue = cart.reduce((sum, item) => sum + (item.price * getItemQuantity(item)), 0);
+    const repairedCart = cart.map(function (item) {
+      return {
+        ...item,
+        image: resolveCartItemImage(item)
+      };
+    });
+
+    const storedCart = getCart();
+    let needsSave = false;
+
+    if (storedCart.length === repairedCart.length) {
+      for (let i = 0; i < storedCart.length; i += 1) {
+        const oldImage = storedCart[i] && storedCart[i].image ? String(storedCart[i].image) : "";
+        const newImage = repairedCart[i] && repairedCart[i].image ? String(repairedCart[i].image) : "";
+        if (oldImage !== newImage && newImage) {
+          needsSave = true;
+          break;
+        }
+      }
+    }
+
+    if (needsSave) {
+      saveCart(repairedCart);
+    }
+
+    const itemCount = repairedCart.reduce((sum, item) => sum + getItemQuantity(item), 0);
+    const subtotalValue = repairedCart.reduce((sum, item) => sum + (item.price * getItemQuantity(item)), 0);
     const discountValue = getDiscountValue(subtotalValue);
     const discountedSubtotal = Math.max(subtotalValue - discountValue, 0);
 
@@ -443,7 +541,7 @@ function initCartDrawer() {
       cartDrawerItemCount.textContent = String(itemCount);
     }
 
-    if (!cart.length) {
+    if (!repairedCart.length) {
       if (cartEmptyState) cartEmptyState.hidden = false;
       if (cartItemsList) {
         cartItemsList.hidden = true;
@@ -454,7 +552,7 @@ function initCartDrawer() {
 
       if (cartItemsList) {
         cartItemsList.hidden = false;
-        cartItemsList.innerHTML = cart.map((item, index) => `
+        cartItemsList.innerHTML = repairedCart.map((item, index) => `
           <div class="cart-item-card">
             <div class="cart-item-image-wrap">
               <img
@@ -569,7 +667,7 @@ function initCartDrawer() {
     }
 
     bindStaticLinks();
-    renderRecommendations(cart);
+    renderRecommendations(repairedCart);
   }
 
   if (!window.__axiomCartDiscountBound && applyCartDiscount) {
