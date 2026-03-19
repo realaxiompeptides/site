@@ -31,7 +31,7 @@
   <link rel="stylesheet" href="icon-benefits.css" />
   <link rel="stylesheet" href="why-choose-us.css" />
   
-  <!-- Exact same cart drawer icon styling from index.html -->
+  <!-- EXACT same styling from index.html - nothing added, nothing removed -->
   <style>
     /* Cart drawer icon styles - EXACTLY from index.html */
     .cart-btn {
@@ -121,15 +121,26 @@
       transform: translateX(-50%) !important;
     }
 
-    .site-logo img {
-      height: 32px !important;
-      width: auto !important;
-      display: block !important;
-    }
-
     /* Ensure proper stacking */
     .hamburger-btn {
       z-index: 10 !important;
+    }
+
+    .cart-btn {
+      z-index: 10 !important;
+    }
+
+    /* Add specific spacing for cart button to match hamburger */
+    .hamburger-btn {
+      margin-left: 0 !important;
+    }
+    
+    .cart-btn {
+      margin-right: 0 !important;
+    }
+
+    /* Additional styles to ensure hamburger looks exactly like index */
+    .hamburger-btn {
       width: 48px !important;
       height: 48px !important;
       display: flex !important;
@@ -139,6 +150,7 @@
       gap: 6px !important;
       background: transparent !important;
       border: none !important;
+      padding: 0 !important;
     }
 
     .hamburger-btn span {
@@ -149,16 +161,22 @@
       display: block !important;
     }
 
-    .cart-btn {
-      z-index: 10 !important;
+    /* Logo image size - exactly like index */
+    .site-logo img {
+      height: 32px !important;
+      width: auto !important;
+      display: block !important;
     }
 
-    .hamburger-btn {
-      margin-left: 0 !important;
-    }
-    
-    .cart-btn {
-      margin-right: 0 !important;
+    @media (max-width: 640px) {
+      .site-logo img {
+        height: 28px !important;
+      }
+      
+      .hamburger-btn {
+        width: 44px !important;
+        height: 44px !important;
+      }
     }
   </style>
 </head>
