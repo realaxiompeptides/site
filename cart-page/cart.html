@@ -30,7 +30,7 @@
   <link rel="stylesheet" href="../css/menu.css" />
   <link rel="stylesheet" href="../cart/cart.css" />
   <link rel="stylesheet" href="../footer/footer.css" />
-  <link rel="stylesheet" href="cart.css?v=8" />
+  <link rel="stylesheet" href="cart.css?v=9" />
 </head>
 <body class="axiom-cart-page">
 
@@ -218,7 +218,6 @@
               type="button"
               class="cart-btn cart-btn-primary"
               id="cartCheckoutBtn"
-              data-checkout-url="https://realaxiompeptides.github.io/site/checkout/checkout.html"
             >
               Proceed to Checkout
             </button>
@@ -255,17 +254,7 @@
               </div>
 
               <div class="cart-page-payment-icon" title="Solana" aria-label="Solana">
-                <svg class="solana-icon-svg" viewBox="0 0 397 311" aria-hidden="true">
-                  <defs>
-                    <linearGradient id="solanaGradientCart" x1="100%" y1="0%" x2="0%" y2="100%">
-                      <stop offset="0%" stop-color="#00FFA3"></stop>
-                      <stop offset="100%" stop-color="#DC1FFF"></stop>
-                    </linearGradient>
-                  </defs>
-                  <path fill="url(#solanaGradientCart)" d="M64.6 237.3c2.3-2.3 5.3-3.5 8.6-3.5h310.9c5.4 0 8.1 6.5 4.3 10.3L332 300.5c-2.3 2.3-5.3 3.5-8.6 3.5H12.5c-5.4 0-8.1-6.5-4.3-10.3l56.4-56.4Z"></path>
-                  <path fill="url(#solanaGradientCart)" d="M64.6 3.5C67 1.2 70 0 73.2 0h310.9c5.4 0 8.1 6.5 4.3 10.3l-56.4 56.4c-2.3 2.3-5.3 3.5-8.6 3.5H12.5c-5.4 0-8.1-6.5-4.3-10.3L64.6 3.5Z"></path>
-                  <path fill="url(#solanaGradientCart)" d="M332 119.7c-2.3-2.3-5.3-3.5-8.6-3.5H12.5c-5.4 0-8.1 6.5-4.3 10.3l56.4 56.4c2.3 2.3 5.3 3.5 8.6 3.5h310.9c5.4 0 8.1-6.5 4.3-10.3L332 119.7Z"></path>
-                </svg>
+                <i class="fa-brands fa-solana" aria-hidden="true"></i>
               </div>
 
               <div class="cart-page-payment-icon" title="Apple Pay" aria-label="Apple Pay">
@@ -273,9 +262,7 @@
               </div>
 
               <div class="cart-page-payment-icon" title="Google Pay" aria-label="Google Pay">
-                <span class="gpay-logo-custom" aria-hidden="true">
-                  <span class="gpay-g-blue">G</span><span class="gpay-pay-dark">Pay</span>
-                </span>
+                <i class="fa-brands fa-google-pay" aria-hidden="true"></i>
               </div>
 
               <div class="cart-page-payment-icon" title="ACH" aria-label="ACH">
@@ -297,16 +284,19 @@
   <script>
     document.addEventListener("DOMContentLoaded", async function () {
       const cartDrawerMount = document.getElementById("cartDrawerMount");
+
       if (cartDrawerMount) {
         try {
           const response = await fetch("../cart/cart-drawer.html", { cache: "no-store" });
           if (!response.ok) {
             throw new Error("Could not load ../cart/cart-drawer.html");
           }
+
           const html = await response.text();
           cartDrawerMount.innerHTML = html;
 
           document.dispatchEvent(new CustomEvent("axiom:cart-drawer-loaded"));
+          window.dispatchEvent(new Event("resize"));
         } catch (error) {
           console.error("Cart drawer load failed:", error);
         }
@@ -319,6 +309,7 @@
           if (!response.ok) {
             throw new Error("Could not load ../footer/footer.html");
           }
+
           const html = await response.text();
           footerTarget.innerHTML = html;
         } catch (error) {
@@ -329,11 +320,55 @@
       const cartCheckoutBtn = document.getElementById("cartCheckoutBtn");
       if (cartCheckoutBtn) {
         cartCheckoutBtn.addEventListener("click", function () {
-          const checkoutUrl =
-            cartCheckoutBtn.getAttribute("data-checkout-url") ||
-            "https://realaxiompeptides.github.io/site/checkout/checkout.html";
+          window.location.href = "https://realaxiompeptides.github.io/site/checkout/checkout.html";
+        });
+      }
 
-          window.location.href = checkoutUrl;
+      const menuToggle = document.getElementById("menuToggle");
+      const menuClose = document.getElementById("menuClose");
+      const mobileMenu = document.getElementById("mobileMenu");
+      const siteOverlay = document.getElementById("siteOverlay");
+
+      function openMenu() {
+        if (!mobileMenu) return;
+        mobileMenu.setAttribute("aria-hidden", "false");
+        if (menuToggle) menuToggle.setAttribute("aria-expanded", "true");
+        if (siteOverlay) siteOverlay.classList.add("active");
+        document.body.classList.add("menu-open");
+      }
+
+      function closeMenu() {
+        if (!mobileMenu) return;
+        mobileMenu.setAttribute("aria-hidden", "true");
+        if (menuToggle) menuToggle.setAttribute("aria-expanded", "false");
+        if (siteOverlay) siteOverlay.classList.remove("active");
+        document.body.classList.remove("menu-open");
+      }
+
+      if (menuToggle) {
+        menuToggle.addEventListener("click", function () {
+          const isOpen = mobileMenu && mobileMenu.getAttribute("aria-hidden") === "false";
+          if (isOpen) {
+            closeMenu();
+          } else {
+            openMenu();
+          }
+        });
+      }
+
+      if (menuClose) {
+        menuClose.addEventListener("click", closeMenu);
+      }
+
+      if (siteOverlay) {
+        siteOverlay.addEventListener("click", function () {
+          closeMenu();
+
+          const cartDrawer = document.getElementById("cartDrawer");
+          if (cartDrawer) {
+            cartDrawer.setAttribute("aria-hidden", "true");
+          }
+          document.body.classList.remove("cart-open");
         });
       }
     });
@@ -343,7 +378,7 @@
   <script src="../cart/cart.js" defer></script>
   <script src="../js/app.js" defer></script>
   <script src="../footer/footer-loader.js" defer></script>
-  <script src="cart.js?v=8" defer></script>
+  <script src="cart.js?v=9" defer></script>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="../admin-dashboard/dashboard-config.js" defer></script>
