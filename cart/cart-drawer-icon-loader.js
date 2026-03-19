@@ -1,57 +1,53 @@
 document.addEventListener("DOMContentLoaded", async function () {
-  const cartTriggerMount =
-    document.getElementById("cartTriggerMount") ||
-    document.getElementById("cartDrawerIconMount");
+  const mount = document.getElementById("cartTriggerMount");
+  if (!mount) return;
 
-  if (!cartTriggerMount) return;
+  const path = window.location.pathname;
+  const isNestedPage = /\/[^/]+\/[^/]+\.html?$/.test(path);
 
-  const pathSegments = window.location.pathname.split("/").filter(Boolean);
-  const currentFile = pathSegments[pathSegments.length - 1] || "";
-  const isNestedPage =
-    pathSegments.length > 1 &&
-    currentFile.endsWith(".html");
-
-  const iconPath = isNestedPage
+  const iconFile = isNestedPage
     ? "../cart/cart-drawer-icon.html"
     : "cart/cart-drawer-icon.html";
 
-  async function loadCartDrawerIcon() {
+  async function loadIcon() {
     try {
-      const response = await fetch(iconPath, { cache: "no-store" });
+      const response = await fetch(iconFile, { cache: "no-store" });
       if (!response.ok) {
-        throw new Error(`Failed to load cart drawer icon: ${response.status}`);
+        throw new Error(`Failed to load ${iconFile}`);
       }
 
       const html = await response.text();
-      cartTriggerMount.innerHTML = html;
-      updateCartCount();
+      mount.innerHTML = html;
+      syncCartCount();
     } catch (error) {
       console.error("Cart drawer icon load failed:", error);
     }
   }
 
-  function updateCartCount() {
-    const cartCount = document.getElementById("cartCount");
-    if (!cartCount) return;
-
-    let cart = [];
+  function getCart() {
     try {
-      cart = JSON.parse(localStorage.getItem("axiom_cart")) || [];
+      const parsed = JSON.parse(localStorage.getItem("axiom_cart") || "[]");
+      return Array.isArray(parsed) ? parsed : [];
     } catch (error) {
-      console.error("Failed to parse axiom_cart", error);
-      cart = [];
+      console.error("Failed to parse axiom_cart:", error);
+      return [];
     }
+  }
 
-    const totalItems = cart.reduce(function (sum, item) {
+  function syncCartCount() {
+    const countEl = document.getElementById("cartCount");
+    if (!countEl) return;
+
+    const cart = getCart();
+    const total = cart.reduce((sum, item) => {
       return sum + Number(item.quantity || item.qty || 0);
     }, 0);
 
-    cartCount.textContent = String(totalItems);
+    countEl.textContent = String(total);
   }
 
-  await loadCartDrawerIcon();
+  await loadIcon();
 
-  window.addEventListener("axiom-cart-updated", updateCartCount);
-  document.addEventListener("axiom-cart-updated", updateCartCount);
-  window.addEventListener("storage", updateCartCount);
+  window.addEventListener("axiom-cart-updated", syncCartCount);
+  window.addEventListener("storage", syncCartCount);
 });
