@@ -311,7 +311,6 @@
   background: #fcfdff;
 }
 
-/* coupon styling - high specificity so other site css does not override it */
 body.axiom-cart-page .cart-page-coupon-box {
   margin-top: 18px;
   margin-bottom: 18px;
@@ -451,7 +450,6 @@ body.axiom-cart-page .cart-page-coupon-message.error {
   white-space: nowrap;
 }
 
-/* google pay custom */
 .gpay-logo-custom {
   display: inline-flex;
   align-items: baseline;
@@ -472,7 +470,6 @@ body.axiom-cart-page .cart-page-coupon-message.error {
   color: #12203f;
 }
 
-/* solana real inline svg */
 .solana-icon-svg {
   width: 38px;
   height: 28px;
@@ -503,6 +500,58 @@ body.axiom-cart-page .cart-page-coupon-message.error {
 .cart-drawer-title-icon i,
 .cart-drawer-title-icon svg {
   display: none !important;
+}
+
+/* force the cart page header to match the homepage header */
+.axiom-cart-page .site-header .header-inner {
+  display: grid;
+  grid-template-columns: 64px 1fr 64px;
+  align-items: center;
+  gap: 16px;
+}
+
+.axiom-cart-page .site-header .site-logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.axiom-cart-page .site-header .site-logo img {
+  display: block;
+  max-width: 140px;
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+}
+
+.axiom-cart-page .site-header .hamburger-btn,
+.axiom-cart-page .site-header .header-cart-btn {
+  width: 64px;
+  height: 64px;
+  min-width: 64px;
+  min-height: 64px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  flex: 0 0 64px;
+}
+
+.axiom-cart-page .site-header .header-cart-btn {
+  position: relative;
+}
+
+.axiom-cart-page .site-header .header-cart-btn svg {
+  width: 24px;
+  height: 24px;
+  display: block;
+}
+
+.axiom-cart-page .site-header .header-cart-btn .cart-count {
+  position: absolute;
+  top: 8px;
+  right: 8px;
 }
 
 @media (max-width: 980px) {
@@ -622,5 +671,23 @@ body.axiom-cart-page .cart-page-coupon-message.error {
     width: 56px;
     height: 56px;
     border-radius: 18px;
+  }
+
+  .axiom-cart-page .site-header .header-inner {
+    grid-template-columns: 56px 1fr 56px;
+    gap: 12px;
+  }
+
+  .axiom-cart-page .site-header .hamburger-btn,
+  .axiom-cart-page .site-header .header-cart-btn {
+    width: 56px;
+    height: 56px;
+    min-width: 56px;
+    min-height: 56px;
+    flex-basis: 56px;
+  }
+
+  .axiom-cart-page .site-header .site-logo img {
+    max-width: 120px;
   }
 }
