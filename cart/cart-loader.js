@@ -33,7 +33,7 @@ document.addEventListener("DOMContentLoaded", function () {
       if (viewCartLink) {
         viewCartLink.setAttribute(
           "href",
-          isProductPage ? "../cart/cart-page.html" : "cart/cart-page.html"
+          isProductPage ? "../cart-page/cart.html" : "cart/cart-page.html"
         );
       }
 
