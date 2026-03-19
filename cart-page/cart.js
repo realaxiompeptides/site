@@ -2,31 +2,10 @@ window.AXIOM_CART_PAGE = {
   storageKey: "axiom_cart",
 
   async init() {
-    await this.loadSharedLayout();
     this.bindEvents();
     this.render();
     this.syncHeaderCartCount();
-  },
-
-  async loadSharedLayout() {
-    await Promise.all([
-      this.loadPartial("../announcement-bar.html", "announcementBarMount"),
-      this.loadPartial("../header.html", "siteHeaderMount"),
-      this.loadPartial("../footer.html", "siteFooterMount")
-    ]);
-  },
-
-  async loadPartial(url, mountId) {
-    const mount = document.getElementById(mountId);
-    if (!mount) return;
-
-    try {
-      const response = await fetch(url, { cache: "no-store" });
-      if (!response.ok) throw new Error(`Failed to load ${url}`);
-      mount.innerHTML = await response.text();
-    } catch (error) {
-      console.error(error);
-    }
+    this.syncCartDrawer();
   },
 
   bindEvents() {
@@ -50,26 +29,32 @@ window.AXIOM_CART_PAGE = {
       });
     }
 
-    document.addEventListener("click", (event) => {
-      const minusBtn = event.target.closest("[data-cart-minus]");
-      const plusBtn = event.target.closest("[data-cart-plus]");
-      const removeBtn = event.target.closest("[data-cart-remove]");
+    if (!document.body.dataset.axiomCartPageDelegated) {
+      document.body.dataset.axiomCartPageDelegated = "true";
 
-      if (minusBtn) {
-        const index = Number(minusBtn.getAttribute("data-cart-minus"));
-        this.changeQuantity(index, -1);
-      }
+      document.addEventListener("click", (event) => {
+        const minusBtn = event.target.closest("[data-cart-minus]");
+        const plusBtn = event.target.closest("[data-cart-plus]");
+        const removeBtn = event.target.closest("[data-cart-remove]");
 
-      if (plusBtn) {
-        const index = Number(plusBtn.getAttribute("data-cart-plus"));
-        this.changeQuantity(index, 1);
-      }
+        if (minusBtn) {
+          const index = Number(minusBtn.getAttribute("data-cart-minus"));
+          this.changeQuantity(index, -1);
+          return;
+        }
 
-      if (removeBtn) {
-        const index = Number(removeBtn.getAttribute("data-cart-remove"));
-        this.removeItem(index);
-      }
-    });
+        if (plusBtn) {
+          const index = Number(plusBtn.getAttribute("data-cart-plus"));
+          this.changeQuantity(index, 1);
+          return;
+        }
+
+        if (removeBtn) {
+          const index = Number(removeBtn.getAttribute("data-cart-remove"));
+          this.removeItem(index);
+        }
+      });
+    }
   },
 
   getCart() {
@@ -85,7 +70,8 @@ window.AXIOM_CART_PAGE = {
       const raw = localStorage.getItem(this.storageKey);
       const parsed = JSON.parse(raw || "[]");
       return Array.isArray(parsed) ? parsed : [];
-    } catch {
+    } catch (error) {
+      console.error("Failed to read cart from storage:", error);
       return [];
     }
   },
@@ -121,7 +107,9 @@ window.AXIOM_CART_PAGE = {
 
     badgeIds.forEach((id) => {
       const el = document.getElementById(id);
-      if (el) el.textContent = String(count);
+      if (el) {
+        el.textContent = String(count);
+      }
     });
   },
 
@@ -215,8 +203,13 @@ window.AXIOM_CART_PAGE = {
   },
 
   renderSummary(cart) {
-    const totalItems = cart.reduce((sum, item) => sum + this.getItemQuantity(item), 0);
-    const subtotal = cart.reduce((sum, item) => sum + this.getItemLineTotal(item), 0);
+    const totalItems = cart.reduce((sum, item) => {
+      return sum + this.getItemQuantity(item);
+    }, 0);
+
+    const subtotal = cart.reduce((sum, item) => {
+      return sum + this.getItemLineTotal(item);
+    }, 0);
 
     const itemsEl = document.getElementById("cartSummaryItemsCount");
     const subtotalEl = document.getElementById("cartSummarySubtotal");
@@ -246,6 +239,7 @@ window.AXIOM_CART_PAGE = {
       const quantity = this.getItemQuantity(item);
       const lineTotal = this.getItemLineTotal(item);
       const image = this.getItemImage(item);
+      const unitPrice = this.getItemUnitPrice(item);
 
       return `
         <article class="cart-item-row">
@@ -262,7 +256,7 @@ window.AXIOM_CART_PAGE = {
 
             <div class="cart-item-meta">
               <p>Variant: ${variant}</p>
-              <p>Unit Price: ${this.formatMoney(this.getItemUnitPrice(item))}</p>
+              <p>Unit Price: ${this.formatMoney(unitPrice)}</p>
             </div>
           </div>
 
@@ -305,7 +299,7 @@ window.AXIOM_CART_PAGE = {
       console.error("Failed to persist cart before checkout:", error);
     }
 
-    window.location.href = "../checkout.html";
+    window.location.href = "https://realaxiompeptides.github.io/site/checkout/checkout.html";
   }
 };
 
