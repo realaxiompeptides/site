@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+  />
+  <title>Your Cart | Axiom Peptides</title>
+
+  <meta
+    name="description"
+    content="Review your cart, update quantities, and continue to secure checkout."
+  />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+    rel="stylesheet"
+  />
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+  />
+
+  <link rel="stylesheet" href="../styles.css?v=1" />
+  <link rel="stylesheet" href="cart.css?v=1" />
+</head>
+<body class="axiom-cart-page">
+
+  <div id="announcementBarMount"></div>
+  <div id="siteHeaderMount"></div>
+
+  <main class="cart-page-shell">
+    <section class="cart-page-hero">
+      <p class="cart-page-kicker">YOUR CART</p>
+      <h1>Review Your Order</h1>
+      <p>Update quantities, remove items, and continue to checkout when you are ready.</p>
+    </section>
+
+    <section class="cart-page-layout">
+      <div class="cart-page-main">
+        <div class="cart-card">
+          <div class="cart-card-header">
+            <h2>Cart Items</h2>
+            <button type="button" class="cart-btn cart-btn-ghost" id="clearCartBtn">
+              Clear Cart
+            </button>
+          </div>
+
+          <div id="cartPageItemsWrap" class="cart-page-items-wrap">
+            <div class="cart-page-loading">Loading cart...</div>
+          </div>
+        </div>
+      </div>
+
+      <aside class="cart-page-sidebar">
+        <div class="cart-card cart-summary-card">
+          <div class="cart-card-header">
+            <h2>Order Summary</h2>
+          </div>
+
+          <div class="cart-summary-list">
+            <div class="cart-summary-row">
+              <span>Items</span>
+              <strong id="cartSummaryItemsCount">0</strong>
+            </div>
+
+            <div class="cart-summary-row">
+              <span>Subtotal</span>
+              <strong id="cartSummarySubtotal">$0.00</strong>
+            </div>
+
+            <div class="cart-summary-row">
+              <span>Estimated Shipping</span>
+              <strong id="cartSummaryShipping">Calculated at checkout</strong>
+            </div>
+          </div>
+
+          <div class="cart-summary-total">
+            <span>Total</span>
+            <strong id="cartSummaryTotal">$0.00</strong>
+          </div>
+
+          <div class="cart-summary-actions">
+            <button type="button" class="cart-btn cart-btn-primary" id="cartCheckoutBtn">
+              Proceed to Checkout
+            </button>
+
+            <a href="../shop.html" class="cart-btn cart-btn-secondary">
+              Continue Shopping
+            </a>
+          </div>
+
+          <p class="cart-summary-note">
+            Taxes and shipping are calculated during checkout.
+          </p>
+        </div>
+      </aside>
+    </section>
+  </main>
+
+  <div id="siteFooterMount"></div>
+
+  <script src="../shared/helpers.js?v=1"></script>
+  <script src="cart.js?v=1"></script>
+</body>
+</html>
