@@ -246,13 +246,13 @@
           <div class="cart-summary-actions">
             <button
               type="button"
-              class="cart-btn cart-btn-primary"
+              class="cart-page-btn cart-page-btn-primary"
               id="cartCheckoutBtn"
             >
               Proceed to Checkout
             </button>
 
-            <a href="../catalog.html" class="cart-btn cart-btn-secondary">
+            <a href="../catalog.html" class="cart-page-btn cart-page-btn-secondary">
               Continue Shopping
             </a>
           </div>
@@ -310,17 +310,6 @@
   </main>
 
   <div id="site-footer"></div>
-
-  <script>
-    document.addEventListener("DOMContentLoaded", function () {
-      const cartCheckoutBtn = document.getElementById("cartCheckoutBtn");
-      if (cartCheckoutBtn) {
-        cartCheckoutBtn.addEventListener("click", function () {
-          window.location.href = "https://realaxiompeptides.github.io/site/checkout/checkout.html";
-        });
-      }
-    });
-  </script>
 
   <script src="../js/menu.js" defer></script>
   <script src="../cart/cart.js" defer></script>
