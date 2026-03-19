@@ -31,90 +31,10 @@
   <link rel="stylesheet" href="icon-benefits.css" />
   <link rel="stylesheet" href="why-choose-us.css" />
   
-  <!-- OVERRIDE STYLES - These come LAST to ensure they take precedence -->
+  <!-- Exact same cart drawer icon styling from index.html -->
   <style>
-    /* ULTRA SPECIFIC HEADER STYLES - Force override everything */
-    body.product-page header.site-header,
-    html body.product-page header.site-header {
-      position: sticky !important;
-      top: 0 !important;
-      width: 100% !important;
-      background: #ffffff !important;
-      z-index: 1000 !important;
-      border-bottom: 1px solid #f0f2f5 !important;
-      padding: 0 !important;
-      margin: 0 !important;
-    }
-
-    body.product-page .header-inner,
-    html body.product-page .header-inner {
-      display: flex !important;
-      align-items: center !important;
-      justify-content: space-between !important;
-      width: 100% !important;
-      max-width: 1280px !important;
-      margin: 0 auto !important;
-      padding: 12px 24px !important;
-      position: relative !important;
-      box-sizing: border-box !important;
-    }
-
-    /* Hamburger menu button */
-    body.product-page .hamburger-btn,
-    html body.product-page .hamburger-btn {
-      width: 48px !important;
-      height: 48px !important;
-      padding: 0 !important;
-      border: none !important;
-      background: transparent !important;
-      display: flex !important;
-      flex-direction: column !important;
-      align-items: center !important;
-      justify-content: center !important;
-      gap: 6px !important;
-      cursor: pointer !important;
-      flex-shrink: 0 !important;
-      margin-left: 0 !important;
-      min-height: auto !important;
-      box-shadow: none !important;
-    }
-
-    body.product-page .hamburger-btn span,
-    html body.product-page .hamburger-btn span {
-      width: 22px !important;
-      height: 2px !important;
-      background: #0f172a !important;
-      border-radius: 3px !important;
-      display: block !important;
-      margin: 0 !important;
-    }
-
-    /* Logo centering */
-    body.product-page .site-logo,
-    html body.product-page .site-logo {
-      position: absolute !important;
-      left: 50% !important;
-      transform: translateX(-50%) !important;
-      margin: 0 !important;
-      display: flex !important;
-      align-items: center !important;
-      justify-content: center !important;
-      height: 48px !important;
-      top: 50% !important;
-      transform: translate(-50%, -50%) !important;
-    }
-
-    body.product-page .site-logo img,
-    html body.product-page .site-logo img {
-      height: 32px !important;
-      width: auto !important;
-      display: block !important;
-      max-height: 32px !important;
-    }
-
-    /* Cart button - EXACT sizing from index */
-    body.product-page .cart-btn,
-    html body.product-page .cart-btn {
+    /* Cart drawer icon styles - EXACTLY from index.html */
+    .cart-btn {
       position: relative !important;
       width: 58px !important;
       height: 58px !important;
@@ -132,12 +52,9 @@
       -webkit-appearance: none !important;
       appearance: none !important;
       margin-right: 0 !important;
-      flex-shrink: 0 !important;
-      min-height: auto !important;
     }
 
-    body.product-page .cart-btn svg,
-    html body.product-page .cart-btn svg {
+    .cart-btn svg {
       width: 28px !important;
       height: 28px !important;
       fill: #111827 !important;
@@ -146,8 +63,7 @@
       visibility: visible !important;
     }
 
-    body.product-page .cart-count,
-    html body.product-page .cart-count {
+    .cart-count {
       position: absolute !important;
       top: -4px !important;
       right: -4px !important;
@@ -164,46 +80,20 @@
       padding: 0 7px !important;
       line-height: 1 !important;
       border: 2px solid #ffffff !important;
-      box-sizing: border-box !important;
     }
 
-    /* Mobile adjustments */
     @media (max-width: 640px) {
-      body.product-page .header-inner,
-      html body.product-page .header-inner {
-        padding: 10px 16px !important;
-      }
-
-      body.product-page .hamburger-btn,
-      html body.product-page .hamburger-btn {
-        width: 44px !important;
-        height: 44px !important;
-      }
-
-      body.product-page .site-logo,
-      html body.product-page .site-logo {
-        height: 44px !important;
-      }
-
-      body.product-page .site-logo img,
-      html body.product-page .site-logo img {
-        height: 28px !important;
-      }
-
-      body.product-page .cart-btn,
-      html body.product-page .cart-btn {
+      .cart-btn {
         width: 54px !important;
         height: 54px !important;
       }
 
-      body.product-page .cart-btn svg,
-      html body.product-page .cart-btn svg {
+      .cart-btn svg {
         width: 26px !important;
         height: 26px !important;
       }
 
-      body.product-page .cart-count,
-      html body.product-page .cart-count {
+      .cart-count {
         min-width: 24px !important;
         height: 24px !important;
         font-size: 12px !important;
@@ -214,26 +104,61 @@
       }
     }
 
-    /* Override any container padding that might affect header */
-    body.product-page .container,
-    html body.product-page .container {
-      max-width: 1280px !important;
+    /* Ensure header layout is correct - EXACTLY from index.html */
+    .header-inner {
+      display: flex !important;
+      align-items: center !important;
+      justify-content: space-between !important;
+      width: 100% !important;
+      padding-left: 16px !important;
+      padding-right: 16px !important;
+    }
+
+    .site-logo {
       margin: 0 auto !important;
-      padding-left: 24px !important;
-      padding-right: 24px !important;
+      position: absolute !important;
+      left: 50% !important;
+      transform: translateX(-50%) !important;
     }
 
-    @media (max-width: 640px) {
-      body.product-page .container,
-      html body.product-page .container {
-        padding-left: 16px !important;
-        padding-right: 16px !important;
-      }
+    .site-logo img {
+      height: 32px !important;
+      width: auto !important;
+      display: block !important;
     }
 
-    /* Force hide any conflicting elements */
-    body.product-page #cartTriggerMount {
-      display: none !important;
+    /* Ensure proper stacking */
+    .hamburger-btn {
+      z-index: 10 !important;
+      width: 48px !important;
+      height: 48px !important;
+      display: flex !important;
+      flex-direction: column !important;
+      align-items: center !important;
+      justify-content: center !important;
+      gap: 6px !important;
+      background: transparent !important;
+      border: none !important;
+    }
+
+    .hamburger-btn span {
+      width: 22px !important;
+      height: 2px !important;
+      background: #0f172a !important;
+      border-radius: 3px !important;
+      display: block !important;
+    }
+
+    .cart-btn {
+      z-index: 10 !important;
+    }
+
+    .hamburger-btn {
+      margin-left: 0 !important;
+    }
+    
+    .cart-btn {
+      margin-right: 0 !important;
     }
   </style>
 </head>
@@ -291,9 +216,6 @@
       </button>
     </div>
   </header>
-
-  <!-- This is hidden by our CSS, but keeping it in case any scripts reference it -->
-  <div id="cartTriggerMount" style="display: none !important;"></div>
 
   <aside class="mobile-menu" id="mobileMenu" aria-hidden="true">
     <div class="mobile-menu-inner">
