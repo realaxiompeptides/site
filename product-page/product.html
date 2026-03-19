@@ -21,17 +21,19 @@
     href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
   />
 
+  <!-- EXACT SAME CSS FILES AS INDEX.HTML in the same order -->
   <link rel="stylesheet" href="../css/style.css" />
-  <link rel="stylesheet" href="../css/home.css" />
   <link rel="stylesheet" href="../css/menu.css" />
   <link rel="stylesheet" href="../cart/cart.css" />
   <link rel="stylesheet" href="../footer/footer.css" />
+  
+  <!-- Product page specific CSS (loaded after base styles) -->
   <link rel="stylesheet" href="product.css" />
   <link rel="stylesheet" href="product-price.css" />
   <link rel="stylesheet" href="icon-benefits.css" />
   <link rel="stylesheet" href="why-choose-us.css" />
   
-  <!-- EXACT same styling from index.html - nothing added, nothing removed -->
+  <!-- Cart drawer icon styles - exactly like index.html -->
   <style>
     /* Cart drawer icon styles - EXACTLY from index.html */
     .cart-btn {
@@ -121,6 +123,12 @@
       transform: translateX(-50%) !important;
     }
 
+    .site-logo img {
+      height: 32px !important;
+      width: auto !important;
+      display: block !important;
+    }
+
     /* Ensure proper stacking */
     .hamburger-btn {
       z-index: 10 !important;
@@ -139,44 +147,10 @@
       margin-right: 0 !important;
     }
 
-    /* Additional styles to ensure hamburger looks exactly like index */
-    .hamburger-btn {
-      width: 48px !important;
-      height: 48px !important;
-      display: flex !important;
-      flex-direction: column !important;
-      align-items: center !important;
-      justify-content: center !important;
-      gap: 6px !important;
-      background: transparent !important;
-      border: none !important;
-      padding: 0 !important;
-    }
-
-    .hamburger-btn span {
-      width: 22px !important;
-      height: 2px !important;
-      background: #0f172a !important;
-      border-radius: 3px !important;
-      display: block !important;
-    }
-
-    /* Logo image size - exactly like index */
-    .site-logo img {
-      height: 32px !important;
-      width: auto !important;
-      display: block !important;
-    }
-
-    @media (max-width: 640px) {
-      .site-logo img {
-        height: 28px !important;
-      }
-      
-      .hamburger-btn {
-        width: 44px !important;
-        height: 44px !important;
-      }
+    /* Remove any conflicting styles from product.css */
+    .product-page .site-header {
+      border-bottom: 1px solid #f0f2f5 !important;
+      background: #ffffff !important;
     }
   </style>
 </head>
@@ -218,7 +192,7 @@
         <img src="../images/axiom-logo.PNG" alt="Axiom Peptides logo" />
       </a>
 
-      <!-- HARDCODED CART BUTTON - exactly like index.html -->
+      <!-- Hardcoded cart button with exact same HTML as index.html -->
       <button
         class="icon-btn cart-btn"
         id="cartToggle"
@@ -343,7 +317,6 @@
 
   <script src="../js/product-data.js" defer></script>
   <script src="../js/menu.js" defer></script>
-  <!-- REMOVED the cart-drawer-icon-loader.js - we're using hardcoded button now -->
   <script src="../cart/cart.js" defer></script>
   <script src="product.js" defer></script>
 
