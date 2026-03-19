@@ -691,3 +691,8 @@ body.axiom-cart-page .cart-page-coupon-message.error {
     max-width: 120px;
   }
 }
+.axiom-cart-page .site-logo img {
+  width: 58px;
+  height: 58px;
+  object-fit: contain;
+}
