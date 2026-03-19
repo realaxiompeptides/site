@@ -1,9 +1,17 @@
 document.addEventListener("DOMContentLoaded", async function () {
-  const cartTriggerMount = document.getElementById("cartTriggerMount");
+  const cartTriggerMount =
+    document.getElementById("cartTriggerMount") ||
+    document.getElementById("cartDrawerIconMount");
+
   if (!cartTriggerMount) return;
 
-  const isProductPage = window.location.pathname.includes("/product-page/");
-  const iconPath = isProductPage
+  const pathSegments = window.location.pathname.split("/").filter(Boolean);
+  const currentFile = pathSegments[pathSegments.length - 1] || "";
+  const isNestedPage =
+    pathSegments.length > 1 &&
+    currentFile.endsWith(".html");
+
+  const iconPath = isNestedPage
     ? "../cart/cart-drawer-icon.html"
     : "cart/cart-drawer-icon.html";
 
@@ -14,7 +22,8 @@ document.addEventListener("DOMContentLoaded", async function () {
         throw new Error(`Failed to load cart drawer icon: ${response.status}`);
       }
 
-      cartTriggerMount.innerHTML = await response.text();
+      const html = await response.text();
+      cartTriggerMount.innerHTML = html;
       updateCartCount();
     } catch (error) {
       console.error("Cart drawer icon load failed:", error);
@@ -34,7 +43,7 @@ document.addEventListener("DOMContentLoaded", async function () {
     }
 
     const totalItems = cart.reduce(function (sum, item) {
-      return sum + (Number(item.quantity) || 0);
+      return sum + Number(item.quantity || item.qty || 0);
     }, 0);
 
     cartCount.textContent = String(totalItems);
