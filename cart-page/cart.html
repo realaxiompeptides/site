@@ -30,7 +30,7 @@
   <link rel="stylesheet" href="../css/menu.css" />
   <link rel="stylesheet" href="../cart/cart.css" />
   <link rel="stylesheet" href="../footer/footer.css" />
-  <link rel="stylesheet" href="cart.css?v=6" />
+  <link rel="stylesheet" href="cart.css?v=7" />
 </head>
 <body class="axiom-cart-page">
 
@@ -136,103 +136,7 @@
     </div>
   </aside>
 
-  <aside class="cart-drawer" id="cartDrawer" aria-hidden="true">
-    <div class="cart-drawer-inner">
-      <div class="cart-drawer-header">
-        <div class="cart-drawer-title-group">
-          <div class="cart-drawer-title-icon" aria-hidden="true">
-            <img src="../images/cart-icon-circle.PNG" alt="" />
-          </div>
-
-          <div class="cart-drawer-title-copy">
-            <h2>Your Cart</h2>
-            <p><span id="cartDrawerItemCount">0</span> item(s) in your cart</p>
-          </div>
-        </div>
-
-        <button class="drawer-close" id="cartClose" aria-label="Close cart" type="button">
-          &times;
-        </button>
-      </div>
-
-      <div class="cart-progress-wrap">
-        <div class="cart-progress-text" id="cartProgressText">
-          Add <strong>$150.00</strong> more to unlock free shipping
-        </div>
-        <div class="cart-progress-bar">
-          <span id="cartProgressFill"></span>
-        </div>
-      </div>
-
-      <div class="cart-body">
-        <div class="cart-empty-state" id="cartEmptyState">
-          <div class="cart-empty-icon" aria-hidden="true">
-            <i class="fa-solid fa-cart-shopping"></i>
-          </div>
-          <p class="cart-empty-text">Your cart is currently empty.</p>
-          <p class="cart-empty-subtext">
-            Add premium research products to your cart and check out when you're ready.
-          </p>
-          <a href="../catalog.html" class="cart-pill-btn cart-outline-btn">Browse Products</a>
-        </div>
-
-        <div class="cart-items-list" id="cartItemsList" hidden></div>
-
-        <div class="cart-recommend-section" id="cartRecommendSection" hidden>
-          <h3>You May Also Like</h3>
-          <div class="cart-recommend-list" id="cartRecommendList"></div>
-        </div>
-      </div>
-
-      <div class="cart-footer">
-        <div class="cart-discount-box">
-          <label for="cartDiscountCode">Gift or Discount Code</label>
-          <div class="cart-discount-row">
-            <input
-              type="text"
-              id="cartDiscountCode"
-              placeholder="Enter code"
-              autocomplete="off"
-            />
-            <button type="button" id="applyCartDiscount">Apply</button>
-          </div>
-          <p class="cart-discount-message" id="cartDiscountMessage"></p>
-        </div>
-
-        <div class="cart-summary">
-          <div class="cart-summary-row">
-            <span>Subtotal</span>
-            <strong id="cartSubtotal">$0.00</strong>
-          </div>
-
-          <div class="cart-summary-row">
-            <span>Estimated Shipping</span>
-            <strong id="cartShipping">Calculated at checkout</strong>
-          </div>
-
-          <div class="cart-summary-row">
-            <span>Estimated Tax</span>
-            <strong id="cartTax">Calculated at checkout</strong>
-          </div>
-
-          <div class="cart-summary-row cart-summary-discount" id="cartDiscountRow" hidden>
-            <span>Discount</span>
-            <strong id="cartDiscountAmount">-$0.00</strong>
-          </div>
-
-          <div class="cart-summary-row cart-summary-total">
-            <span>Total</span>
-            <strong id="cartTotal">$0.00</strong>
-          </div>
-        </div>
-
-        <div class="cart-action-stack">
-          <a href="../cart-page/cart.html" class="cart-pill-btn cart-muted-btn">View Cart</a>
-          <a href="../checkout/checkout.html" class="cart-pill-btn cart-primary-btn">Checkout</a>
-        </div>
-      </div>
-    </div>
-  </aside>
+  <div id="cartDrawerMount"></div>
 
   <div class="site-overlay" id="siteOverlay"></div>
 
@@ -346,7 +250,11 @@
               </div>
 
               <div class="cart-page-payment-icon" title="Solana" aria-label="Solana">
-                <span class="payment-wordmark">S</span>
+                <span class="payment-solana">
+                  <span></span>
+                  <span></span>
+                  <span></span>
+                </span>
               </div>
 
               <div class="cart-page-payment-icon" title="Apple Pay" aria-label="Apple Pay">
@@ -354,7 +262,9 @@
               </div>
 
               <div class="cart-page-payment-icon" title="Google Pay" aria-label="Google Pay">
-                <span class="payment-wordmark">G&nbsp;Pay</span>
+                <span class="payment-gpay">
+                  <span class="gpay-g">G</span><span class="gpay-pay">Pay</span>
+                </span>
               </div>
 
               <div class="cart-page-payment-icon" title="ACH" aria-label="ACH">
@@ -373,32 +283,50 @@
 
   <div id="site-footer"></div>
 
+  <script>
+    document.addEventListener("DOMContentLoaded", async function () {
+      const cartDrawerMount = document.getElementById("cartDrawerMount");
+      if (cartDrawerMount) {
+        try {
+          const response = await fetch("../cart/cart-drawer.html", { cache: "no-store" });
+          if (!response.ok) {
+            throw new Error("Could not load ../cart/cart-drawer.html");
+          }
+          const html = await response.text();
+          cartDrawerMount.innerHTML = html;
+        } catch (error) {
+          console.error("Cart drawer load failed:", error);
+        }
+      }
+
+      const footerTarget = document.getElementById("site-footer");
+      if (footerTarget) {
+        try {
+          const response = await fetch("../footer/footer.html", { cache: "no-store" });
+          if (!response.ok) {
+            throw new Error("Could not load ../footer/footer.html");
+          }
+          const html = await response.text();
+          footerTarget.innerHTML = html;
+        } catch (error) {
+          console.error("Footer load failed:", error);
+        }
+      }
+
+      const cartCheckoutBtn = document.getElementById("cartCheckoutBtn");
+      if (cartCheckoutBtn) {
+        cartCheckoutBtn.addEventListener("click", function () {
+          window.location.href = "https://realaxiompeptides.github.io/site/checkout/checkout.html";
+        });
+      }
+    });
+  </script>
+
   <script src="../js/menu.js" defer></script>
   <script src="../cart/cart.js" defer></script>
   <script src="../js/app.js" defer></script>
   <script src="../footer/footer-loader.js" defer></script>
-  <script src="cart.js?v=6" defer></script>
-
-  <script>
-    document.addEventListener("DOMContentLoaded", function () {
-      const footerTarget = document.getElementById("site-footer");
-      if (!footerTarget) return;
-
-      fetch("../footer/footer.html", { cache: "no-store" })
-        .then(function (response) {
-          if (!response.ok) {
-            throw new Error("Could not load ../footer/footer.html");
-          }
-          return response.text();
-        })
-        .then(function (html) {
-          footerTarget.innerHTML = html;
-        })
-        .catch(function (error) {
-          console.error("Footer load failed:", error);
-        });
-    });
-  </script>
+  <script src="cart.js?v=7" defer></script>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="../admin-dashboard/dashboard-config.js" defer></script>
