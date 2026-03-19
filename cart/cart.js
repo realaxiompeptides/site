@@ -209,7 +209,7 @@ function initCartDrawer() {
     });
 
     viewCartLinks.forEach(link => {
-      link.setAttribute("href", getPageLink("cart/cart-page.html"));
+      link.setAttribute("href", getPageLink("cart-page/cart.html"));
     });
 
     checkoutLinks.forEach(link => {
