@@ -4,7 +4,6 @@
   justify-content: center;
 }
 
-/* REMOVE big button look */
 #cartTriggerMount .cart-btn {
   position: relative;
   background: transparent;
@@ -17,9 +16,10 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
 }
 
-/* ICON (same as track page) */
 #cartTriggerMount .cart-btn svg {
   width: 24px;
   height: 24px;
@@ -27,7 +27,6 @@
   display: block;
 }
 
-/* BLUE COUNT BADGE (matches track page) */
 #cartTriggerMount .cart-count {
   position: absolute;
   top: -6px;
@@ -47,7 +46,6 @@
   line-height: 1;
 }
 
-/* MOBILE */
 @media (max-width: 640px) {
   #cartTriggerMount .cart-btn svg {
     width: 22px;
