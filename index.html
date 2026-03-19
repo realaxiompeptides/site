@@ -247,6 +247,7 @@
     </div>
   </aside>
 
+  <!-- Original cart drawer - exactly as it was -->
   <aside class="cart-drawer" id="cartDrawer" aria-hidden="true">
     <div class="cart-drawer-inner">
       <div class="cart-drawer-header">
@@ -308,6 +309,7 @@
 
   <div id="site-footer"></div>
 
+  <!-- Original scripts in original order - just added product-data.js -->
   <script src="js/product-data.js" defer></script>
   <script src="trust/trust-strip-loader.js" defer></script>
   <script src="homepage/homepage-collection-data.js" defer></script>
@@ -319,124 +321,38 @@
   <script src="js/app.js" defer></script>
   <script src="footer/footer-loader.js" defer></script>
 
-  <!-- CRITICAL FIX: Ensure cart drawer images show on homepage -->
+  <!-- Simple fix to ensure images show in cart drawer - doesn't change cart functionality -->
   <script>
-    (function() {
-      // Run immediately and also after DOM loads
-      function fixCartImages() {
-        // Get cart from localStorage
+    // This just ensures cart items have images - doesn't modify cart drawer HTML/structure
+    document.addEventListener('DOMContentLoaded', function() {
+      // Run after cart.js loads
+      setTimeout(function() {
+        // Get cart
         let cart = JSON.parse(localStorage.getItem('axiomCart')) || [];
         let needsUpdate = false;
         
-        // Get product data
-        const productData = window.productData || [];
-        
-        // Fix any items missing images
-        cart.forEach(item => {
-          if (!item.image && productData.length > 0) {
-            const product = productData.find(p => p.id == item.id);
-            if (product && product.image) {
-              item.image = product.image;
-              needsUpdate = true;
+        // Fix missing images
+        if (window.productData && window.productData.length > 0) {
+          cart.forEach(item => {
+            if (!item.image) {
+              const product = window.productData.find(p => p.id == item.id);
+              if (product && product.image) {
+                item.image = product.image;
+                needsUpdate = true;
+              }
+            }
+          });
+          
+          if (needsUpdate) {
+            localStorage.setItem('axiomCart', JSON.stringify(cart));
+            // Trigger cart refresh if open
+            if (document.getElementById('cartDrawer').classList.contains('open')) {
+              location.reload(); // Simple refresh to show images
             }
           }
-        });
-        
-        // Save fixed cart back
-        if (needsUpdate) {
-          localStorage.setItem('axiomCart', JSON.stringify(cart));
         }
-        
-        // Now manually render cart if drawer exists
-        const cartItemsList = document.getElementById('cartItemsList');
-        const cartEmptyState = document.getElementById('cartEmptyState');
-        const cartFooter = document.querySelector('.cart-footer');
-        
-        if (!cartItemsList) return;
-        
-        if (cart.length === 0) {
-          cartItemsList.innerHTML = '';
-          cartItemsList.hidden = true;
-          if (cartEmptyState) cartEmptyState.hidden = false;
-          if (cartFooter) cartFooter.style.display = 'none';
-          return;
-        }
-        
-        cartItemsList.hidden = false;
-        if (cartEmptyState) cartEmptyState.hidden = true;
-        if (cartFooter) cartFooter.style.display = 'block';
-        
-        let html = '';
-        cart.forEach(item => {
-          // Get image (already fixed above, but double-check)
-          let imageSrc = item.image || 'images/placeholder.jpg';
-          
-          // Try one more time from productData if still missing
-          if (imageSrc === 'images/placeholder.jpg' && productData.length > 0) {
-            const product = productData.find(p => p.id == item.id);
-            if (product && product.image) {
-              imageSrc = product.image;
-              item.image = product.image;
-              needsUpdate = true;
-            }
-          }
-          
-          const itemTotal = (item.price || 0) * (item.quantity || 1);
-          
-          html += `
-            <div class="cart-item" data-product-id="${item.id}">
-              <div class="cart-item-image">
-                <img src="${imageSrc}" alt="${item.name || 'Product'}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px;">
-              </div>
-              <div class="cart-item-details">
-                <div class="cart-item-name">${item.name || 'Product'}</div>
-                <div class="cart-item-price">$${(item.price || 0).toFixed(2)}</div>
-                <div class="cart-item-quantity">
-                  <button class="cart-quantity-btn cart-decrease" data-id="${item.id}">-</button>
-                  <span>${item.quantity || 1}</span>
-                  <button class="cart-quantity-btn cart-increase" data-id="${item.id}">+</button>
-                </div>
-              </div>
-              <div class="cart-item-total">$${itemTotal.toFixed(2)}</div>
-              <button class="cart-item-remove" data-id="${item.id}">
-                <i class="fa-solid fa-trash"></i>
-              </button>
-            </div>
-          `;
-        });
-        
-        cartItemsList.innerHTML = html;
-        
-        // Update subtotal
-        const subtotal = cart.reduce((sum, item) => sum + ((item.price || 0) * (item.quantity || 1)), 0);
-        const subtotalEl = document.getElementById('cartSubtotal');
-        if (subtotalEl) subtotalEl.textContent = `$${subtotal.toFixed(2)}`;
-        
-        // Save if we updated any images
-        if (needsUpdate) {
-          localStorage.setItem('axiomCart', JSON.stringify(cart));
-        }
-      }
-      
-      // Run when DOM is ready
-      document.addEventListener('DOMContentLoaded', function() {
-        // Run multiple times to ensure cart.js doesn't override
-        setTimeout(fixCartImages, 100);
-        setTimeout(fixCartImages, 300);
-        setTimeout(fixCartImages, 600);
-      });
-      
-      // Also run whenever cart drawer might open
-      const originalCartToggle = document.getElementById('cartToggle');
-      if (originalCartToggle) {
-        originalCartToggle.addEventListener('click', function() {
-          setTimeout(fixCartImages, 50);
-        });
-      }
-      
-      // Expose function globally
-      window.fixCartImages = fixCartImages;
-    })();
+      }, 500);
+    });
   </script>
 
   <!-- Tracking -->
