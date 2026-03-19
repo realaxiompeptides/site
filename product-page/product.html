@@ -123,8 +123,9 @@
       transform: translateX(-50%) !important;
     }
 
+    /* BIGGER LOGO - increased from 32px to 42px */
     .site-logo img {
-      height: 32px !important;
+      height: 42px !important;
       width: auto !important;
       display: block !important;
     }
@@ -152,10 +153,18 @@
       border-bottom: 1px solid #f0f2f5 !important;
       background: #ffffff !important;
     }
+
+    /* Mobile adjustments for bigger logo */
+    @media (max-width: 640px) {
+      .site-logo img {
+        height: 36px !important;
+      }
+    }
   </style>
 </head>
 <body class="product-page">
 
+  <!-- ANNOUNCEMENT BAR - reverted to original styling -->
   <div class="top-announcement-bar">
     <div class="top-announcement-track">
       <span class="announcement-item">🇺🇸 USA Fulfilled Orders</span>
