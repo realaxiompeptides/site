@@ -6,24 +6,63 @@ document.addEventListener("DOMContentLoaded", function () {
 
   function openCart() {
     if (!cartDrawer || !overlay) return;
+
     cartDrawer.classList.add("active");
     overlay.classList.add("active");
     document.body.style.overflow = "hidden";
-    cartToggle?.setAttribute("aria-expanded", "true");
+
+    if (cartToggle) {
+      cartToggle.setAttribute("aria-expanded", "true");
+    }
+
     cartDrawer.setAttribute("aria-hidden", "false");
   }
 
   function closeCart() {
     if (!cartDrawer || !overlay) return;
+
     cartDrawer.classList.remove("active");
     overlay.classList.remove("active");
     document.body.style.overflow = "";
-    cartToggle?.setAttribute("aria-expanded", "false");
+
+    if (cartToggle) {
+      cartToggle.setAttribute("aria-expanded", "false");
+    }
+
     cartDrawer.setAttribute("aria-hidden", "true");
   }
 
-  if (cartToggle) cartToggle.addEventListener("click", openCart);
-  if (cartClose) cartClose.addEventListener("click", closeCart);
+  if (cartToggle && !cartToggle.dataset.bound) {
+    cartToggle.addEventListener("click", function (event) {
+      event.preventDefault();
+      openCart();
+    });
+    cartToggle.dataset.bound = "true";
+  }
 
+  if (cartClose && !cartClose.dataset.bound) {
+    cartClose.addEventListener("click", function () {
+      closeCart();
+    });
+    cartClose.dataset.bound = "true";
+  }
+
+  if (overlay && !overlay.dataset.cartBound) {
+    overlay.addEventListener("click", function () {
+      closeCart();
+    });
+    overlay.dataset.cartBound = "true";
+  }
+
+  if (!window.__axiomCartEscapeBound) {
+    document.addEventListener("keydown", function (event) {
+      if (event.key === "Escape") {
+        closeCart();
+      }
+    });
+    window.__axiomCartEscapeBound = true;
+  }
+
+  window.openCartDrawer = openCart;
   window.closeCartDrawer = closeCart;
 });
