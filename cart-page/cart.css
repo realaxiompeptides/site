@@ -16,6 +16,10 @@
   color: var(--cart-text);
 }
 
+.axiom-cart-page * {
+  box-sizing: border-box;
+}
+
 .cart-page-shell {
   width: min(1240px, calc(100% - 32px));
   margin: 0 auto;
@@ -307,47 +311,58 @@
   background: #fcfdff;
 }
 
-.cart-page-coupon-box {
+/* coupon styling - high specificity so other site css does not override it */
+body.axiom-cart-page .cart-page-coupon-box {
   margin-top: 18px;
   margin-bottom: 18px;
 }
 
-.cart-page-coupon-label {
+body.axiom-cart-page .cart-page-coupon-label {
   display: block;
-  margin-bottom: 10px;
+  margin: 0 0 12px;
   font-size: 16px;
-  font-weight: 700;
+  font-weight: 800;
   color: var(--cart-brand-dark);
 }
 
-.cart-page-coupon-row {
+body.axiom-cart-page .cart-page-coupon-row {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
 }
 
-.cart-page-coupon-input {
+body.axiom-cart-page .cart-page-coupon-input {
   flex: 1;
   min-width: 0;
+  width: 100%;
   height: 54px;
-  padding: 0 16px;
+  padding: 0 18px;
   border: 2px solid #d8e0ec;
-  border-radius: 16px;
+  border-radius: 999px;
   background: #fff;
   font-size: 16px;
+  font-weight: 500;
   color: var(--cart-brand-dark);
   outline: none;
   box-sizing: border-box;
+  -webkit-appearance: none;
+  appearance: none;
+  box-shadow: none;
 }
 
-.cart-page-coupon-input:focus {
+body.axiom-cart-page .cart-page-coupon-input::placeholder {
+  color: #9aa7bf;
+}
+
+body.axiom-cart-page .cart-page-coupon-input:focus {
   border-color: #4a88d9;
   box-shadow: 0 0 0 4px rgba(74, 136, 217, 0.1);
 }
 
-.cart-page-coupon-btn {
+body.axiom-cart-page .cart-page-coupon-btn {
+  min-width: 180px;
   height: 54px;
-  padding: 0 20px;
+  padding: 0 22px;
   border: none;
   border-radius: 999px;
   background: linear-gradient(135deg, #4b8fda 0%, #3c79d8 100%);
@@ -356,18 +371,20 @@
   font-weight: 800;
   cursor: pointer;
   white-space: nowrap;
+  -webkit-appearance: none;
+  appearance: none;
 }
 
-.cart-page-coupon-btn:hover {
+body.axiom-cart-page .cart-page-coupon-btn:hover {
   opacity: 0.96;
 }
 
-.cart-page-coupon-btn:disabled {
+body.axiom-cart-page .cart-page-coupon-btn:disabled {
   opacity: 0.65;
   cursor: not-allowed;
 }
 
-.cart-page-coupon-message {
+body.axiom-cart-page .cart-page-coupon-message {
   min-height: 20px;
   margin: 10px 2px 0;
   font-size: 14px;
@@ -375,11 +392,11 @@
   color: #6c7c99;
 }
 
-.cart-page-coupon-message.success {
+body.axiom-cart-page .cart-page-coupon-message.success {
   color: #1d8a43;
 }
 
-.cart-page-coupon-message.error {
+body.axiom-cart-page .cart-page-coupon-message.error {
   color: #c73b3b;
 }
 
@@ -398,10 +415,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 56px;
-  padding: 10px;
+  min-height: 78px;
+  padding: 12px;
   border: 1px solid #dbe4f0;
-  border-radius: 18px;
+  border-radius: 20px;
   background: #ffffff;
 }
 
@@ -411,15 +428,55 @@
   line-height: 1;
 }
 
-.cart-page-payment-icon i {
-  font-size: 30px;
+.cart-page-payment-icon i.fa-cc-visa,
+.cart-page-payment-icon i.fa-cc-mastercard,
+.cart-page-payment-icon i.fa-cc-amex,
+.cart-page-payment-icon i.fa-cc-discover {
+  font-size: 40px;
 }
 
-.cart-page-payment-icon .payment-wordmark {
-  font-size: 18px;
+.cart-page-payment-icon i.fa-bitcoin,
+.cart-page-payment-icon i.fa-ethereum {
+  font-size: 34px;
+}
+
+.cart-page-payment-icon i.fa-apple-pay {
+  font-size: 38px;
+}
+
+.payment-wordmark {
+  font-size: 28px;
   font-weight: 900;
   letter-spacing: -0.01em;
   white-space: nowrap;
+}
+
+/* google pay custom */
+.gpay-logo-custom {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 2px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.gpay-g-blue {
+  font-size: 30px;
+  font-weight: 500;
+  color: #4285f4;
+}
+
+.gpay-pay-dark {
+  font-size: 24px;
+  font-weight: 700;
+  color: #12203f;
+}
+
+/* solana real inline svg */
+.solana-icon-svg {
+  width: 38px;
+  height: 28px;
+  display: block;
 }
 
 .cart-drawer-title-icon {
@@ -510,13 +567,14 @@
     font-size: 15px;
   }
 
-  .cart-page-coupon-row {
+  body.axiom-cart-page .cart-page-coupon-row {
     flex-direction: column;
     align-items: stretch;
   }
 
-  .cart-page-coupon-btn {
+  body.axiom-cart-page .cart-page-coupon-btn {
     width: 100%;
+    min-width: 0;
   }
 
   .icons-only-grid {
@@ -525,17 +583,39 @@
   }
 
   .cart-page-payment-icon {
-    min-height: 52px;
-    padding: 8px;
-    border-radius: 16px;
+    min-height: 72px;
+    padding: 10px;
+    border-radius: 18px;
   }
 
-  .cart-page-payment-icon i {
+  .cart-page-payment-icon i.fa-cc-visa,
+  .cart-page-payment-icon i.fa-cc-mastercard,
+  .cart-page-payment-icon i.fa-cc-amex,
+  .cart-page-payment-icon i.fa-cc-discover {
+    font-size: 34px;
+  }
+
+  .cart-page-payment-icon i.fa-bitcoin,
+  .cart-page-payment-icon i.fa-ethereum,
+  .cart-page-payment-icon i.fa-apple-pay {
+    font-size: 30px;
+  }
+
+  .payment-wordmark {
     font-size: 24px;
   }
 
-  .cart-page-payment-icon .payment-wordmark {
-    font-size: 14px;
+  .gpay-g-blue {
+    font-size: 26px;
+  }
+
+  .gpay-pay-dark {
+    font-size: 20px;
+  }
+
+  .solana-icon-svg {
+    width: 32px;
+    height: 24px;
   }
 
   .cart-drawer-title-icon {
