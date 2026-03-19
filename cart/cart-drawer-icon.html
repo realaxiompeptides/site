@@ -1,15 +1,14 @@
-<button
-  class="icon-btn cart-btn"
+<a
+  href="/site/cart-page/cart.html"
+  class="checkout-cart-link"
   id="cartToggle"
   aria-label="Open cart"
   aria-controls="cartDrawer"
   aria-expanded="false"
-  type="button"
+  role="button"
 >
-  <svg viewBox="0 0 24 24" aria-hidden="true">
-    <path d="M6 6h15l-1.5 9h-12z" />
-    <circle cx="9" cy="20" r="1.6" />
-    <circle cx="17" cy="20" r="1.6" />
-  </svg>
-  <span class="cart-count" id="cartCount">0</span>
-</button>
+  <span class="checkout-cart-icon-wrap">
+    <i class="fa-solid fa-cart-shopping" aria-hidden="true"></i>
+    <span class="checkout-cart-count" id="cartCount">0</span>
+  </span>
+</a>
