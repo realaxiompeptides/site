@@ -30,6 +30,12 @@ document.addEventListener("DOMContentLoaded", function () {
   const isDashboardPage = path.endsWith("/dashboard.html") || path.endsWith("dashboard.html");
   const isAccountPage = path.endsWith("/account.html") || path.endsWith("account.html");
 
+  const EMAIL_CACHE_KEY = "axiom_account_email";
+  const ORDERS_CACHE_KEY = "axiom_account_orders";
+
+  let supabase = null;
+  let authListenerBound = false;
+
   function getBasePrefix() {
     return window.location.hostname.includes("github.io") ? "/site/account/" : "/account/";
   }
@@ -47,14 +53,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
   function getSupabaseClient() {
     if (window.supabaseClient) return window.supabaseClient;
-
-    if (window.AXIOM_SUPABASE && typeof window.AXIOM_SUPABASE === "object") {
-      return window.AXIOM_SUPABASE;
-    }
-
-    if (window.axiomSupabase && typeof window.axiomSupabase === "object") {
-      return window.axiomSupabase;
-    }
+    if (window.AXIOM_SUPABASE && typeof window.AXIOM_SUPABASE === "object") return window.AXIOM_SUPABASE;
+    if (window.axiomSupabase && typeof window.axiomSupabase === "object") return window.axiomSupabase;
 
     if (window.supabase && typeof window.supabase.createClient === "function") {
       const config =
@@ -80,31 +80,35 @@ document.addEventListener("DOMContentLoaded", function () {
       if (!url || !anonKey) return null;
 
       const client = window.supabase.createClient(url, anonKey);
-
       window.supabaseClient = client;
       window.AXIOM_SUPABASE = client;
       window.axiomSupabase = client;
-
       return client;
     }
 
     return null;
   }
 
-  async function waitForSupabaseClient(maxAttempts = 40, delay = 150) {
+  function wait(ms) {
+    return new Promise(function (resolve) {
+      setTimeout(resolve, ms);
+    });
+  }
+
+  async function waitForSupabaseClient(maxAttempts = 80, delay = 150) {
     for (let i = 0; i < maxAttempts; i += 1) {
       const client = getSupabaseClient();
       if (client) return client;
-
-      await new Promise(function (resolve) {
-        setTimeout(resolve, delay);
-      });
+      await wait(delay);
     }
-
     return null;
   }
 
-  let supabase = null;
+  async function ensureSupabaseReady() {
+    if (supabase) return supabase;
+    supabase = await waitForSupabaseClient();
+    return supabase;
+  }
 
   function showMessage(text, type) {
     if (!accountMessage) return;
@@ -218,18 +222,9 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   function getOrderItems(order) {
-    if (Array.isArray(order.order_items) && order.order_items.length) {
-      return order.order_items;
-    }
-
-    if (Array.isArray(order.cart_items) && order.cart_items.length) {
-      return order.cart_items;
-    }
-
-    if (Array.isArray(order.items) && order.items.length) {
-      return order.items;
-    }
-
+    if (Array.isArray(order.order_items) && order.order_items.length) return order.order_items;
+    if (Array.isArray(order.cart_items) && order.cart_items.length) return order.cart_items;
+    if (Array.isArray(order.items) && order.items.length) return order.items;
     return [];
   }
 
@@ -274,11 +269,15 @@ document.addEventListener("DOMContentLoaded", function () {
     ordersEmptyState.hidden = true;
     orderCount.textContent = String(orders.length);
 
-    const firstStatus = normalizeStatus(orders[0].fulfillment_status || orders[0].order_status || orders[0].status || "pending");
+    const firstStatus = normalizeStatus(
+      orders[0].fulfillment_status || orders[0].order_status || orders[0].status || "pending"
+    );
     latestStatus.textContent = firstStatus.label;
 
     orders.forEach(function (order) {
-      const statusMeta = normalizeStatus(order.fulfillment_status || order.order_status || order.status || "pending");
+      const statusMeta = normalizeStatus(
+        order.fulfillment_status || order.order_status || order.status || "pending"
+      );
       const orderNumber =
         order.order_number ||
         order.public_order_id ||
@@ -358,6 +357,61 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
+  function cacheEmail(email) {
+    try {
+      if (email) {
+        localStorage.setItem(EMAIL_CACHE_KEY, email);
+      }
+    } catch (error) {
+      console.error("Failed to cache email:", error);
+    }
+  }
+
+  function clearCachedAccountData() {
+    try {
+      localStorage.removeItem(EMAIL_CACHE_KEY);
+      localStorage.removeItem(ORDERS_CACHE_KEY);
+    } catch (error) {
+      console.error("Failed clearing cached account data:", error);
+    }
+  }
+
+  async function waitForSession(client, maxAttempts = 20, delay = 150) {
+    for (let i = 0; i < maxAttempts; i += 1) {
+      try {
+        const sessionResult = await client.auth.getSession();
+        const session =
+          sessionResult &&
+          sessionResult.data &&
+          sessionResult.data.session
+            ? sessionResult.data.session
+            : null;
+
+        if (session && session.user) {
+          return session.user;
+        }
+
+        const userResult = await client.auth.getUser();
+        const user =
+          userResult &&
+          userResult.data &&
+          userResult.data.user
+            ? userResult.data.user
+            : null;
+
+        if (user) {
+          return user;
+        }
+      } catch (error) {
+        console.error("waitForSession exception:", error);
+      }
+
+      await wait(delay);
+    }
+
+    return null;
+  }
+
   async function claimOrdersForUser() {
     if (!supabase) return;
 
@@ -386,6 +440,12 @@ document.addEventListener("DOMContentLoaded", function () {
       return;
     }
 
+    try {
+      localStorage.setItem(ORDERS_CACHE_KEY, JSON.stringify(Array.isArray(data) ? data : []));
+    } catch (error) {
+      console.error("Failed to cache orders:", error);
+    }
+
     renderOrders(Array.isArray(data) ? data : []);
   }
 
@@ -405,6 +465,13 @@ document.addEventListener("DOMContentLoaded", function () {
   async function handleLoggedInView(user) {
     if (!user) return;
 
+    const email =
+      user.email ||
+      (user.user_metadata && user.user_metadata.email) ||
+      "Account";
+
+    cacheEmail(email);
+
     if (isAccountPage && !isDashboardPage) {
       redirectToDashboard();
       return;
@@ -413,7 +480,7 @@ document.addEventListener("DOMContentLoaded", function () {
     if (authCard) authCard.hidden = true;
     if (dashboardCard) dashboardCard.hidden = false;
     if (ordersCard) ordersCard.hidden = false;
-    if (accountEmailDisplay) accountEmailDisplay.textContent = user.email || "Account";
+    if (accountEmailDisplay) accountEmailDisplay.textContent = email;
 
     await claimOrdersForUser();
     await loadOrdersForUser(user);
@@ -423,17 +490,13 @@ document.addEventListener("DOMContentLoaded", function () {
     const opts = options || {};
     const preserveMessage = opts.preserveMessage === true;
 
-    if (!supabase) {
+    const client = await ensureSupabaseReady();
+    if (!client) {
       showMessage("Supabase is not configured on this page yet.", "error");
       return;
     }
 
-    const { data, error } = await supabase.auth.getUser();
-    if (error) {
-      console.error(error);
-    }
-
-    const user = data && data.user ? data.user : null;
+    const user = await waitForSession(client, 8, 120);
 
     if (!user) {
       await handleLoggedOutView();
@@ -442,6 +505,33 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     await handleLoggedInView(user);
+  }
+
+  async function bindAuthStateListener() {
+    const client = await ensureSupabaseReady();
+    if (!client || authListenerBound) return;
+
+    if (client.auth && typeof client.auth.onAuthStateChange === "function") {
+      authListenerBound = true;
+
+      client.auth.onAuthStateChange(async function (event) {
+        if (
+          event === "SIGNED_IN" ||
+          event === "INITIAL_SESSION" ||
+          event === "TOKEN_REFRESHED" ||
+          event === "USER_UPDATED"
+        ) {
+          const user = await waitForSession(client, 12, 150);
+          await handleLoggedInView(user);
+          return;
+        }
+
+        if (event === "SIGNED_OUT") {
+          clearCachedAccountData();
+          await handleLoggedOutView();
+        }
+      });
+    }
   }
 
   function bindAuthEvents() {
@@ -453,8 +543,9 @@ document.addEventListener("DOMContentLoaded", function () {
         event.preventDefault();
         clearMessage();
 
-        if (!supabase) {
-          showMessage("Supabase is not configured.", "error");
+        const client = await ensureSupabaseReady();
+        if (!client) {
+          showMessage("Login system is not ready yet. Refresh and try again.", "error");
           return;
         }
 
@@ -466,7 +557,7 @@ document.addEventListener("DOMContentLoaded", function () {
           return;
         }
 
-        const { error } = await supabase.auth.signInWithPassword({
+        const { error } = await client.auth.signInWithPassword({
           email: email,
           password: password
         });
@@ -476,6 +567,14 @@ document.addEventListener("DOMContentLoaded", function () {
           return;
         }
 
+        const user = await waitForSession(client, 20, 150);
+
+        if (!user) {
+          showMessage("Signed in, but your session is still restoring. Please try again.", "error");
+          return;
+        }
+
+        cacheEmail(user.email || email);
         redirectToDashboard();
       });
     }
@@ -485,8 +584,9 @@ document.addEventListener("DOMContentLoaded", function () {
         event.preventDefault();
         clearMessage();
 
-        if (!supabase) {
-          showMessage("Supabase is not configured.", "error");
+        const client = await ensureSupabaseReady();
+        if (!client) {
+          showMessage("Signup system is not ready yet. Refresh and try again.", "error");
           return;
         }
 
@@ -509,7 +609,7 @@ document.addEventListener("DOMContentLoaded", function () {
           return;
         }
 
-        const { data, error } = await supabase.auth.signUp({
+        const { data, error } = await client.auth.signUp({
           email: email,
           password: password,
           options: {
@@ -523,11 +623,13 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
         if (data && data.session) {
+          const user = await waitForSession(client, 20, 150);
+          cacheEmail((user && user.email) || email);
           redirectToDashboard();
           return;
         }
 
-        showMessage("Account created, but no active session was returned. Try signing in now.", "success");
+        showMessage("Account created. Sign in now to access your dashboard.", "success");
         switchToLogin();
         if (loginEmail) loginEmail.value = email;
       });
@@ -537,7 +639,8 @@ document.addEventListener("DOMContentLoaded", function () {
       forgotPasswordBtn.addEventListener("click", async function () {
         clearMessage();
 
-        if (!supabase) {
+        const client = await ensureSupabaseReady();
+        if (!client) {
           showMessage("Supabase is not configured.", "error");
           return;
         }
@@ -548,7 +651,7 @@ document.addEventListener("DOMContentLoaded", function () {
           return;
         }
 
-        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        const { error } = await client.auth.resetPasswordForEmail(email, {
           redirectTo: ACCOUNT_PAGE_URL
         });
 
@@ -565,12 +668,15 @@ document.addEventListener("DOMContentLoaded", function () {
       logoutBtn.addEventListener("click", async function () {
         clearMessage();
 
-        if (!supabase) {
+        const client = await ensureSupabaseReady();
+        if (!client) {
           showMessage("Supabase is not configured.", "error");
           return;
         }
 
-        const { error } = await supabase.auth.signOut();
+        clearCachedAccountData();
+
+        const { error } = await client.auth.signOut();
 
         if (error) {
           showMessage(error.message || "Unable to log out.", "error");
@@ -585,53 +691,35 @@ document.addEventListener("DOMContentLoaded", function () {
       refreshOrdersBtn.addEventListener("click", async function () {
         clearMessage();
 
-        if (!supabase) {
+        const client = await ensureSupabaseReady();
+        if (!client) {
           showMessage("Supabase is not configured.", "error");
           return;
         }
 
-        await claimOrdersForUser();
-
-        const { data, error } = await supabase.auth.getUser();
-        if (error) {
-          console.error(error);
-        }
-
-        const user = data && data.user ? data.user : null;
-        await loadOrdersForUser(user);
-      });
-    }
-
-    if (supabase && supabase.auth && typeof supabase.auth.onAuthStateChange === "function") {
-      supabase.auth.onAuthStateChange(async function (event) {
-        if (
-          event === "SIGNED_IN" ||
-          event === "INITIAL_SESSION" ||
-          event === "TOKEN_REFRESHED" ||
-          event === "USER_UPDATED"
-        ) {
-          const { data } = await supabase.auth.getUser();
-          const user = data && data.user ? data.user : null;
-          await handleLoggedInView(user);
+        const user = await waitForSession(client, 8, 120);
+        if (!user) {
+          showMessage("Your session could not be restored. Please sign in again.", "error");
           return;
         }
 
-        if (event === "SIGNED_OUT") {
-          await handleLoggedOutView();
-        }
+        await claimOrdersForUser();
+        await loadOrdersForUser(user);
       });
     }
   }
 
   async function initAccountPage() {
-    supabase = await waitForSupabaseClient();
+    bindAuthEvents();
+    await bindAuthStateListener();
 
-    if (!supabase) {
+    const client = await ensureSupabaseReady();
+
+    if (!client) {
       showMessage("Supabase is not configured on this page yet.", "error");
       return;
     }
 
-    bindAuthEvents();
     await updateAuthView();
   }
 
