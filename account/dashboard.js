@@ -60,14 +60,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
   function getSupabaseClient() {
     if (window.supabaseClient) return window.supabaseClient;
-
-    if (window.AXIOM_SUPABASE && typeof window.AXIOM_SUPABASE === "object") {
-      return window.AXIOM_SUPABASE;
-    }
-
-    if (window.axiomSupabase && typeof window.axiomSupabase === "object") {
-      return window.axiomSupabase;
-    }
+    if (window.AXIOM_SUPABASE && typeof window.AXIOM_SUPABASE === "object") return window.AXIOM_SUPABASE;
+    if (window.axiomSupabase && typeof window.axiomSupabase === "object") return window.axiomSupabase;
 
     if (window.supabase && typeof window.supabase.createClient === "function") {
       const config =
@@ -155,18 +149,9 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   function getOrderItems(order) {
-    if (Array.isArray(order.order_items) && order.order_items.length) {
-      return order.order_items;
-    }
-
-    if (Array.isArray(order.cart_items) && order.cart_items.length) {
-      return order.cart_items;
-    }
-
-    if (Array.isArray(order.items) && order.items.length) {
-      return order.items;
-    }
-
+    if (Array.isArray(order.order_items) && order.order_items.length) return order.order_items;
+    if (Array.isArray(order.cart_items) && order.cart_items.length) return order.cart_items;
+    if (Array.isArray(order.items) && order.items.length) return order.items;
     return [];
   }
 
@@ -319,16 +304,30 @@ document.addEventListener("DOMContentLoaded", function () {
 
   async function getLoggedInUser(supabase) {
     try {
-      const { data, error } = await supabase.auth.getUser();
+      const sessionResult = await supabase.auth.getSession();
+      const sessionUser =
+        sessionResult &&
+        sessionResult.data &&
+        sessionResult.data.session &&
+        sessionResult.data.session.user
+          ? sessionResult.data.session.user
+          : null;
 
-      if (error) {
-        console.error("getUser failed:", error);
-        return null;
+      if (sessionUser) {
+        return sessionUser;
       }
 
-      return data && data.user ? data.user : null;
+      const userResult = await supabase.auth.getUser();
+      const user =
+        userResult &&
+        userResult.data &&
+        userResult.data.user
+          ? userResult.data.user
+          : null;
+
+      return user || null;
     } catch (error) {
-      console.error("getUser exception:", error);
+      console.error("getLoggedInUser exception:", error);
       return null;
     }
   }
@@ -354,12 +353,25 @@ document.addEventListener("DOMContentLoaded", function () {
     const user = await getLoggedInUser(supabase);
 
     if (!user) {
+      if (accountEmailDisplay) {
+        accountEmailDisplay.textContent = "Not signed in";
+      }
       redirectToAccount();
       return;
     }
 
+    const userEmail =
+      user.email ||
+      (user.user_metadata && user.user_metadata.email) ||
+      (user.identities &&
+        Array.isArray(user.identities) &&
+        user.identities[0] &&
+        user.identities[0].identity_data &&
+        user.identities[0].identity_data.email) ||
+      "Account";
+
     if (accountEmailDisplay) {
-      accountEmailDisplay.textContent = user.email || "Account";
+      accountEmailDisplay.textContent = userEmail;
     }
 
     await claimOrdersForUser(supabase);
