@@ -52,6 +52,10 @@ document.addEventListener("DOMContentLoaded", function () {
       return window.AXIOM_SUPABASE;
     }
 
+    if (window.axiomSupabase && typeof window.axiomSupabase === "object") {
+      return window.axiomSupabase;
+    }
+
     if (window.supabase && typeof window.supabase.createClient === "function") {
       const config =
         window.AXIOM_DASHBOARD_CONFIG ||
@@ -75,13 +79,32 @@ document.addEventListener("DOMContentLoaded", function () {
 
       if (!url || !anonKey) return null;
 
-      return window.supabase.createClient(url, anonKey);
+      const client = window.supabase.createClient(url, anonKey);
+
+      window.supabaseClient = client;
+      window.AXIOM_SUPABASE = client;
+      window.axiomSupabase = client;
+
+      return client;
     }
 
     return null;
   }
 
-  const supabase = getSupabaseClient();
+  async function waitForSupabaseClient(maxAttempts = 40, delay = 150) {
+    for (let i = 0; i < maxAttempts; i += 1) {
+      const client = getSupabaseClient();
+      if (client) return client;
+
+      await new Promise(function (resolve) {
+        setTimeout(resolve, delay);
+      });
+    }
+
+    return null;
+  }
+
+  let supabase = null;
 
   function showMessage(text, type) {
     if (!accountMessage) return;
@@ -251,11 +274,11 @@ document.addEventListener("DOMContentLoaded", function () {
     ordersEmptyState.hidden = true;
     orderCount.textContent = String(orders.length);
 
-    const firstStatus = normalizeStatus(orders[0].order_status || orders[0].status || "pending");
+    const firstStatus = normalizeStatus(orders[0].fulfillment_status || orders[0].order_status || orders[0].status || "pending");
     latestStatus.textContent = firstStatus.label;
 
     orders.forEach(function (order) {
-      const statusMeta = normalizeStatus(order.order_status || order.status || "pending");
+      const statusMeta = normalizeStatus(order.fulfillment_status || order.order_status || order.status || "pending");
       const orderNumber =
         order.order_number ||
         order.public_order_id ||
@@ -421,182 +444,196 @@ document.addEventListener("DOMContentLoaded", function () {
     await handleLoggedInView(user);
   }
 
-  if (loginTab) loginTab.addEventListener("click", switchToLogin);
-  if (signupTab) signupTab.addEventListener("click", switchToSignup);
+  function bindAuthEvents() {
+    if (loginTab) loginTab.addEventListener("click", switchToLogin);
+    if (signupTab) signupTab.addEventListener("click", switchToSignup);
 
-  if (loginForm) {
-    loginForm.addEventListener("submit", async function (event) {
-      event.preventDefault();
-      clearMessage();
+    if (loginForm) {
+      loginForm.addEventListener("submit", async function (event) {
+        event.preventDefault();
+        clearMessage();
 
-      if (!supabase) {
-        showMessage("Supabase is not configured.", "error");
-        return;
-      }
+        if (!supabase) {
+          showMessage("Supabase is not configured.", "error");
+          return;
+        }
 
-      const email = (loginEmail && loginEmail.value ? loginEmail.value : "").trim().toLowerCase();
-      const password = loginPassword ? loginPassword.value : "";
+        const email = (loginEmail && loginEmail.value ? loginEmail.value : "").trim().toLowerCase();
+        const password = loginPassword ? loginPassword.value : "";
 
-      if (!email || !password) {
-        showMessage("Enter your email and password.", "error");
-        return;
-      }
+        if (!email || !password) {
+          showMessage("Enter your email and password.", "error");
+          return;
+        }
 
-      const { error } = await supabase.auth.signInWithPassword({
-        email: email,
-        password: password
+        const { error } = await supabase.auth.signInWithPassword({
+          email: email,
+          password: password
+        });
+
+        if (error) {
+          showMessage(error.message || "Unable to sign in.", "error");
+          return;
+        }
+
+        redirectToDashboard();
       });
+    }
 
-      if (error) {
-        showMessage(error.message || "Unable to sign in.", "error");
-        return;
-      }
+    if (signupForm) {
+      signupForm.addEventListener("submit", async function (event) {
+        event.preventDefault();
+        clearMessage();
 
-      redirectToDashboard();
-    });
-  }
+        if (!supabase) {
+          showMessage("Supabase is not configured.", "error");
+          return;
+        }
 
-  if (signupForm) {
-    signupForm.addEventListener("submit", async function (event) {
-      event.preventDefault();
-      clearMessage();
+        const email = (signupEmail && signupEmail.value ? signupEmail.value : "").trim().toLowerCase();
+        const password = signupPassword ? signupPassword.value : "";
+        const confirm = signupPasswordConfirm ? signupPasswordConfirm.value : "";
 
-      if (!supabase) {
-        showMessage("Supabase is not configured.", "error");
-        return;
-      }
+        if (!email || !password || !confirm) {
+          showMessage("Fill out all fields.", "error");
+          return;
+        }
 
-      const email = (signupEmail && signupEmail.value ? signupEmail.value : "").trim().toLowerCase();
-      const password = signupPassword ? signupPassword.value : "";
-      const confirm = signupPasswordConfirm ? signupPasswordConfirm.value : "";
+        if (password.length < 6) {
+          showMessage("Password must be at least 6 characters.", "error");
+          return;
+        }
 
-      if (!email || !password || !confirm) {
-        showMessage("Fill out all fields.", "error");
-        return;
-      }
+        if (password !== confirm) {
+          showMessage("Passwords do not match.", "error");
+          return;
+        }
 
-      if (password.length < 6) {
-        showMessage("Password must be at least 6 characters.", "error");
-        return;
-      }
+        const { data, error } = await supabase.auth.signUp({
+          email: email,
+          password: password,
+          options: {
+            emailRedirectTo: DASHBOARD_PAGE_URL
+          }
+        });
 
-      if (password !== confirm) {
-        showMessage("Passwords do not match.", "error");
-        return;
-      }
+        if (error) {
+          showMessage(error.message || "Unable to create account.", "error");
+          return;
+        }
 
-      const { data, error } = await supabase.auth.signUp({
-        email: email,
-        password: password,
-        options: {
-          emailRedirectTo: DASHBOARD_PAGE_URL
+        if (data && data.session) {
+          redirectToDashboard();
+          return;
+        }
+
+        showMessage("Account created, but no active session was returned. Try signing in now.", "success");
+        switchToLogin();
+        if (loginEmail) loginEmail.value = email;
+      });
+    }
+
+    if (forgotPasswordBtn) {
+      forgotPasswordBtn.addEventListener("click", async function () {
+        clearMessage();
+
+        if (!supabase) {
+          showMessage("Supabase is not configured.", "error");
+          return;
+        }
+
+        const email = (loginEmail && loginEmail.value ? loginEmail.value : "").trim().toLowerCase();
+        if (!email) {
+          showMessage("Enter your email first.", "error");
+          return;
+        }
+
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: ACCOUNT_PAGE_URL
+        });
+
+        if (error) {
+          showMessage(error.message || "Could not send reset email.", "error");
+          return;
+        }
+
+        showMessage("Password reset email sent.", "success");
+      });
+    }
+
+    if (logoutBtn) {
+      logoutBtn.addEventListener("click", async function () {
+        clearMessage();
+
+        if (!supabase) {
+          showMessage("Supabase is not configured.", "error");
+          return;
+        }
+
+        const { error } = await supabase.auth.signOut();
+
+        if (error) {
+          showMessage(error.message || "Unable to log out.", "error");
+          return;
+        }
+
+        redirectToAccount();
+      });
+    }
+
+    if (refreshOrdersBtn) {
+      refreshOrdersBtn.addEventListener("click", async function () {
+        clearMessage();
+
+        if (!supabase) {
+          showMessage("Supabase is not configured.", "error");
+          return;
+        }
+
+        await claimOrdersForUser();
+
+        const { data, error } = await supabase.auth.getUser();
+        if (error) {
+          console.error(error);
+        }
+
+        const user = data && data.user ? data.user : null;
+        await loadOrdersForUser(user);
+      });
+    }
+
+    if (supabase && supabase.auth && typeof supabase.auth.onAuthStateChange === "function") {
+      supabase.auth.onAuthStateChange(async function (event) {
+        if (
+          event === "SIGNED_IN" ||
+          event === "INITIAL_SESSION" ||
+          event === "TOKEN_REFRESHED" ||
+          event === "USER_UPDATED"
+        ) {
+          const { data } = await supabase.auth.getUser();
+          const user = data && data.user ? data.user : null;
+          await handleLoggedInView(user);
+          return;
+        }
+
+        if (event === "SIGNED_OUT") {
+          await handleLoggedOutView();
         }
       });
-
-      if (error) {
-        showMessage(error.message || "Unable to create account.", "error");
-        return;
-      }
-
-      if (data && data.session) {
-        redirectToDashboard();
-        return;
-      }
-
-      showMessage("Account created, but no active session was returned. Try signing in now.", "success");
-      switchToLogin();
-      if (loginEmail) loginEmail.value = email;
-    });
+    }
   }
 
-  if (forgotPasswordBtn) {
-    forgotPasswordBtn.addEventListener("click", async function () {
-      clearMessage();
+  async function initAccountPage() {
+    supabase = await waitForSupabaseClient();
 
-      if (!supabase) {
-        showMessage("Supabase is not configured.", "error");
-        return;
-      }
+    if (!supabase) {
+      showMessage("Supabase is not configured on this page yet.", "error");
+      return;
+    }
 
-      const email = (loginEmail && loginEmail.value ? loginEmail.value : "").trim().toLowerCase();
-      if (!email) {
-        showMessage("Enter your email first.", "error");
-        return;
-      }
-
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: ACCOUNT_PAGE_URL
-      });
-
-      if (error) {
-        showMessage(error.message || "Could not send reset email.", "error");
-        return;
-      }
-
-      showMessage("Password reset email sent.", "success");
-    });
+    bindAuthEvents();
+    await updateAuthView();
   }
 
-  if (logoutBtn) {
-    logoutBtn.addEventListener("click", async function () {
-      clearMessage();
-
-      if (!supabase) {
-        showMessage("Supabase is not configured.", "error");
-        return;
-      }
-
-      const { error } = await supabase.auth.signOut();
-
-      if (error) {
-        showMessage(error.message || "Unable to log out.", "error");
-        return;
-      }
-
-      redirectToAccount();
-    });
-  }
-
-  if (refreshOrdersBtn) {
-    refreshOrdersBtn.addEventListener("click", async function () {
-      clearMessage();
-
-      if (!supabase) {
-        showMessage("Supabase is not configured.", "error");
-        return;
-      }
-
-      await claimOrdersForUser();
-
-      const { data, error } = await supabase.auth.getUser();
-      if (error) {
-        console.error(error);
-      }
-
-      const user = data && data.user ? data.user : null;
-      await loadOrdersForUser(user);
-    });
-  }
-
-  if (supabase && supabase.auth && typeof supabase.auth.onAuthStateChange === "function") {
-    supabase.auth.onAuthStateChange(async function (event) {
-      if (
-        event === "SIGNED_IN" ||
-        event === "INITIAL_SESSION" ||
-        event === "TOKEN_REFRESHED" ||
-        event === "USER_UPDATED"
-      ) {
-        const { data } = await supabase.auth.getUser();
-        const user = data && data.user ? data.user : null;
-        await handleLoggedInView(user);
-        return;
-      }
-
-      if (event === "SIGNED_OUT") {
-        await handleLoggedOutView();
-      }
-    });
-  }
-
-  updateAuthView();
+  initAccountPage();
 });
