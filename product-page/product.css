@@ -526,3 +526,19 @@
     font-size: 20px;
   }
 }
+
+/* FIX PRODUCT DESCRIPTION FORMATTING */
+.product-description-text {
+  white-space: pre-line !important;
+  line-height: 1.9;
+}
+
+/* add spacing between each line block */
+.product-description-text div {
+  margin-bottom: 10px;
+}
+
+/* override the paragraph reset */
+.product-description-card p.product-description-text {
+  margin: 0;
+}
