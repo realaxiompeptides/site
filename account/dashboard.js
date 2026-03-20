@@ -8,6 +8,56 @@ document.addEventListener("DOMContentLoaded", function () {
   const ordersList = document.getElementById("ordersList");
   const ordersEmptyState = document.getElementById("ordersEmptyState");
 
+  function accountPageUrl() {
+    return window.location.hostname.includes("github.io")
+      ? "/site/account/account.html"
+      : "/account/account.html";
+  }
+
+  function showMessage(text, type) {
+    if (!accountMessage) return;
+    accountMessage.hidden = false;
+    accountMessage.textContent = text;
+    accountMessage.className = `account-message ${type === "error" ? "is-error" : "is-success"}`;
+  }
+
+  function clearMessage() {
+    if (!accountMessage) return;
+    accountMessage.hidden = true;
+    accountMessage.textContent = "";
+    accountMessage.className = "account-message";
+  }
+
+  function redirectToAccount() {
+    window.location.href = accountPageUrl();
+  }
+
+  function escapeHtml(value) {
+    return String(value || "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
+  function formatMoney(value) {
+    return `$${Number(value || 0).toFixed(2)}`;
+  }
+
+  function formatDate(value) {
+    if (!value) return "—";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "—";
+    return date.toLocaleString();
+  }
+
+  function buildTrackingUrl(trackingNumber) {
+    const clean = String(trackingNumber || "").trim();
+    if (!clean) return "";
+    return `https://tools.usps.com/go/TrackConfirmAction?tLabels=${encodeURIComponent(clean)}`;
+  }
+
   function getSupabaseClient() {
     if (window.supabaseClient) return window.supabaseClient;
 
@@ -44,73 +94,79 @@ document.addEventListener("DOMContentLoaded", function () {
     return null;
   }
 
-  const supabase = getSupabaseClient();
+  async function waitForSupabaseClient(maxAttempts = 40, delay = 150) {
+    for (let i = 0; i < maxAttempts; i += 1) {
+      const client = getSupabaseClient();
+      if (client) return client;
 
-  function accountPageUrl() {
-    return window.location.hostname.includes("github.io")
-      ? "/site/account/account.html"
-      : "/account/account.html";
+      await new Promise(function (resolve) {
+        setTimeout(resolve, delay);
+      });
+    }
+
+    return null;
   }
 
-  function showMessage(text, type) {
-    if (!accountMessage) return;
-    accountMessage.hidden = false;
-    accountMessage.textContent = text;
-    accountMessage.className = `account-message ${type === "error" ? "is-error" : "is-success"}`;
+  function normalizeStatus(order) {
+    const fulfillment = String(order.fulfillment_status || "").trim().toLowerCase();
+    const orderStatus = String(order.order_status || "").trim().toLowerCase();
+    const payment = String(order.payment_status || "").trim().toLowerCase();
+
+    if (fulfillment.includes("delivered")) {
+      return { label: "Delivered", className: "delivered" };
+    }
+
+    if (
+      fulfillment.includes("shipped") ||
+      fulfillment.includes("in_transit") ||
+      orderStatus.includes("shipped")
+    ) {
+      return { label: "Shipped", className: "shipped" };
+    }
+
+    if (payment.includes("paid")) {
+      return { label: "Paid", className: "paid" };
+    }
+
+    if (
+      orderStatus.includes("pending") ||
+      fulfillment.includes("unfulfilled") ||
+      payment.includes("unpaid")
+    ) {
+      return { label: "Pending", className: "pending" };
+    }
+
+    if (orderStatus) {
+      return {
+        label: orderStatus.charAt(0).toUpperCase() + orderStatus.slice(1),
+        className: "default"
+      };
+    }
+
+    return { label: "Pending", className: "default" };
   }
 
-  function clearMessage() {
-    if (!accountMessage) return;
-    accountMessage.hidden = true;
-    accountMessage.textContent = "";
-    accountMessage.className = "account-message";
-  }
+  function getOrderItems(order) {
+    if (Array.isArray(order.order_items) && order.order_items.length) {
+      return order.order_items;
+    }
 
-  function normalizeStatus(status) {
-    const clean = String(status || "").trim().toLowerCase();
-    if (!clean) return { label: "Pending", className: "default" };
-    if (clean.includes("deliver")) return { label: "Delivered", className: "delivered" };
-    if (clean.includes("ship")) return { label: "Shipped", className: "shipped" };
-    if (clean.includes("paid")) return { label: "Paid", className: "paid" };
-    if (clean.includes("pend")) return { label: "Pending", className: "pending" };
+    if (Array.isArray(order.cart_items) && order.cart_items.length) {
+      return order.cart_items;
+    }
 
-    return {
-      label: clean.charAt(0).toUpperCase() + clean.slice(1),
-      className: "default"
-    };
-  }
+    if (Array.isArray(order.items) && order.items.length) {
+      return order.items;
+    }
 
-  function formatMoney(value) {
-    return `$${Number(value || 0).toFixed(2)}`;
-  }
-
-  function formatDate(value) {
-    if (!value) return "—";
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return "—";
-    return date.toLocaleString();
-  }
-
-  function escapeHtml(value) {
-    return String(value || "")
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#039;");
-  }
-
-  function buildTrackingUrl(trackingNumber) {
-    const clean = String(trackingNumber || "").trim();
-    if (!clean) return "";
-    return `https://tools.usps.com/go/TrackConfirmAction?tLabels=${encodeURIComponent(clean)}`;
+    return [];
   }
 
   function getOrderShippingAddress(order) {
-    const shippingAddress = order.shipping_address || null;
+    const shippingAddress = order.shipping_address || order.shippingAddress || null;
 
     if (shippingAddress && typeof shippingAddress === "object") {
-      const name =
+      const fullName =
         shippingAddress.full_name ||
         [shippingAddress.first_name, shippingAddress.last_name].filter(Boolean).join(" ").trim();
 
@@ -123,7 +179,7 @@ document.addEventListener("DOMContentLoaded", function () {
         .join(", ");
 
       return [
-        name,
+        fullName,
         shippingAddress.address1 || shippingAddress.line1,
         shippingAddress.address2 || shippingAddress.line2,
         cityStateZip,
@@ -136,12 +192,6 @@ document.addEventListener("DOMContentLoaded", function () {
     return "Not available";
   }
 
-  function getOrderItems(order) {
-    if (Array.isArray(order.order_items) && order.order_items.length) return order.order_items;
-    if (Array.isArray(order.cart_items) && order.cart_items.length) return order.cart_items;
-    return [];
-  }
-
   function renderOrderItems(items) {
     if (!Array.isArray(items) || !items.length) {
       return `<div class="order-item"><div class="order-item-meta">No item details available.</div></div>`;
@@ -151,7 +201,7 @@ document.addEventListener("DOMContentLoaded", function () {
       const name = escapeHtml(item.name || item.product_name || "Product");
       const variant = escapeHtml(item.variantLabel || item.variant_label || item.variant || "");
       const qty = Number(item.quantity || item.qty || 1);
-      const price = Number(item.price || item.unit_price || 0);
+      const unitPrice = Number(item.price || item.unit_price || 0);
 
       return `
         <div class="order-item">
@@ -162,7 +212,7 @@ document.addEventListener("DOMContentLoaded", function () {
               Qty: ${qty}
             </div>
           </div>
-          <div class="order-item-name">${formatMoney(price * qty)}</div>
+          <div class="order-item-name">${formatMoney(unitPrice * qty)}</div>
         </div>
       `;
     }).join("");
@@ -183,23 +233,18 @@ document.addEventListener("DOMContentLoaded", function () {
     ordersEmptyState.hidden = true;
     orderCount.textContent = String(orders.length);
 
-    const firstStatus = normalizeStatus(orders[0].order_status || "pending");
+    const firstStatus = normalizeStatus(orders[0]);
     latestStatus.textContent = firstStatus.label;
 
     orders.forEach(function (order) {
-      const statusMeta = normalizeStatus(order.order_status || "pending");
+      const statusMeta = normalizeStatus(order);
       const orderNumber = order.order_number || order.id || "Order";
       const trackingNumber = order.tracking_number || "";
       const trackingUrl = order.tracking_url || buildTrackingUrl(trackingNumber);
-      const eta =
-        order.estimated_delivery ||
-        order.estimated_delivery_date ||
-        order.delivery_estimate ||
-        "";
       const total = order.total_amount ?? 0;
-      const items = getOrderItems(order);
       const createdAt = order.created_at || "";
       const shippingAddress = getOrderShippingAddress(order);
+      const items = getOrderItems(order);
 
       const card = document.createElement("article");
       card.className = "order-card";
@@ -224,8 +269,13 @@ document.addEventListener("DOMContentLoaded", function () {
           </div>
 
           <div class="order-info-box">
-            <span class="order-info-label">Estimated Delivery</span>
-            <div class="order-info-value">${escapeHtml(eta || "Not available yet")}</div>
+            <span class="order-info-label">Payment Status</span>
+            <div class="order-info-value">${escapeHtml(order.payment_status || "Not available")}</div>
+          </div>
+
+          <div class="order-info-box">
+            <span class="order-info-label">Fulfillment Status</span>
+            <div class="order-info-value">${escapeHtml(order.fulfillment_status || "Not available")}</div>
           </div>
 
           <div class="order-info-box">
@@ -249,10 +299,9 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
-  async function getLoggedInUser() {
-    if (!supabase) return null;
-
+  async function getLoggedInUser(supabase) {
     const { data, error } = await supabase.auth.getUser();
+
     if (error) {
       console.error("getUser failed:", error);
       return null;
@@ -261,19 +310,26 @@ document.addEventListener("DOMContentLoaded", function () {
     return data && data.user ? data.user : null;
   }
 
-  async function claimOrdersForUser() {
-    if (!supabase) return;
-
-    const { error } = await supabase.rpc("claim_my_orders");
-    if (error) {
-      console.error("claim_my_orders failed:", error);
+  async function claimOrdersForUser(supabase) {
+    try {
+      const { error } = await supabase.rpc("claim_my_orders");
+      if (error) {
+        console.error("claim_my_orders failed:", error);
+      }
+    } catch (error) {
+      console.error("claim_my_orders exception:", error);
     }
   }
 
-  async function loadOrders() {
+  async function loadOrders(supabase) {
     clearMessage();
 
-    const user = await getLoggedInUser();
+    if (accountEmailDisplay) {
+      accountEmailDisplay.textContent = "Loading...";
+    }
+
+    const user = await getLoggedInUser(supabase);
+
     if (!user) {
       redirectToAccount();
       return;
@@ -283,7 +339,7 @@ document.addEventListener("DOMContentLoaded", function () {
       accountEmailDisplay.textContent = user.email || "Account";
     }
 
-    await claimOrdersForUser();
+    await claimOrdersForUser(supabase);
 
     const { data, error } = await supabase.rpc("get_my_orders");
 
@@ -297,52 +353,57 @@ document.addEventListener("DOMContentLoaded", function () {
     renderOrders(Array.isArray(data) ? data : []);
   }
 
-  function redirectToAccount() {
-    window.location.href = accountPageUrl();
-  }
+  async function initDashboard() {
+    const supabase = await waitForSupabaseClient();
 
-  if (logoutBtn) {
-    logoutBtn.addEventListener("click", async function () {
-      clearMessage();
-
-      if (!supabase) {
-        showMessage("Supabase is not configured.", "error");
-        return;
+    if (!supabase) {
+      if (accountEmailDisplay) {
+        accountEmailDisplay.textContent = "Could not connect";
       }
+      showMessage("Supabase client did not load. Check dashboard-config.js and supabase-client.js.", "error");
+      return;
+    }
 
-      const { error } = await supabase.auth.signOut();
-      if (error) {
-        showMessage(error.message || "Unable to log out.", "error");
-        return;
-      }
+    if (logoutBtn) {
+      logoutBtn.addEventListener("click", async function () {
+        clearMessage();
 
-      redirectToAccount();
-    });
-  }
+        const { error } = await supabase.auth.signOut();
+        if (error) {
+          showMessage(error.message || "Unable to log out.", "error");
+          return;
+        }
 
-  if (refreshOrdersBtn) {
-    refreshOrdersBtn.addEventListener("click", async function () {
-      await loadOrders();
-    });
-  }
-
-  if (supabase && supabase.auth && typeof supabase.auth.onAuthStateChange === "function") {
-    supabase.auth.onAuthStateChange(async function (event) {
-      if (event === "SIGNED_OUT") {
         redirectToAccount();
-        return;
-      }
+      });
+    }
 
-      if (
-        event === "SIGNED_IN" ||
-        event === "INITIAL_SESSION" ||
-        event === "TOKEN_REFRESHED" ||
-        event === "USER_UPDATED"
-      ) {
-        await loadOrders();
-      }
-    });
+    if (refreshOrdersBtn) {
+      refreshOrdersBtn.addEventListener("click", async function () {
+        await loadOrders(supabase);
+      });
+    }
+
+    if (supabase.auth && typeof supabase.auth.onAuthStateChange === "function") {
+      supabase.auth.onAuthStateChange(async function (event) {
+        if (event === "SIGNED_OUT") {
+          redirectToAccount();
+          return;
+        }
+
+        if (
+          event === "SIGNED_IN" ||
+          event === "INITIAL_SESSION" ||
+          event === "TOKEN_REFRESHED" ||
+          event === "USER_UPDATED"
+        ) {
+          await loadOrders(supabase);
+        }
+      });
+    }
+
+    await loadOrders(supabase);
   }
 
-  loadOrders();
+  initDashboard();
 });
