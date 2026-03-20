@@ -185,7 +185,12 @@ function initCartDrawer() {
       if (Array.isArray(product.variants)) {
         return product.variants.some(function (variant) {
           if (!variant) return false;
-          return item.id && variant.id && String(item.id) === String(variant.id);
+
+          if (item.id && variant.id && String(item.id) === String(variant.id)) {
+            return true;
+          }
+
+          return false;
         });
       }
 
@@ -194,13 +199,20 @@ function initCartDrawer() {
   }
 
   function resolveCartItemImage(item) {
-    if (item && typeof item.image === "string" && item.image.trim()) {
-      return normalizeImagePath(item.image);
+    const matchingProduct = findMatchingProduct(item);
+
+    if (matchingProduct) {
+      const matchedProductImage = getProductImage(matchingProduct);
+      if (
+        matchedProductImage &&
+        matchedProductImage !== `${IMAGE_PREFIX}images/products/placeholder.PNG`
+      ) {
+        return matchedProductImage;
+      }
     }
 
-    const matchingProduct = findMatchingProduct(item);
-    if (matchingProduct) {
-      return getProductImage(matchingProduct);
+    if (item && typeof item.image === "string" && item.image.trim()) {
+      return normalizeImagePath(item.image);
     }
 
     return `${IMAGE_PREFIX}images/products/placeholder.PNG`;
