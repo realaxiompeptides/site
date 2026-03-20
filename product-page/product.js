@@ -277,7 +277,7 @@ document.addEventListener("DOMContentLoaded", async function () {
   if (productName) productName.textContent = product.name || "Product";
   if (breadcrumbName) breadcrumbName.textContent = product.name || "Product";
   if (productShortDescription) productShortDescription.textContent = product.description || "";
-  if (productLongDescription) productLongDescription.textContent = product.longDescription || "";
+  if (productLongDescription) productLongDescription.innerHTML = product.longDescription || "";
 
   if (!variants.length) {
     hidePriceSection();
