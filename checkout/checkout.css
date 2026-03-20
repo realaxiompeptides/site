@@ -1,14 +1,19 @@
-..checkout-page {
+.checkout-page {
   font-family: "Inter", sans-serif;
   background: #f6f8fc;
   margin: 0;
   color: #0f172a;
 }
 
+.checkout-main {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
 .checkout-container {
   width: min(1100px, calc(100% - 24px));
   margin: auto;
-  padding: 40px 0;
+  padding: 40px 0 8px;
 }
 
 .checkout-card {
@@ -17,6 +22,7 @@
   padding: 32px;
   border: 1px solid #dbe3ee;
   box-shadow: 0 12px 32px rgba(15,23,42,0.05);
+  margin-bottom: 0 !important;
 }
 
 .checkout-title {
@@ -231,6 +237,11 @@
   color: #64748b;
 }
 
+#site-footer {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+}
+
 @media (max-width: 640px) {
   .checkout-summary-item {
     grid-template-columns: 54px 1fr;
@@ -238,5 +249,9 @@
 
   .checkout-summary-item-price {
     grid-column: 2;
+  }
+
+  .checkout-container {
+    padding: 24px 0 0;
   }
 }
