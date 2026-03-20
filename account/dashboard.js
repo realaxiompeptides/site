@@ -65,6 +65,10 @@ document.addEventListener("DOMContentLoaded", function () {
       return window.AXIOM_SUPABASE;
     }
 
+    if (window.axiomSupabase && typeof window.axiomSupabase === "object") {
+      return window.axiomSupabase;
+    }
+
     if (window.supabase && typeof window.supabase.createClient === "function") {
       const config =
         window.AXIOM_DASHBOARD_CONFIG ||
@@ -88,13 +92,17 @@ document.addEventListener("DOMContentLoaded", function () {
 
       if (!url || !anonKey) return null;
 
-      return window.supabase.createClient(url, anonKey);
+      const client = window.supabase.createClient(url, anonKey);
+      window.supabaseClient = client;
+      window.AXIOM_SUPABASE = client;
+      window.axiomSupabase = client;
+      return client;
     }
 
     return null;
   }
 
-  async function waitForSupabaseClient(maxAttempts = 40, delay = 150) {
+  async function waitForSupabaseClient(maxAttempts = 50, delay = 150) {
     for (let i = 0; i < maxAttempts; i += 1) {
       const client = getSupabaseClient();
       if (client) return client;
@@ -189,7 +197,17 @@ document.addEventListener("DOMContentLoaded", function () {
         .join(" • ");
     }
 
-    return "Not available";
+    const fallbackAddress = [
+      order.shipping_name,
+      order.shipping_address_1,
+      order.shipping_address_2,
+      [order.shipping_city, order.shipping_state, order.shipping_zip].filter(Boolean).join(", "),
+      order.shipping_country
+    ]
+      .filter(Boolean)
+      .join(" • ");
+
+    return fallbackAddress || "Not available";
   }
 
   function renderOrderItems(items) {
@@ -300,14 +318,19 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   async function getLoggedInUser(supabase) {
-    const { data, error } = await supabase.auth.getUser();
+    try {
+      const { data, error } = await supabase.auth.getUser();
 
-    if (error) {
-      console.error("getUser failed:", error);
+      if (error) {
+        console.error("getUser failed:", error);
+        return null;
+      }
+
+      return data && data.user ? data.user : null;
+    } catch (error) {
+      console.error("getUser exception:", error);
       return null;
     }
-
-    return data && data.user ? data.user : null;
   }
 
   async function claimOrdersForUser(supabase) {
@@ -341,16 +364,22 @@ document.addEventListener("DOMContentLoaded", function () {
 
     await claimOrdersForUser(supabase);
 
-    const { data, error } = await supabase.rpc("get_my_orders");
+    try {
+      const { data, error } = await supabase.rpc("get_my_orders");
 
-    if (error) {
-      console.error("get_my_orders failed:", error);
+      if (error) {
+        console.error("get_my_orders failed:", error);
+        showMessage("Could not load your orders right now.", "error");
+        renderOrders([]);
+        return;
+      }
+
+      renderOrders(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error("get_my_orders exception:", error);
       showMessage("Could not load your orders right now.", "error");
       renderOrders([]);
-      return;
     }
-
-    renderOrders(Array.isArray(data) ? data : []);
   }
 
   async function initDashboard() {
@@ -360,7 +389,7 @@ document.addEventListener("DOMContentLoaded", function () {
       if (accountEmailDisplay) {
         accountEmailDisplay.textContent = "Could not connect";
       }
-      showMessage("Supabase client did not load. Check dashboard-config.js and supabase-client.js.", "error");
+      showMessage("Supabase client did not load on this page.", "error");
       return;
     }
 
@@ -368,13 +397,18 @@ document.addEventListener("DOMContentLoaded", function () {
       logoutBtn.addEventListener("click", async function () {
         clearMessage();
 
-        const { error } = await supabase.auth.signOut();
-        if (error) {
-          showMessage(error.message || "Unable to log out.", "error");
-          return;
-        }
+        try {
+          const { error } = await supabase.auth.signOut();
+          if (error) {
+            showMessage(error.message || "Unable to log out.", "error");
+            return;
+          }
 
-        redirectToAccount();
+          redirectToAccount();
+        } catch (error) {
+          console.error("signOut exception:", error);
+          showMessage("Unable to log out.", "error");
+        }
       });
     }
 
