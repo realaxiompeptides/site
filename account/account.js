@@ -26,6 +26,25 @@ document.addEventListener("DOMContentLoaded", function () {
   const ordersList = document.getElementById("ordersList");
   const ordersEmptyState = document.getElementById("ordersEmptyState");
 
+  const path = window.location.pathname.toLowerCase();
+  const isDashboardPage = path.endsWith("/dashboard.html") || path.endsWith("dashboard.html");
+  const isAccountPage = path.endsWith("/account.html") || path.endsWith("account.html");
+
+  function getBasePrefix() {
+    return window.location.hostname.includes("github.io") ? "/site/account/" : "/account/";
+  }
+
+  const ACCOUNT_PAGE_URL = `${getBasePrefix()}account.html`;
+  const DASHBOARD_PAGE_URL = `${getBasePrefix()}dashboard.html`;
+
+  function redirectToAccount() {
+    window.location.href = ACCOUNT_PAGE_URL;
+  }
+
+  function redirectToDashboard() {
+    window.location.href = DASHBOARD_PAGE_URL;
+  }
+
   function getSupabaseClient() {
     if (window.supabaseClient) return window.supabaseClient;
 
@@ -347,6 +366,36 @@ document.addEventListener("DOMContentLoaded", function () {
     renderOrders(Array.isArray(data) ? data : []);
   }
 
+  async function handleLoggedOutView() {
+    if (isDashboardPage) {
+      redirectToAccount();
+      return;
+    }
+
+    if (authCard) authCard.hidden = false;
+    if (dashboardCard) dashboardCard.hidden = true;
+    if (ordersCard) ordersCard.hidden = true;
+    if (accountEmailDisplay) accountEmailDisplay.textContent = "—";
+    renderOrders([]);
+  }
+
+  async function handleLoggedInView(user) {
+    if (!user) return;
+
+    if (isAccountPage && !isDashboardPage) {
+      redirectToDashboard();
+      return;
+    }
+
+    if (authCard) authCard.hidden = true;
+    if (dashboardCard) dashboardCard.hidden = false;
+    if (ordersCard) ordersCard.hidden = false;
+    if (accountEmailDisplay) accountEmailDisplay.textContent = user.email || "Account";
+
+    await claimOrdersForUser();
+    await loadOrdersForUser(user);
+  }
+
   async function updateAuthView(options) {
     const opts = options || {};
     const preserveMessage = opts.preserveMessage === true;
@@ -364,25 +413,12 @@ document.addEventListener("DOMContentLoaded", function () {
     const user = data && data.user ? data.user : null;
 
     if (!user) {
-      if (authCard) authCard.hidden = false;
-      if (dashboardCard) dashboardCard.hidden = true;
-      if (ordersCard) ordersCard.hidden = true;
-      if (accountEmailDisplay) accountEmailDisplay.textContent = "—";
-      renderOrders([]);
-
-      if (!preserveMessage) {
-        clearMessage();
-      }
+      await handleLoggedOutView();
+      if (!preserveMessage) clearMessage();
       return;
     }
 
-    if (authCard) authCard.hidden = true;
-    if (dashboardCard) dashboardCard.hidden = false;
-    if (ordersCard) ordersCard.hidden = false;
-    if (accountEmailDisplay) accountEmailDisplay.textContent = user.email || "Account";
-
-    await claimOrdersForUser();
-    await loadOrdersForUser(user);
+    await handleLoggedInView(user);
   }
 
   if (loginTab) loginTab.addEventListener("click", switchToLogin);
@@ -416,8 +452,7 @@ document.addEventListener("DOMContentLoaded", function () {
         return;
       }
 
-      showMessage("Signed in successfully.", "success");
-      await updateAuthView({ preserveMessage: true });
+      redirectToDashboard();
     });
   }
 
@@ -450,15 +485,11 @@ document.addEventListener("DOMContentLoaded", function () {
         return;
       }
 
-      const redirectBase =
-        window.location.origin +
-        "/site/account/account.html";
-
       const { data, error } = await supabase.auth.signUp({
         email: email,
         password: password,
         options: {
-          emailRedirectTo: redirectBase
+          emailRedirectTo: DASHBOARD_PAGE_URL
         }
       });
 
@@ -467,15 +498,12 @@ document.addEventListener("DOMContentLoaded", function () {
         return;
       }
 
-      const userCreated = data && data.user;
-
-      if (userCreated && data.session) {
-        showMessage("Account created and signed in successfully.", "success");
-        await updateAuthView({ preserveMessage: true });
+      if (data && data.session) {
+        redirectToDashboard();
         return;
       }
 
-      showMessage("Account created. Check your email to confirm your account if email confirmation is enabled.", "success");
+      showMessage("Account created, but no active session was returned. Try signing in now.", "success");
       switchToLogin();
       if (loginEmail) loginEmail.value = email;
     });
@@ -496,12 +524,8 @@ document.addEventListener("DOMContentLoaded", function () {
         return;
       }
 
-      const redirectBase =
-        window.location.origin +
-        "/site/account/account.html";
-
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: redirectBase
+        redirectTo: ACCOUNT_PAGE_URL
       });
 
       if (error) {
@@ -529,13 +553,7 @@ document.addEventListener("DOMContentLoaded", function () {
         return;
       }
 
-      if (authCard) authCard.hidden = false;
-      if (dashboardCard) dashboardCard.hidden = true;
-      if (ordersCard) ordersCard.hidden = true;
-      if (accountEmailDisplay) accountEmailDisplay.textContent = "—";
-      renderOrders([]);
-      switchToLogin();
-      showMessage("Logged out successfully.", "success");
+      redirectToAccount();
     });
   }
 
@@ -562,18 +580,20 @@ document.addEventListener("DOMContentLoaded", function () {
 
   if (supabase && supabase.auth && typeof supabase.auth.onAuthStateChange === "function") {
     supabase.auth.onAuthStateChange(async function (event) {
-      if (event === "SIGNED_IN" || event === "INITIAL_SESSION" || event === "TOKEN_REFRESHED" || event === "USER_UPDATED") {
-        await updateAuthView({ preserveMessage: true });
+      if (
+        event === "SIGNED_IN" ||
+        event === "INITIAL_SESSION" ||
+        event === "TOKEN_REFRESHED" ||
+        event === "USER_UPDATED"
+      ) {
+        const { data } = await supabase.auth.getUser();
+        const user = data && data.user ? data.user : null;
+        await handleLoggedInView(user);
         return;
       }
 
       if (event === "SIGNED_OUT") {
-        if (authCard) authCard.hidden = false;
-        if (dashboardCard) dashboardCard.hidden = true;
-        if (ordersCard) ordersCard.hidden = true;
-        if (accountEmailDisplay) accountEmailDisplay.textContent = "—";
-        renderOrders([]);
-        switchToLogin();
+        await handleLoggedOutView();
       }
     });
   }
