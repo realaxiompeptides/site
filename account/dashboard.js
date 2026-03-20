@@ -8,6 +8,8 @@ document.addEventListener("DOMContentLoaded", function () {
   const ordersList = document.getElementById("ordersList");
   const ordersEmptyState = document.getElementById("ordersEmptyState");
 
+  let isBooting = true;
+
   function accountPageUrl() {
     return window.location.hostname.includes("github.io")
       ? "/site/account/account.html"
@@ -96,16 +98,18 @@ document.addEventListener("DOMContentLoaded", function () {
     return null;
   }
 
-  async function waitForSupabaseClient(maxAttempts = 80, delay = 150) {
+  async function wait(ms) {
+    return new Promise(function (resolve) {
+      setTimeout(resolve, ms);
+    });
+  }
+
+  async function waitForSupabaseClient(maxAttempts = 100, delay = 150) {
     for (let i = 0; i < maxAttempts; i += 1) {
       const client = getSupabaseClient();
       if (client) return client;
-
-      await new Promise(function (resolve) {
-        setTimeout(resolve, delay);
-      });
+      await wait(delay);
     }
-
     return null;
   }
 
@@ -303,33 +307,36 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   async function getLoggedInUser(supabase) {
-    try {
-      const sessionResult = await supabase.auth.getSession();
-      const sessionUser =
-        sessionResult &&
-        sessionResult.data &&
-        sessionResult.data.session &&
-        sessionResult.data.session.user
-          ? sessionResult.data.session.user
-          : null;
+    for (let i = 0; i < 12; i += 1) {
+      try {
+        const sessionResult = await supabase.auth.getSession();
+        const sessionUser =
+          sessionResult &&
+          sessionResult.data &&
+          sessionResult.data.session &&
+          sessionResult.data.session.user
+            ? sessionResult.data.session.user
+            : null;
 
-      if (sessionUser) return sessionUser;
+        if (sessionUser) return sessionUser;
 
-      const userResult = await supabase.auth.getUser();
-      const user =
-        userResult &&
-        userResult.data &&
-        userResult.data.user
-          ? userResult.data.user
-          : null;
+        const userResult = await supabase.auth.getUser();
+        const user =
+          userResult &&
+          userResult.data &&
+          userResult.data.user
+            ? userResult.data.user
+            : null;
 
-      if (user) return user;
+        if (user) return user;
+      } catch (error) {
+        console.error("getLoggedInUser exception:", error);
+      }
 
-      return null;
-    } catch (error) {
-      console.error("getLoggedInUser exception:", error);
-      return null;
+      await wait(250);
     }
+
+    return null;
   }
 
   async function claimOrdersForUser(supabase) {
@@ -365,22 +372,29 @@ document.addEventListener("DOMContentLoaded", function () {
   async function loadDashboardData(supabase, options) {
     const opts = options || {};
     const preserveMessage = opts.preserveMessage === true;
+    const skipRedirect = opts.skipRedirect === true;
 
     if (!preserveMessage) {
       clearMessage();
     }
 
     if (accountEmailDisplay) {
-      accountEmailDisplay.textContent = "Loading...";
+      const existing = accountEmailDisplay.textContent || "";
+      if (!existing || existing === "Loading..." || existing === "Not signed in") {
+        accountEmailDisplay.textContent = "Loading...";
+      }
     }
 
     const user = await getLoggedInUser(supabase);
 
     if (!user) {
-      if (accountEmailDisplay) {
+      if (accountEmailDisplay && !accountEmailDisplay.textContent.trim()) {
         accountEmailDisplay.textContent = "Not signed in";
       }
-      redirectToAccount();
+
+      if (!skipRedirect && !isBooting) {
+        redirectToAccount();
+      }
       return;
     }
 
@@ -434,7 +448,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     if (refreshOrdersBtn) {
       refreshOrdersBtn.addEventListener("click", async function () {
-        await loadDashboardData(supabase, { preserveMessage: false });
+        await loadDashboardData(supabase, { preserveMessage: false, skipRedirect: false });
       });
     }
 
@@ -451,12 +465,13 @@ document.addEventListener("DOMContentLoaded", function () {
           event === "TOKEN_REFRESHED" ||
           event === "USER_UPDATED"
         ) {
-          await loadDashboardData(supabase, { preserveMessage: true });
+          await loadDashboardData(supabase, { preserveMessage: true, skipRedirect: true });
         }
       });
     }
 
-    await loadDashboardData(supabase, { preserveMessage: false });
+    await loadDashboardData(supabase, { preserveMessage: false, skipRedirect: true });
+    isBooting = false;
   }
 
   initDashboard();
