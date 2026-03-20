@@ -96,7 +96,7 @@ document.addEventListener("DOMContentLoaded", function () {
     return null;
   }
 
-  async function waitForSupabaseClient(maxAttempts = 50, delay = 150) {
+  async function waitForSupabaseClient(maxAttempts = 80, delay = 150) {
     for (let i = 0; i < maxAttempts; i += 1) {
       const client = getSupabaseClient();
       if (client) return client;
@@ -313,9 +313,7 @@ document.addEventListener("DOMContentLoaded", function () {
           ? sessionResult.data.session.user
           : null;
 
-      if (sessionUser) {
-        return sessionUser;
-      }
+      if (sessionUser) return sessionUser;
 
       const userResult = await supabase.auth.getUser();
       const user =
@@ -325,7 +323,9 @@ document.addEventListener("DOMContentLoaded", function () {
           ? userResult.data.user
           : null;
 
-      return user || null;
+      if (user) return user;
+
+      return null;
     } catch (error) {
       console.error("getLoggedInUser exception:", error);
       return null;
@@ -343,8 +343,32 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
-  async function loadOrders(supabase) {
-    clearMessage();
+  async function fetchOrdersForUser(supabase) {
+    try {
+      const { data, error } = await supabase.rpc("get_my_orders");
+
+      if (error) {
+        console.error("get_my_orders failed:", error);
+        showMessage("Could not load your orders right now.", "error");
+        renderOrders([]);
+        return;
+      }
+
+      renderOrders(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error("get_my_orders exception:", error);
+      showMessage("Could not load your orders right now.", "error");
+      renderOrders([]);
+    }
+  }
+
+  async function loadDashboardData(supabase, options) {
+    const opts = options || {};
+    const preserveMessage = opts.preserveMessage === true;
+
+    if (!preserveMessage) {
+      clearMessage();
+    }
 
     if (accountEmailDisplay) {
       accountEmailDisplay.textContent = "Loading...";
@@ -375,23 +399,7 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     await claimOrdersForUser(supabase);
-
-    try {
-      const { data, error } = await supabase.rpc("get_my_orders");
-
-      if (error) {
-        console.error("get_my_orders failed:", error);
-        showMessage("Could not load your orders right now.", "error");
-        renderOrders([]);
-        return;
-      }
-
-      renderOrders(Array.isArray(data) ? data : []);
-    } catch (error) {
-      console.error("get_my_orders exception:", error);
-      showMessage("Could not load your orders right now.", "error");
-      renderOrders([]);
-    }
+    await fetchOrdersForUser(supabase);
   }
 
   async function initDashboard() {
@@ -426,7 +434,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     if (refreshOrdersBtn) {
       refreshOrdersBtn.addEventListener("click", async function () {
-        await loadOrders(supabase);
+        await loadDashboardData(supabase, { preserveMessage: false });
       });
     }
 
@@ -443,12 +451,12 @@ document.addEventListener("DOMContentLoaded", function () {
           event === "TOKEN_REFRESHED" ||
           event === "USER_UPDATED"
         ) {
-          await loadOrders(supabase);
+          await loadDashboardData(supabase, { preserveMessage: true });
         }
       });
     }
 
-    await loadOrders(supabase);
+    await loadDashboardData(supabase, { preserveMessage: false });
   }
 
   initDashboard();
