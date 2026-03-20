@@ -28,22 +28,17 @@ function initCartDrawer() {
 
   const FREE_SHIPPING_THRESHOLD = 150;
 
-  const pathSegments = window.location.pathname.split("/").filter(Boolean);
-  const currentFile = pathSegments[pathSegments.length - 1] || "";
-  const isNestedPage =
-    pathSegments.length > 1 &&
-    currentFile.endsWith(".html");
-
-  const IMAGE_PREFIX = isNestedPage ? "../" : "";
   const BASE_PATH = window.location.hostname.includes("github.io") ? "/site/" : "/";
+  const PRODUCT_IMAGE_BASE = `${BASE_PATH}images/products/`;
+  const DEFAULT_IMAGE = `${BASE_PATH}images/axiom-logo.PNG`;
 
   const RECOMMENDED_PRODUCTS = [
     {
       id: "bacwater-10ml",
-      slug: "bac-water",
+      slug: "bac-water-10ml",
       name: "BAC Water (10ML)",
       price: 10,
-      image: `${IMAGE_PREFIX}images/products/bac-water-10ml-main.PNG`,
+      image: `${PRODUCT_IMAGE_BASE}bac-water-10ml-main.PNG`,
       variantLabel: "10ML",
       weightOz: 9.6,
       inStock: true
@@ -93,12 +88,28 @@ function initCartDrawer() {
     item.qty = quantity;
   }
 
+  function slugifyProductString(value) {
+    return String(value || "")
+      .trim()
+      .toLowerCase()
+      .replace(/&/g, " and ")
+      .replace(/\+/g, " plus ")
+      .replace(/[()]/g, " ")
+      .replace(/['".,]/g, "")
+      .replace(/\//g, "-")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/-+/g, "-")
+      .replace(/^-|-$/g, "");
+  }
+
   function normalizeImagePath(path) {
     if (!path || typeof path !== "string") {
-      return `${IMAGE_PREFIX}images/products/placeholder.PNG`;
+      return DEFAULT_IMAGE;
     }
 
     const cleanPath = path.trim();
+
+    if (!cleanPath) return DEFAULT_IMAGE;
 
     if (cleanPath.startsWith("http://") || cleanPath.startsWith("https://")) {
       return cleanPath;
@@ -108,29 +119,96 @@ function initCartDrawer() {
       return cleanPath;
     }
 
-    if (cleanPath.startsWith("../images/")) {
-      return isNestedPage ? cleanPath : cleanPath.replace("../", "");
-    }
-
     if (cleanPath.startsWith("images/")) {
-      return isNestedPage ? `../${cleanPath}` : cleanPath;
+      return `${BASE_PATH}${cleanPath}`;
     }
 
     if (cleanPath.startsWith("./images/")) {
-      const normalized = cleanPath.replace("./", "");
-      return isNestedPage ? `../${normalized}` : normalized;
+      return `${BASE_PATH}${cleanPath.replace("./", "")}`;
     }
 
-    if (cleanPath.startsWith("../")) {
-      return isNestedPage ? cleanPath : cleanPath.replace("../", "");
+    if (cleanPath.startsWith("../images/")) {
+      return `${BASE_PATH}${cleanPath.replace(/^(\.\.\/)+/, "")}`;
     }
 
     if (cleanPath.startsWith("./")) {
-      const normalized = cleanPath.replace("./", "");
-      return isNestedPage ? `../${normalized}` : normalized;
+      return `${BASE_PATH}${cleanPath.replace("./", "")}`;
     }
 
-    return isNestedPage ? `../${cleanPath}` : cleanPath;
+    if (cleanPath.startsWith("../")) {
+      return `${BASE_PATH}${cleanPath.replace(/^(\.\.\/)+/, "")}`;
+    }
+
+    return `${PRODUCT_IMAGE_BASE}${cleanPath}`;
+  }
+
+  function uniqueValues(values) {
+    return [...new Set(values.filter(Boolean))];
+  }
+
+  function buildImageCandidatesFromKey(key) {
+    const cleanKey = slugifyProductString(key);
+    if (!cleanKey) return [];
+
+    return [
+      `${PRODUCT_IMAGE_BASE}${cleanKey}-main.PNG`,
+      `${PRODUCT_IMAGE_BASE}${cleanKey}-main.png`,
+      `${PRODUCT_IMAGE_BASE}${cleanKey}.PNG`,
+      `${PRODUCT_IMAGE_BASE}${cleanKey}.png`
+    ];
+  }
+
+  function buildProductImageCandidates(item) {
+    const candidates = [];
+
+    if (item && typeof item.image === "string" && item.image.trim()) {
+      candidates.push(normalizeImagePath(item.image));
+    }
+
+    const rawKeys = [
+      item && item.slug,
+      item && item.id,
+      item && item.name,
+      item && item.product_name,
+      item && item.variant,
+      item && item.variantLabel,
+      item && item.variant_label
+    ];
+
+    const normalizedName = item && item.name
+      ? slugifyProductString(
+          String(item.name)
+            .replace(/\(([^)]+)\)/g, "-$1")
+            .replace(/\s+/g, " ")
+        )
+      : "";
+
+    const specialKeys = [
+      normalizedName,
+      item && item.slug && item.variantLabel
+        ? `${item.slug}-${item.variantLabel}`
+        : "",
+      item && item.slug && item.variant
+        ? `${item.slug}-${item.variant}`
+        : "",
+      item && item.name && item.variantLabel
+        ? `${item.name}-${item.variantLabel}`
+        : "",
+      item && item.id === "bacwater-10ml" ? "bac-water-10ml" : "",
+      item && item.id === "bacwater-3ml" ? "bac-water-3ml" : "",
+      item && item.id === "mt2-10mg" ? "mt-2-10mg" : "",
+      item && item.id === "mt1-10mg" ? "mt-1-10mg" : ""
+    ];
+
+    const allKeys = uniqueValues([...rawKeys, ...specialKeys]);
+
+    allKeys.forEach((key) => {
+      candidates.push(...buildImageCandidatesFromKey(key));
+    });
+
+    candidates.push(DEFAULT_IMAGE);
+
+    return uniqueValues(candidates);
   }
 
   function getAllProducts() {
@@ -145,26 +223,29 @@ function initCartDrawer() {
     return [];
   }
 
-  function getProductImage(product) {
+  function getProductImageCandidates(product) {
     if (!product || typeof product !== "object") {
-      return `${IMAGE_PREFIX}images/products/placeholder.PNG`;
+      return [DEFAULT_IMAGE];
     }
 
+    const candidates = [];
+
     if (typeof product.image === "string" && product.image.trim()) {
-      return normalizeImagePath(product.image);
+      candidates.push(normalizeImagePath(product.image));
     }
 
     if (Array.isArray(product.images) && product.images.length) {
-      const firstImage = product.images.find(function (img) {
-        return typeof img === "string" && img.trim();
+      product.images.forEach((img) => {
+        if (typeof img === "string" && img.trim()) {
+          candidates.push(normalizeImagePath(img));
+        }
       });
-
-      if (firstImage) {
-        return normalizeImagePath(firstImage);
-      }
     }
 
-    return `${IMAGE_PREFIX}images/products/placeholder.PNG`;
+    candidates.push(...buildProductImageCandidates(product));
+    candidates.push(DEFAULT_IMAGE);
+
+    return uniqueValues(candidates);
   }
 
   function findMatchingProduct(item) {
@@ -198,28 +279,27 @@ function initCartDrawer() {
     }) || null;
   }
 
-  function resolveCartItemImage(item) {
+  function resolveCartItemImageData(item) {
     const matchingProduct = findMatchingProduct(item);
 
     if (matchingProduct) {
-      const matchedProductImage = getProductImage(matchingProduct);
-      if (
-        matchedProductImage &&
-        matchedProductImage !== `${IMAGE_PREFIX}images/products/placeholder.PNG`
-      ) {
-        return matchedProductImage;
-      }
+      const productCandidates = getProductImageCandidates(matchingProduct);
+      return {
+        image: productCandidates[0] || DEFAULT_IMAGE,
+        imageCandidates: productCandidates
+      };
     }
 
-    if (item && typeof item.image === "string" && item.image.trim()) {
-      return normalizeImagePath(item.image);
-    }
-
-    return `${IMAGE_PREFIX}images/products/placeholder.PNG`;
+    const itemCandidates = buildProductImageCandidates(item);
+    return {
+      image: itemCandidates[0] || DEFAULT_IMAGE,
+      imageCandidates: itemCandidates
+    };
   }
 
   function normalizeCartItem(item) {
     const normalizedQty = getItemQuantity(item);
+    const imageData = resolveCartItemImageData(item);
 
     return {
       id: item.id || "",
@@ -247,7 +327,8 @@ function initCartDrawer() {
             : item.oldPrice !== undefined && item.oldPrice !== null
               ? Number(item.oldPrice) || null
               : null,
-      image: resolveCartItemImage(item),
+      image: imageData.image,
+      imageCandidates: imageData.imageCandidates,
       quantity: normalizedQty,
       qty: normalizedQty,
       line_total: (Number(item.price) || 0) * normalizedQty,
@@ -341,6 +422,27 @@ function initCartDrawer() {
       return sum + (Number(item.price || 0) * getItemQuantity(item));
     }, 0);
   }
+
+  window.AXIOM_HANDLE_CART_IMAGE_ERROR = function (img) {
+    if (!img) return;
+
+    const fallbackList = (img.dataset.fallbacks || "")
+      .split("|")
+      .map((value) => value.trim())
+      .filter(Boolean);
+
+    let nextIndex = Number(img.dataset.fallbackIndex || "0");
+
+    if (nextIndex < fallbackList.length) {
+      img.dataset.fallbackIndex = String(nextIndex + 1);
+      img.src = fallbackList[nextIndex];
+      return;
+    }
+
+    if (img.src !== DEFAULT_IMAGE) {
+      img.src = DEFAULT_IMAGE;
+    }
+  };
 
   async function syncCartToCheckoutSession(cartOverride) {
     try {
@@ -454,11 +556,18 @@ function initCartDrawer() {
     }
 
     const item = RECOMMENDED_PRODUCTS[0];
+    const fallbackCandidates = buildProductImageCandidates(item).slice(1);
 
     cartRecommendSection.hidden = false;
     cartRecommendList.innerHTML = `
       <div class="cart-recommend-item">
-        <img src="${item.image}" alt="${item.name}" onerror="this.onerror=null;this.src='${IMAGE_PREFIX}images/products/placeholder.PNG';">
+        <img
+          src="${item.image}"
+          alt="${item.name}"
+          data-fallback-index="0"
+          data-fallbacks="${fallbackCandidates.join("|")}"
+          onerror="window.AXIOM_HANDLE_CART_IMAGE_ERROR(this)"
+        >
         <div>
           <p class="cart-recommend-title">${item.name}</p>
           <div class="cart-recommend-price">${formatMoney(item.price)}</div>
@@ -511,9 +620,11 @@ function initCartDrawer() {
     const cart = getCart().map(normalizeCartItem);
 
     const repairedCart = cart.map(function (item) {
+      const imageData = resolveCartItemImageData(item);
       return {
         ...item,
-        image: resolveCartItemImage(item)
+        image: imageData.image,
+        imageCandidates: imageData.imageCandidates
       };
     });
 
@@ -564,43 +675,51 @@ function initCartDrawer() {
 
       if (cartItemsList) {
         cartItemsList.hidden = false;
-        cartItemsList.innerHTML = repairedCart.map((item, index) => `
-          <div class="cart-item-card">
-            <div class="cart-item-image-wrap">
-              <img
-                src="${item.image}"
-                alt="${item.name}"
-                onerror="this.onerror=null;this.src='${IMAGE_PREFIX}images/products/placeholder.PNG';"
-              >
-            </div>
+        cartItemsList.innerHTML = repairedCart.map((item, index) => {
+          const fallbackCandidates = Array.isArray(item.imageCandidates)
+            ? item.imageCandidates.slice(1)
+            : [DEFAULT_IMAGE];
 
-            <div class="cart-item-content">
-              <div class="cart-item-top">
-                <div>
-                  <h3 class="cart-item-name">${item.name}</h3>
-                  ${item.variantLabel ? `<p class="cart-item-variant">${item.variantLabel}</p>` : ""}
-                </div>
-
-                <button class="cart-item-remove" data-remove-index="${index}" aria-label="Remove item">
-                  <i class="fa-solid fa-trash"></i>
-                </button>
+          return `
+            <div class="cart-item-card">
+              <div class="cart-item-image-wrap">
+                <img
+                  src="${item.image}"
+                  alt="${item.name}"
+                  data-fallback-index="0"
+                  data-fallbacks="${fallbackCandidates.join("|")}"
+                  onerror="window.AXIOM_HANDLE_CART_IMAGE_ERROR(this)"
+                >
               </div>
 
-              <div class="cart-item-bottom">
-                <div class="cart-qty">
-                  <button type="button" data-decrease-index="${index}">−</button>
-                  <span>${getItemQuantity(item)}</span>
-                  <button type="button" data-increase-index="${index}">+</button>
+              <div class="cart-item-content">
+                <div class="cart-item-top">
+                  <div>
+                    <h3 class="cart-item-name">${item.name}</h3>
+                    ${item.variantLabel ? `<p class="cart-item-variant">${item.variantLabel}</p>` : ""}
+                  </div>
+
+                  <button class="cart-item-remove" data-remove-index="${index}" aria-label="Remove item">
+                    <i class="fa-solid fa-trash"></i>
+                  </button>
                 </div>
 
-                <div class="cart-item-price-wrap">
-                  ${item.compareAtPrice && item.compareAtPrice > item.price ? `<span class="cart-item-old-price">${formatMoney(item.compareAtPrice * getItemQuantity(item))}</span>` : ""}
-                  <span class="cart-item-price">${formatMoney(item.price * getItemQuantity(item))}</span>
+                <div class="cart-item-bottom">
+                  <div class="cart-qty">
+                    <button type="button" data-decrease-index="${index}">−</button>
+                    <span>${getItemQuantity(item)}</span>
+                    <button type="button" data-increase-index="${index}">+</button>
+                  </div>
+
+                  <div class="cart-item-price-wrap">
+                    ${item.compareAtPrice && item.compareAtPrice > item.price ? `<span class="cart-item-old-price">${formatMoney(item.compareAtPrice * getItemQuantity(item))}</span>` : ""}
+                    <span class="cart-item-price">${formatMoney(item.price * getItemQuantity(item))}</span>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        `).join("");
+          `;
+        }).join("");
 
         cartItemsList.querySelectorAll("[data-remove-index]").forEach(button => {
           button.onclick = async function () {
