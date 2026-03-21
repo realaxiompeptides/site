@@ -42,3 +42,151 @@
 .shipping-option:hover {
   border-color: #3a8dde;
 }
+
+.shipping-box {
+  display: grid;
+  gap: 14px;
+  padding: 22px;
+  border: 1px solid #dbe4ef;
+  border-radius: 28px;
+  background: linear-gradient(180deg, #f8fbff 0%, #f5f8fc 100%);
+}
+
+.shipping-help-text {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.55;
+  color: #51627c;
+}
+
+.shipping-status-text {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.45;
+  font-weight: 800;
+  color: #51627c;
+}
+
+.shipping-status-text.error {
+  color: #b42318;
+}
+
+.shipping-status-text.success {
+  color: #157067;
+}
+
+.shipping-rates {
+  display: grid;
+  gap: 14px;
+}
+
+.shipping-empty-message {
+  padding: 18px 20px;
+  border: 1px solid #dbe4ef;
+  border-radius: 22px;
+  background: #ffffff;
+  color: #64748b;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.shipping-option {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 20px 22px;
+  border: 2px solid #dbe4ef;
+  border-radius: 22px;
+  background: #ffffff;
+  cursor: pointer;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+}
+
+.shipping-option:hover {
+  border-color: #7fb4e0;
+}
+
+.shipping-option.active {
+  border-color: #3a8dd1;
+  background: #f8fbff;
+  box-shadow: 0 0 0 3px rgba(58, 141, 209, 0.08);
+}
+
+.shipping-option input[type="radio"] {
+  margin-top: 5px;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  accent-color: #1e7fe6;
+}
+
+.shipping-option-copy {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  flex: 1;
+  min-width: 0;
+}
+
+.shipping-option-name {
+  display: block;
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.25;
+  font-weight: 800;
+  color: #12203f;
+}
+
+.shipping-option-eta {
+  display: block;
+  margin-top: 4px;
+  font-size: 14px;
+  line-height: 1.35;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.shipping-option strong {
+  margin-left: auto;
+  font-size: 18px;
+  line-height: 1.2;
+  font-weight: 900;
+  color: #12203f;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+@media (max-width: 640px) {
+  .shipping-box {
+    padding: 18px;
+    border-radius: 24px;
+    gap: 12px;
+  }
+
+  .shipping-help-text {
+    font-size: 14px;
+  }
+
+  .shipping-status-text {
+    font-size: 14px;
+  }
+
+  .shipping-option {
+    padding: 18px 16px;
+    border-radius: 20px;
+    gap: 12px;
+  }
+
+  .shipping-option-name {
+    font-size: 16px;
+  }
+
+  .shipping-option-eta {
+    font-size: 13px;
+  }
+
+  .shipping-option strong {
+    font-size: 16px;
+  }
+}
