@@ -32,7 +32,6 @@
   <link rel="stylesheet" href="footer/footer.css" />
 
   <style>
-    /* Cart drawer icon styles - exactly like product page */
     .cart-btn {
       position: relative !important;
       width: 58px !important;
@@ -82,7 +81,6 @@
       border: 2px solid #ffffff !important;
     }
 
-    /* Header layout with padding */
     .header-inner {
       display: flex !important;
       align-items: center !important;
@@ -93,7 +91,6 @@
       padding-right: 16px !important;
     }
 
-    /* Hamburger button */
     .hamburger-btn {
       width: 58px !important;
       height: 58px !important;
@@ -123,7 +120,6 @@
       margin: 0 !important;
     }
 
-    /* Logo */
     .site-logo {
       position: absolute !important;
       left: 50% !important;
@@ -146,7 +142,7 @@
         padding-left: 12px !important;
         padding-right: 12px !important;
       }
-      
+
       .cart-btn {
         width: 54px !important;
         height: 54px !important;
@@ -446,9 +442,8 @@
   <script src="cart/cart.js" defer></script>
   <script src="js/app.js" defer></script>
   <script src="footer/footer-loader.js" defer></script>
-  <script src="js/catalog.js" defer></script>
 
-  <!-- Tracking -->
+  <!-- Supabase must load BEFORE catalog.js -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="admin-dashboard/dashboard-config.js" defer></script>
   <script src="admin-dashboard/shared/tracking-config.js" defer></script>
@@ -456,5 +451,8 @@
   <script src="admin-dashboard/supabase-client.js" defer></script>
   <script src="admin-dashboard/visitor-session.js" defer></script>
   <script src="admin-dashboard/cart-session/cart-session.js" defer></script>
+
+  <!-- Catalog LAST -->
+  <script src="js/catalog.js" defer></script>
 </body>
 </html>
