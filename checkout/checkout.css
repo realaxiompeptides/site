@@ -289,3 +289,26 @@
     margin-bottom: 4px !important;
   }
 }
+
+.shipping-box {
+  display: grid;
+  gap: 14px;
+  padding: 22px;
+  border: 1px solid #dbe4ef;
+  border-radius: 28px;
+  background: linear-gradient(180deg, #f8fbff 0%, #f5f8fc 100%);
+}
+
+.shipping-rates {
+  display: none;
+  gap: 14px;
+}
+
+.shipping-rates.has-rates {
+  display: grid;
+}
+
+.shipping-address-status:empty,
+.shipping-status-text:empty {
+  display: none;
+}
