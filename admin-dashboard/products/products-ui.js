@@ -340,9 +340,31 @@ window.AXIOM_PRODUCTS_UI = (function () {
 
       renderProductsList();
       renderProductDetail();
-      alert("Product saved.");
+
+      const refreshedTopButton = document.getElementById("saveProductBtnTop");
+      const refreshedBottomButton = document.getElementById("saveProductBtnBottom");
+
+      [refreshedTopButton, refreshedBottomButton].filter(Boolean).forEach(function (button) {
+        button.textContent = "Saved";
+        button.disabled = true;
+      });
+
+      setTimeout(function () {
+        [document.getElementById("saveProductBtnTop"), document.getElementById("saveProductBtnBottom")]
+          .filter(Boolean)
+          .forEach(function (button) {
+            button.textContent = "Save Product";
+            button.disabled = false;
+          });
+      }, 900);
     } catch (error) {
       console.error(error);
+
+      saveButtons.forEach(function (button) {
+        button.disabled = false;
+        button.textContent = "Save Product";
+      });
+
       alert(error.message || "Could not save product.");
     } finally {
       isSavingProduct = false;
