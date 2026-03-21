@@ -136,6 +136,10 @@
       color: #0f766e;
     }
 
+    .checkout-field-group + .checkout-field-group {
+      margin-top: 16px;
+    }
+
     @media (max-width: 640px) {
       .checkout-cart-link.cart-btn {
         width: 54px !important;
@@ -213,11 +217,9 @@
                     type="tel"
                     id="phone"
                     name="phone"
-                    placeholder="Phone Number"
+                    placeholder="Phone Number (Optional)"
                     autocomplete="tel"
                     inputmode="tel"
-                    minlength="7"
-                    required
                   />
                   <div id="checkoutPhoneError" class="checkout-validation-text"></div>
                 </div>
