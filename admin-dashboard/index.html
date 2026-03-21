@@ -408,13 +408,23 @@
             <h2>Product Management</h2>
           </div>
 
-          <button
-            type="button"
-            class="dashboard-btn dashboard-btn-secondary"
-            id="refreshProductsBtnTop"
-          >
-            Refresh
-          </button>
+          <div style="display:flex; gap:12px; flex-wrap:wrap;">
+            <button
+              type="button"
+              class="dashboard-btn dashboard-btn-secondary"
+              id="createProductBtn"
+            >
+              Create Product
+            </button>
+
+            <button
+              type="button"
+              class="dashboard-btn dashboard-btn-secondary"
+              id="refreshProductsBtnTop"
+            >
+              Refresh
+            </button>
+          </div>
         </section>
 
         <section class="dashboard-details-grid">
@@ -480,9 +490,11 @@
   <script src="supabase-client.js?v=63" defer></script>
   <script src="auth/admin-auth.js?v=63" defer></script>
   <script src="analytics/analytics.js?v=63" defer></script>
-  <script src="products/products-api.js?v=1" defer></script>
-<script src="products/products-ui.js?v=1" defer></script>
-<script src="products/products.js?v=1" defer></script>
+
+  <script src="products/product-api.js?v=1" defer></script>
+  <script src="products/products-ui.js?v=1" defer></script>
+  <script src="products/products.js?v=1" defer></script>
+
   <script src="orders/order-actions.js?v=63" defer></script>
   <script src="orders/order-fulfillment-modal.js?v=63" defer></script>
   <script src="payment-tracking/payment-tracking.js?v=63" defer></script>
