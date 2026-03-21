@@ -136,12 +136,77 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
-  async function fetchSupabaseProducts() {
-    if (!window.axiomSupabase) {
-      throw new Error("Supabase client is not available.");
+  function renderGrid(grid, products) {
+    if (!grid) return;
+
+    if (!products.length) {
+      grid.innerHTML = `
+        <div class="dashboard-loading" style="grid-column:1 / -1; text-align:center;">
+          No products found.
+        </div>
+      `;
+      return;
     }
 
-    const { data, error } = await window.axiomSupabase
+    grid.innerHTML = products.map(function (product) {
+      return `
+        <article class="homepage-product-card">
+          <div class="homepage-product-image-wrap">
+            ${product.badge ? `<span class="homepage-product-badge">${escapeHtml(product.badge)}</span>` : ""}
+            <img
+              src="${escapeHtml(product.image)}"
+              alt="${escapeHtml(product.name)}"
+              onerror="this.onerror=null;this.src='images/products/placeholder.PNG';"
+            >
+          </div>
+
+          <div class="homepage-product-card-body">
+            <h3 class="homepage-product-title">${escapeHtml(product.name)}</h3>
+
+            <div class="homepage-product-price-block">
+              ${product.oldPrice ? `<span class="homepage-product-old-price">${escapeHtml(product.oldPrice)}</span>` : ""}
+              <span class="homepage-product-price">${escapeHtml(product.price)}</span>
+            </div>
+
+            <a href="${escapeHtml(product.link)}" class="homepage-product-button">
+              ${escapeHtml(product.buttonText || "Shop Now")}
+            </a>
+          </div>
+        </article>
+      `;
+    }).join("");
+  }
+
+  function waitForSupabase(maxWaitMs) {
+    return new Promise(function (resolve) {
+      const start = Date.now();
+
+      function check() {
+        if (window.axiomSupabase) {
+          resolve(window.axiomSupabase);
+          return;
+        }
+
+        if (Date.now() - start >= maxWaitMs) {
+          resolve(null);
+          return;
+        }
+
+        setTimeout(check, 100);
+      }
+
+      check();
+    });
+  }
+
+  async function fetchSupabaseProducts() {
+    const supabase = await waitForSupabase(2500);
+
+    if (!supabase) {
+      throw new Error("Supabase client is not available in time.");
+    }
+
+    const { data, error } = await supabase
       .from("products")
       .select(`
         id,
@@ -185,47 +250,6 @@ document.addEventListener("DOMContentLoaded", function () {
     return Array.isArray(data) ? data : [];
   }
 
-  function renderGrid(grid, products) {
-    if (!grid) return;
-
-    if (!products.length) {
-      grid.innerHTML = `
-        <div class="dashboard-loading" style="grid-column:1 / -1; text-align:center;">
-          No products found.
-        </div>
-      `;
-      return;
-    }
-
-    grid.innerHTML = products.map(function (product) {
-      return `
-        <article class="homepage-product-card">
-          <div class="homepage-product-image-wrap">
-            ${product.badge ? `<span class="homepage-product-badge">${escapeHtml(product.badge)}</span>` : ""}
-            <img
-              src="${escapeHtml(product.image)}"
-              alt="${escapeHtml(product.name)}"
-              onerror="this.onerror=null;this.src='images/products/placeholder.PNG';"
-            >
-          </div>
-
-          <div class="homepage-product-card-body">
-            <h3 class="homepage-product-title">${escapeHtml(product.name)}</h3>
-
-            <div class="homepage-product-price-block">
-              ${product.oldPrice ? `<span class="homepage-product-old-price">${escapeHtml(product.oldPrice)}</span>` : ""}
-              <span class="homepage-product-price">${escapeHtml(product.price)}</span>
-            </div>
-
-            <a href="${escapeHtml(product.link)}" class="homepage-product-button">
-              ${escapeHtml(product.buttonText || "Shop Now")}
-            </a>
-          </div>
-        </article>
-      `;
-    }).join("");
-  }
-
   fetch("homepage/homepage-collection.html", { cache: "no-store" })
     .then(function (response) {
       if (!response.ok) {
@@ -233,40 +257,41 @@ document.addEventListener("DOMContentLoaded", function () {
       }
       return response.text();
     })
-    .then(async function (html) {
+    .then(function (html) {
       mount.innerHTML = html;
 
       const grid = document.getElementById("homepageCollectionGrid");
       if (!grid) return;
 
-      grid.innerHTML = `
-        <div class="dashboard-loading" style="grid-column:1 / -1; text-align:center;">
-          Loading products...
-        </div>
-      `;
+      const fallbackProducts = Array.isArray(window.HOMEPAGE_COLLECTION_PRODUCTS)
+        ? window.HOMEPAGE_COLLECTION_PRODUCTS
+        : [];
 
-      try {
-        const supabaseProducts = await fetchSupabaseProducts();
-        const homepageProducts = buildHomepageProducts(supabaseProducts);
-        renderGrid(grid, homepageProducts);
-      } catch (error) {
-        console.error("Supabase homepage products failed to load:", error);
-
-        const fallbackProducts = Array.isArray(window.HOMEPAGE_COLLECTION_PRODUCTS)
-          ? window.HOMEPAGE_COLLECTION_PRODUCTS
-          : [];
-
-        if (fallbackProducts.length) {
-          renderGrid(grid, fallbackProducts);
-          return;
-        }
-
-        grid.innerHTML = `
-          <div class="dashboard-loading" style="grid-column:1 / -1; text-align:center;">
-            Could not load products.
-          </div>
-        `;
+      if (fallbackProducts.length) {
+        renderGrid(grid, fallbackProducts);
       }
+
+      fetchSupabaseProducts()
+        .then(function (supabaseProducts) {
+          const homepageProducts = buildHomepageProducts(supabaseProducts);
+
+          if (homepageProducts.length) {
+            renderGrid(grid, homepageProducts);
+          } else if (!fallbackProducts.length) {
+            renderGrid(grid, []);
+          }
+        })
+        .catch(function (error) {
+          console.error("Supabase homepage products failed to load:", error);
+
+          if (!fallbackProducts.length) {
+            grid.innerHTML = `
+              <div class="dashboard-loading" style="grid-column:1 / -1; text-align:center;">
+                Could not load products.
+              </div>
+            `;
+          }
+        });
     })
     .catch(function (error) {
       console.error("Homepage collection failed to load:", error);
