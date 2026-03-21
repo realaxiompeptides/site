@@ -784,6 +784,15 @@ async function refreshAnalytics() {
   }
 }
 
+async function refreshProducts() {
+  if (
+    window.AXIOM_PRODUCTS &&
+    typeof window.AXIOM_PRODUCTS.init === "function"
+  ) {
+    await window.AXIOM_PRODUCTS.init();
+  }
+}
+
 async function refreshDashboard() {
   const list = document.getElementById("sessionsList");
   if (list) {
@@ -859,19 +868,22 @@ document.addEventListener("DOMContentLoaded", async function () {
     home: document.getElementById("dashboardHomeView"),
     sessions: document.getElementById("dashboardSessionsView"),
     analytics: document.getElementById("dashboardAnalyticsView"),
-    orders: document.getElementById("dashboardOrdersView")
+    orders: document.getElementById("dashboardOrdersView"),
+    products: document.getElementById("dashboardProductsView")
   };
 
   const buttons = {
     home: document.getElementById("showHomeViewBtn"),
     sessions: document.getElementById("showSessionsViewBtn"),
     analytics: document.getElementById("showAnalyticsViewBtn"),
-    orders: document.getElementById("showOrdersViewBtn")
+    orders: document.getElementById("showOrdersViewBtn"),
+    products: document.getElementById("showProductsViewBtn")
   };
 
   const sessionsSidebar = document.getElementById("dashboardSessionsSidebar");
   const analyticsSidebar = document.getElementById("dashboardAnalyticsSidebar");
   const ordersSidebar = document.getElementById("dashboardOrdersSidebar");
+  const productsSidebar = document.getElementById("dashboardProductsSidebar");
 
   function setActiveButton(activeKey) {
     Object.entries(buttons).forEach(([key, btn]) => {
@@ -920,6 +932,10 @@ document.addEventListener("DOMContentLoaded", async function () {
       ordersSidebar.hidden = viewKey !== "orders";
     }
 
+    if (productsSidebar) {
+      productsSidebar.hidden = viewKey !== "products";
+    }
+
     setActiveButton(viewKey);
 
     if (viewKey === "home") {
@@ -937,6 +953,10 @@ document.addEventListener("DOMContentLoaded", async function () {
     if (viewKey === "orders") {
       await refreshOrders();
     }
+
+    if (viewKey === "products") {
+      await refreshProducts();
+    }
   }
 
   window.AXIOM_DASHBOARD_APP = {
@@ -945,6 +965,7 @@ document.addEventListener("DOMContentLoaded", async function () {
     refreshHomeDashboard,
     refreshDashboard,
     refreshOrders,
+    refreshProducts,
     refreshAllDashboardData,
     renderOrdersList,
     renderRecentOrders: refreshHomeDashboard,
@@ -999,6 +1020,14 @@ document.addEventListener("DOMContentLoaded", async function () {
       await refreshOrders();
     });
 
+    document.getElementById("refreshProductsBtn")?.addEventListener("click", async function () {
+      await refreshProducts();
+    });
+
+    document.getElementById("refreshProductsBtnTop")?.addEventListener("click", async function () {
+      await refreshProducts();
+    });
+
     document.getElementById("refreshHomeDashboardBtn")?.addEventListener("click", async function () {
       await refreshHomeDashboard();
     });
@@ -1020,6 +1049,10 @@ document.addEventListener("DOMContentLoaded", async function () {
       await showView("orders");
     });
 
+    buttons.products?.addEventListener("click", async function () {
+      await showView("products");
+    });
+
     document.getElementById("quickOpenSessionsBtn")?.addEventListener("click", async function () {
       await showView("sessions");
     });
@@ -1031,6 +1064,10 @@ document.addEventListener("DOMContentLoaded", async function () {
     document.getElementById("quickOpenOrdersBtn")?.addEventListener("click", async function () {
       window.AXIOM_DASHBOARD_STATE.isOrderDetailOpen = false;
       await showView("orders");
+    });
+
+    document.getElementById("quickOpenProductsBtn")?.addEventListener("click", async function () {
+      await showView("products");
     });
 
     subscribeDashboardRealtime();
