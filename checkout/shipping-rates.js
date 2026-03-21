@@ -295,6 +295,14 @@ window.AXIOM_SHIPPING_RATES = (function () {
   const DOMESTIC_EXTRA_ITEM_FEE = 0.35;
   const INTERNATIONAL_EXTRA_ITEM_FEE = 0.75;
 
+  const DOMESTIC_OVERFLOW_STEP_OZ = 16;
+  const DOMESTIC_OVERFLOW_GROUND_FEE = 2.50;
+  const DOMESTIC_OVERFLOW_PRIORITY_FEE = 3.50;
+
+  const INTERNATIONAL_OVERFLOW_STEP_OZ = 16;
+  const INTERNATIONAL_OVERFLOW_STANDARD_FEE = 6.00;
+  const INTERNATIONAL_OVERFLOW_PRIORITY_FEE = 8.00;
+
   function normalizeCountryCode(countryCode) {
     return String(countryCode || "").trim().toUpperCase();
   }
@@ -306,6 +314,10 @@ window.AXIOM_SHIPPING_RATES = (function () {
   function toNumber(value, fallback) {
     const num = Number(value);
     return Number.isFinite(num) ? num : fallback;
+  }
+
+  function roundMoney(value) {
+    return Number(toNumber(value, 0).toFixed(2));
   }
 
   function getCountryGroup(countryCode) {
@@ -367,6 +379,37 @@ window.AXIOM_SHIPPING_RATES = (function () {
     return 0;
   }
 
+  function getOverflowSteps(weightOz, maxWeightOz, stepOz) {
+    const normalizedWeight = Math.max(toNumber(weightOz, 0), 0);
+    const maxWeight = Math.max(toNumber(maxWeightOz, 0), 0);
+    const step = Math.max(toNumber(stepOz, 0), 1);
+
+    if (normalizedWeight <= maxWeight) return 0;
+    return Math.ceil((normalizedWeight - maxWeight) / step);
+  }
+
+  function getDomesticOverflowFee(methodId, overflowSteps) {
+    const steps = Math.max(toNumber(overflowSteps, 0), 0);
+    if (!steps) return 0;
+
+    if (methodId === "usps_priority_mail") {
+      return steps * DOMESTIC_OVERFLOW_PRIORITY_FEE;
+    }
+
+    return steps * DOMESTIC_OVERFLOW_GROUND_FEE;
+  }
+
+  function getInternationalOverflowFee(methodId, overflowSteps) {
+    const steps = Math.max(toNumber(overflowSteps, 0), 0);
+    if (!steps) return 0;
+
+    if (methodId === "usps_priority_mail_international") {
+      return steps * INTERNATIONAL_OVERFLOW_PRIORITY_FEE;
+    }
+
+    return steps * INTERNATIONAL_OVERFLOW_STANDARD_FEE;
+  }
+
   function cloneMethods(methods) {
     return (Array.isArray(methods) ? methods : []).map(function (method) {
       return {
@@ -387,13 +430,28 @@ window.AXIOM_SHIPPING_RATES = (function () {
     const itemCountSurcharge = getItemCountSurcharge(itemCount, true);
     const weightSurcharge = getWeightSurcharge(normalizedWeightOz, true);
     const handlingFee = DOMESTIC_BASE_HANDLING_FEE;
+    const overflowSteps = getOverflowSteps(
+      normalizedWeightOz,
+      matchedTier.maxWeightOz,
+      DOMESTIC_OVERFLOW_STEP_OZ
+    );
 
     return cloneMethods(matchedTier.methods).map(function (method) {
+      const overflowFee = getDomesticOverflowFee(method.id, overflowSteps);
+
       return {
         ...method,
-        amount: Number((method.amount + zoneSurcharge + itemCountSurcharge + weightSurcharge + handlingFee).toFixed(2)),
+        amount: roundMoney(
+          method.amount +
+          zoneSurcharge +
+          itemCountSurcharge +
+          weightSurcharge +
+          handlingFee +
+          overflowFee
+        ),
         currency: "USD",
-        country_group: "domestic"
+        country_group: "domestic",
+        overflow_steps: overflowSteps
       };
     });
   }
@@ -411,13 +469,27 @@ window.AXIOM_SHIPPING_RATES = (function () {
     const itemCountSurcharge = getItemCountSurcharge(itemCount, false);
     const weightSurcharge = getWeightSurcharge(normalizedWeightOz, false);
     const handlingFee = INTERNATIONAL_BASE_HANDLING_FEE;
+    const overflowSteps = getOverflowSteps(
+      normalizedWeightOz,
+      matchedTier.maxWeightOz,
+      INTERNATIONAL_OVERFLOW_STEP_OZ
+    );
 
     return cloneMethods(matchedTier.methods).map(function (method) {
+      const overflowFee = getInternationalOverflowFee(method.id, overflowSteps);
+
       return {
         ...method,
-        amount: Number((method.amount + itemCountSurcharge + weightSurcharge + handlingFee).toFixed(2)),
+        amount: roundMoney(
+          method.amount +
+          itemCountSurcharge +
+          weightSurcharge +
+          handlingFee +
+          overflowFee
+        ),
         currency: "USD",
-        country_group: group
+        country_group: group,
+        overflow_steps: overflowSteps
       };
     });
   }
@@ -439,7 +511,7 @@ window.AXIOM_SHIPPING_RATES = (function () {
       postalCode: postalCode,
       itemCount: itemCount,
       weightOz: weightOz,
-      weightLbs: Number((weightOz / 16).toFixed(3)),
+      weightLbs: roundMoney(weightOz / 16),
       isDomestic: isDomestic,
       methods: methods
     };
@@ -453,10 +525,19 @@ window.AXIOM_SHIPPING_RATES = (function () {
     INTERNATIONAL_BASE_HANDLING_FEE,
     DOMESTIC_EXTRA_ITEM_FEE,
     INTERNATIONAL_EXTRA_ITEM_FEE,
+    DOMESTIC_OVERFLOW_STEP_OZ,
+    DOMESTIC_OVERFLOW_GROUND_FEE,
+    DOMESTIC_OVERFLOW_PRIORITY_FEE,
+    INTERNATIONAL_OVERFLOW_STEP_OZ,
+    INTERNATIONAL_OVERFLOW_STANDARD_FEE,
+    INTERNATIONAL_OVERFLOW_PRIORITY_FEE,
     getCountryGroup,
     getDomesticZoneSurcharge,
     getItemCountSurcharge,
     getWeightSurcharge,
+    getOverflowSteps,
+    getDomesticOverflowFee,
+    getInternationalOverflowFee,
     getDomesticRates,
     getInternationalRates,
     getRates
