@@ -1,6 +1,4 @@
 document.addEventListener("DOMContentLoaded", async function () {
-  const productData = Array.isArray(window.AXIOM_PRODUCTS) ? window.AXIOM_PRODUCTS : [];
-
   const purchaseMount = document.getElementById("productPurchaseBoxMount");
   const descriptionMount = document.getElementById("productDescriptionMount");
   const iconBenefitsMount = document.getElementById("productIconBenefitsMount");
@@ -32,10 +30,6 @@ document.addEventListener("DOMContentLoaded", async function () {
   const params = new URLSearchParams(window.location.search);
   const slug = (params.get("slug") || "").trim().toLowerCase();
 
-  const product = productData.find(function (item) {
-    return String(item.slug || "").trim().toLowerCase() === slug;
-  });
-
   const breadcrumbName = document.getElementById("productBreadcrumbName");
   const productBadge = document.getElementById("productBadge");
   const productName = document.getElementById("productName");
@@ -60,10 +54,6 @@ document.addEventListener("DOMContentLoaded", async function () {
     return `$${Number(value || 0).toFixed(2)}`;
   }
 
-  function getVariants(productObj) {
-    return Array.isArray(productObj?.variants) ? productObj.variants : [];
-  }
-
   function normalizeImagePath(path) {
     if (!path || typeof path !== "string") {
       return "../images/products/placeholder.PNG";
@@ -72,11 +62,11 @@ document.addEventListener("DOMContentLoaded", async function () {
     const cleanPath = path.trim();
 
     if (
-      cleanPath.startsWith("../") ||
-      cleanPath.startsWith("./") ||
-      cleanPath.startsWith("/") ||
       cleanPath.startsWith("http://") ||
-      cleanPath.startsWith("https://")
+      cleanPath.startsWith("https://") ||
+      cleanPath.startsWith("/") ||
+      cleanPath.startsWith("../") ||
+      cleanPath.startsWith("./")
     ) {
       return cleanPath;
     }
@@ -84,28 +74,9 @@ document.addEventListener("DOMContentLoaded", async function () {
     return `../${cleanPath}`;
   }
 
-  function getImageForVariant(productObj, variantIndex) {
-    const variants = Array.isArray(productObj?.variants) ? productObj.variants : [];
-    const selectedVariant = variants[variantIndex] || variants[0] || null;
-
-    if (selectedVariant?.image) {
-      return normalizeImagePath(selectedVariant.image);
-    }
-
-    const images = Array.isArray(productObj?.images) ? productObj.images : [];
-    if (images.length) {
-      return normalizeImagePath(images[variantIndex] || images[0]);
-    }
-
-    if (productObj?.image) {
-      return normalizeImagePath(productObj.image);
-    }
-
-    return "../images/products/placeholder.PNG";
-  }
-
   function setMainImage(src, alt) {
     if (!productMainImage) return;
+
     productMainImage.src = src;
     productMainImage.alt = alt || "Product image";
     productMainImage.onerror = function () {
@@ -163,9 +134,12 @@ document.addEventListener("DOMContentLoaded", async function () {
           id: item.id || "",
           slug: item.slug || "",
           name: item.name || "Product",
+          product_name: item.name || "Product",
           variantLabel: item.variantLabel || item.variant || "",
           variant_label: item.variantLabel || item.variant || "",
+          variant: item.variantLabel || item.variant || "",
           price: Number(item.price || 0),
+          unit_price: Number(item.price || 0),
           compareAtPrice:
             item.compareAtPrice !== undefined && item.compareAtPrice !== null
               ? Number(item.compareAtPrice) || null
@@ -213,7 +187,11 @@ document.addEventListener("DOMContentLoaded", async function () {
     if (!productPrice) return;
 
     const currentPrice = Number(variant?.price || 0);
-    const oldPrice = Number(variant?.compareAtPrice || 0);
+    const oldPrice = Number(
+      variant?.compareAtPrice !== undefined && variant?.compareAtPrice !== null
+        ? variant.compareAtPrice
+        : variant?.compare_at_price || 0
+    );
 
     productPrice.textContent = formatMoney(currentPrice);
 
@@ -243,12 +221,12 @@ document.addEventListener("DOMContentLoaded", async function () {
 
     if (productShortDescription) {
       productShortDescription.textContent =
-        "The product slug in the URL does not match your product data file.";
+        "The product slug in the URL does not match any live product.";
     }
 
     if (productLongDescription) {
       productLongDescription.textContent =
-        "Check that the product link uses product-page/product.html?slug=your-product-slug and that the slug exists in ../js/product-data.js.";
+        "Check that the product link uses product-page/product.html?slug=your-product-slug and that the slug exists in Supabase or in ../js/product-data.js.";
     }
 
     hidePriceSection();
@@ -264,6 +242,132 @@ document.addEventListener("DOMContentLoaded", async function () {
     if (qtyPlus) qtyPlus.disabled = true;
     if (addToCartBtn) addToCartBtn.disabled = true;
   }
+
+  function convertSupabaseProductToStoreShape(row) {
+    const variants = Array.isArray(row?.product_variants) ? row.product_variants : [];
+    const galleryImages = Array.isArray(row?.gallery_images) ? row.gallery_images : [];
+
+    return {
+      id: row.id,
+      slug: row.slug || "",
+      name: row.name || "Product",
+      badge: row.badge || "SALE",
+      category: row.category || "",
+      description: row.description || "",
+      longDescription: row.long_description || "",
+      image: row.main_image || "",
+      images: galleryImages,
+      variants: variants
+        .slice()
+        .sort(function (a, b) {
+          return Number(a.sort_order || 0) - Number(b.sort_order || 0);
+        })
+        .map(function (variant) {
+          return {
+            id: variant.variant_id || variant.id,
+            dbId: variant.id || null,
+            label: variant.label || "",
+            price: Number(variant.price || 0),
+            compareAtPrice:
+              variant.compare_at_price !== undefined && variant.compare_at_price !== null
+                ? Number(variant.compare_at_price || 0)
+                : 0,
+            compare_at_price:
+              variant.compare_at_price !== undefined && variant.compare_at_price !== null
+                ? Number(variant.compare_at_price || 0)
+                : 0,
+            weightOz: Number(variant.weight_oz || 0),
+            weight_oz: Number(variant.weight_oz || 0),
+            stockQuantity: Number(variant.stock_quantity || 0),
+            stock_quantity: Number(variant.stock_quantity || 0),
+            inStock:
+              variant.is_active !== false &&
+              (Number(variant.stock_quantity || 0) > 0 || variant.allow_backorder === true),
+            allow_backorder: variant.allow_backorder === true,
+            is_active: variant.is_active !== false,
+            image: row.main_image || galleryImages[0] || ""
+          };
+        })
+    };
+  }
+
+  async function fetchSupabaseProductBySlug(productSlug) {
+    if (!productSlug) return null;
+    if (!window.axiomSupabase) return null;
+
+    try {
+      const { data, error } = await window.axiomSupabase
+        .from("products")
+        .select(`
+          *,
+          product_variants (
+            id,
+            product_id,
+            variant_id,
+            label,
+            price,
+            compare_at_price,
+            weight_oz,
+            stock_quantity,
+            allow_backorder,
+            is_active,
+            sort_order
+          )
+        `)
+        .eq("slug", productSlug)
+        .eq("is_active", true)
+        .single();
+
+      if (error) {
+        console.error("Failed to load product from Supabase:", error);
+        return null;
+      }
+
+      return convertSupabaseProductToStoreShape(data);
+    } catch (error) {
+      console.error("Supabase product lookup failed:", error);
+      return null;
+    }
+  }
+
+  function getStaticProductBySlug(productSlug) {
+    const productData =
+      Array.isArray(window.AXIOM_PRODUCTS) ? window.AXIOM_PRODUCTS :
+      Array.isArray(window.productData) ? window.productData :
+      [];
+
+    return productData.find(function (item) {
+      return String(item?.slug || "").trim().toLowerCase() === productSlug;
+    }) || null;
+  }
+
+  function getVariants(productObj) {
+    return Array.isArray(productObj?.variants) ? productObj.variants : [];
+  }
+
+  function getImageForVariant(productObj, variantIndex) {
+    const variants = Array.isArray(productObj?.variants) ? productObj.variants : [];
+    const selectedVariant = variants[variantIndex] || variants[0] || null;
+
+    if (selectedVariant?.image) {
+      return normalizeImagePath(selectedVariant.image);
+    }
+
+    const images = Array.isArray(productObj?.images) ? productObj.images : [];
+    if (images.length) {
+      return normalizeImagePath(images[variantIndex] || images[0]);
+    }
+
+    if (productObj?.image) {
+      return normalizeImagePath(productObj.image);
+    }
+
+    return "../images/products/placeholder.PNG";
+  }
+
+  const product =
+    (await fetchSupabaseProductBySlug(slug)) ||
+    getStaticProductBySlug(slug);
 
   if (!product) {
     showNotFoundState();
@@ -288,7 +392,11 @@ document.addEventListener("DOMContentLoaded", async function () {
       variantSelect.disabled = true;
     }
 
-    if (qtyInput) qtyInput.value = "1";
+    if (qtyInput) {
+      qtyInput.value = "1";
+      qtyInput.disabled = true;
+    }
+
     if (qtyMinus) qtyMinus.disabled = true;
     if (qtyPlus) qtyPlus.disabled = true;
     if (addToCartBtn) addToCartBtn.disabled = true;
@@ -310,6 +418,7 @@ document.addEventListener("DOMContentLoaded", async function () {
   if (qtyInput) {
     qtyInput.value = "1";
     qtyInput.min = "1";
+    qtyInput.disabled = false;
   }
 
   function getSelectedVariantIndex() {
@@ -381,10 +490,17 @@ document.addEventListener("DOMContentLoaded", async function () {
         id: variant.id,
         slug: product.slug,
         name: product.name,
+        product_name: product.name,
         variantLabel: variant.label,
+        variant_label: variant.label,
         variant: variant.label,
         price: Number(variant.price) || 0,
+        unit_price: Number(variant.price) || 0,
         compareAtPrice:
+          variant.compareAtPrice !== undefined && variant.compareAtPrice !== null
+            ? Number(variant.compareAtPrice) || null
+            : null,
+        compare_at_price:
           variant.compareAtPrice !== undefined && variant.compareAtPrice !== null
             ? Number(variant.compareAtPrice) || null
             : null,
@@ -395,19 +511,24 @@ document.addEventListener("DOMContentLoaded", async function () {
         quantity: quantity,
         qty: quantity,
         image: image,
-        weightOz: Number(variant.weightOz) || 0,
-        inStock: variant.inStock !== false
+        weightOz: Number(variant.weightOz || variant.weight_oz || 0),
+        weight_oz: Number(variant.weightOz || variant.weight_oz || 0),
+        inStock: variant.inStock !== false,
+        in_stock: variant.inStock !== false
       };
 
       const cart = getLocalCart();
       const existingIndex = cart.findIndex(function (item) {
-        return item.id === cartItem.id;
+        return String(item.id) === String(cartItem.id);
       });
 
       if (existingIndex > -1) {
         const currentQty = getCartItemQuantity(cart[existingIndex]);
         cart[existingIndex].quantity = currentQty + quantity;
         cart[existingIndex].qty = currentQty + quantity;
+        if (!cart[existingIndex].image && cartItem.image) {
+          cart[existingIndex].image = cartItem.image;
+        }
       } else {
         cart.push(cartItem);
       }
