@@ -13,6 +13,7 @@ window.AXIOM_PRODUCTS_UI = (function () {
   };
 
   let rootButtonsBound = false;
+  let isSavingProduct = false;
 
   function escapeHtml(value) {
     return String(value || "")
@@ -281,6 +282,8 @@ window.AXIOM_PRODUCTS_UI = (function () {
   }
 
   async function saveCurrentProduct(product, variants) {
+    if (isSavingProduct) return;
+
     const payload = collectProductPayload(product, variants);
 
     if (!payload.name) {
@@ -293,20 +296,47 @@ window.AXIOM_PRODUCTS_UI = (function () {
       return;
     }
 
+    const saveButtons = [
+      document.getElementById("saveProductBtnTop"),
+      document.getElementById("saveProductBtnBottom")
+    ].filter(Boolean);
+
     try {
+      isSavingProduct = true;
+
+      saveButtons.forEach(function (button) {
+        button.disabled = true;
+        button.textContent = "Saving...";
+      });
+
       const saved = await window.AXIOM_PRODUCTS_API.saveProduct(payload);
       const refreshed = await window.AXIOM_PRODUCTS_API.listProducts();
 
       state.products = Array.isArray(refreshed) ? refreshed : [];
 
+      let matchedProduct = null;
+
       if (saved && saved.id) {
-        state.selectedProductId = saved.id;
-      } else {
-        const matched = state.products.find(function (entry) {
-          return entry.slug === payload.slug;
-        });
-        state.selectedProductId = matched ? matched.id : state.selectedProductId;
+        matchedProduct = state.products.find(function (entry) {
+          return entry.id === saved.id;
+        }) || null;
       }
+
+      if (!matchedProduct && payload.id) {
+        matchedProduct = state.products.find(function (entry) {
+          return entry.id === payload.id;
+        }) || null;
+      }
+
+      if (!matchedProduct && payload.slug) {
+        matchedProduct = state.products.find(function (entry) {
+          return String(entry.slug || "").trim() === payload.slug;
+        }) || null;
+      }
+
+      state.selectedProductId = matchedProduct
+        ? matchedProduct.id
+        : (state.products[0] ? state.products[0].id : null);
 
       renderProductsList();
       renderProductDetail();
@@ -314,6 +344,8 @@ window.AXIOM_PRODUCTS_UI = (function () {
     } catch (error) {
       console.error(error);
       alert(error.message || "Could not save product.");
+    } finally {
+      isSavingProduct = false;
     }
   }
 
@@ -451,8 +483,14 @@ window.AXIOM_PRODUCTS_UI = (function () {
     `;
 
     const saveHandler = async function () {
-      const currentVariants = collectVariantsFromDom(variants);
-      await saveCurrentProduct(product, currentVariants);
+      const currentProduct = getSelectedProduct();
+      if (!currentProduct) return;
+
+      const currentVariants = collectVariantsFromDom(
+        Array.isArray(currentProduct.product_variants) ? currentProduct.product_variants : []
+      );
+
+      await saveCurrentProduct(currentProduct, currentVariants);
     };
 
     const addVariant = function () {
