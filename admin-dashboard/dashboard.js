@@ -11,6 +11,7 @@ const DASHBOARD_PARTIALS = [
 
 let allSessions = [];
 let allOrders = [];
+let allProducts = [];
 let selectedSessionId = null;
 let selectedOrderId = null;
 let dashboardRealtimeChannel = null;
@@ -45,6 +46,15 @@ function setText(id, value) {
   if (!el) return;
   el.textContent =
     value === undefined || value === null || value === "" ? "—" : String(value);
+}
+
+function escapeHtml(value) {
+  return String(value === undefined || value === null ? "" : value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 function normalizeImagePath(path) {
@@ -546,12 +556,12 @@ function renderSelectedSession() {
         return `
           <div class="dashboard-item-row">
             <div class="dashboard-item-image">
-              <img src="${image}" alt="${getCartItemName(item)}" onerror="this.onerror=null;this.src='../images/products/placeholder.PNG';">
+              <img src="${image}" alt="${escapeHtml(getCartItemName(item))}" onerror="this.onerror=null;this.src='../images/products/placeholder.PNG';">
             </div>
 
             <div class="dashboard-item-info">
-              <h4>${getCartItemName(item)}</h4>
-              <p>${getCartItemVariant(item)}</p>
+              <h4>${escapeHtml(getCartItemName(item))}</h4>
+              <p>${escapeHtml(getCartItemVariant(item))}</p>
               <p>Qty: ${qty}</p>
             </div>
 
@@ -608,10 +618,10 @@ function renderOrdersList() {
     return `
       <div class="dashboard-session-card" data-order-id="${order.id}">
         <h4>Order #${order.order_number || "—"}</h4>
-        <p>${fullName || order.customer_email || "Unknown customer"}</p>
+        <p>${escapeHtml(fullName || order.customer_email || "Unknown customer")}</p>
         <p>${formatDateTime(order.created_at)}</p>
         ${getOrderStatusBadgeHtml(order)}
-        <p>Status: ${order.order_status || "—"} | Payment: ${order.payment_status || "—"} | Fulfillment: ${order.fulfillment_status || "—"}</p>
+        <p>Status: ${escapeHtml(order.order_status || "—")} | Payment: ${escapeHtml(order.payment_status || "—")} | Fulfillment: ${escapeHtml(order.fulfillment_status || "—")}</p>
         <p>Total: ${formatMoney(order.total_amount)}</p>
       </div>
     `;
@@ -738,7 +748,7 @@ async function refreshHomeDashboard() {
         return `
           <div class="dashboard-session-card" data-home-order-id="${order.id}">
             <h4>Order #${order.order_number || "—"}</h4>
-            <p>${getOrderDisplayTitle(order)}</p>
+            <p>${escapeHtml(getOrderDisplayTitle(order))}</p>
             ${getOrderStatusBadgeHtml(order)}
             <p>${formatDateTime(order.created_at)}</p>
             <p>${formatMoney(order.total_amount)}</p>
@@ -784,14 +794,672 @@ async function refreshAnalytics() {
   }
 }
 
-async function refreshProducts() {
-  if (
-    window.AXIOM_PRODUCTS &&
-    typeof window.AXIOM_PRODUCTS.init === "function"
-  ) {
-    await window.AXIOM_PRODUCTS.init();
+/* =========================
+   PRODUCTS MANAGEMENT
+========================= */
+
+const PRODUCT_OVERRIDES_STORAGE_KEY = "axiom_dashboard_product_overrides";
+
+function injectProductsStyles() {
+  if (document.getElementById("axiomDashboardProductsStyles")) return;
+
+  const style = document.createElement("style");
+  style.id = "axiomDashboardProductsStyles";
+  style.textContent = `
+    .dashboard-products-toolbar {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 18px;
+      flex-wrap: wrap;
+    }
+
+    .dashboard-products-search {
+      flex: 1 1 320px;
+      min-width: 220px;
+      height: 46px;
+      border-radius: 14px;
+      border: 1px solid #dbe3ee;
+      padding: 0 14px;
+      font: inherit;
+      background: #fff;
+    }
+
+    .dashboard-products-meta {
+      color: #64748b;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .dashboard-products-grid {
+      display: grid;
+      gap: 18px;
+    }
+
+    .dashboard-product-card {
+      background: #fff;
+      border: 1px solid #dbe3ee;
+      border-radius: 22px;
+      padding: 18px;
+      box-shadow: 0 10px 24px rgba(15,23,42,0.04);
+    }
+
+    .dashboard-product-card.is-editing {
+      border-color: #4b90d9;
+      box-shadow: 0 0 0 4px rgba(75,144,217,0.12);
+    }
+
+    .dashboard-product-top {
+      display: grid;
+      grid-template-columns: 90px 1fr auto;
+      gap: 16px;
+      align-items: start;
+    }
+
+    .dashboard-product-image {
+      width: 90px;
+      height: 90px;
+      border-radius: 16px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .dashboard-product-image img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+    }
+
+    .dashboard-product-name {
+      margin: 0 0 6px;
+      font-size: 28px;
+      line-height: 1.05;
+      color: #0f172a;
+      font-weight: 900;
+      letter-spacing: -0.03em;
+    }
+
+    .dashboard-product-subline,
+    .dashboard-product-variants,
+    .dashboard-product-stockline {
+      margin: 0;
+      color: #64748b;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .dashboard-product-subline strong,
+    .dashboard-product-stockline strong {
+      color: #0f172a;
+    }
+
+    .dashboard-product-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .dashboard-product-btn {
+      border: 1px solid #dbe3ee;
+      background: #fff;
+      color: #0f172a;
+      height: 42px;
+      padding: 0 16px;
+      border-radius: 999px;
+      font: inherit;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .dashboard-product-btn.primary {
+      background: #0f172a;
+      border-color: #0f172a;
+      color: #fff;
+    }
+
+    .dashboard-product-btn.secondary {
+      background: #eef4fb;
+    }
+
+    .dashboard-product-editor {
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid #e2e8f0;
+      display: none;
+    }
+
+    .dashboard-product-card.is-editing .dashboard-product-editor {
+      display: block;
+    }
+
+    .dashboard-product-editor-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .dashboard-product-editor-field {
+      display: grid;
+      gap: 6px;
+    }
+
+    .dashboard-product-editor-field.full {
+      grid-column: 1 / -1;
+    }
+
+    .dashboard-product-editor-field label {
+      font-size: 13px;
+      color: #475569;
+      font-weight: 800;
+    }
+
+    .dashboard-product-editor-field input,
+    .dashboard-product-editor-field textarea {
+      width: 100%;
+      border: 1px solid #dbe3ee;
+      background: #fff;
+      border-radius: 14px;
+      padding: 12px 14px;
+      font: inherit;
+      color: #0f172a;
+    }
+
+    .dashboard-product-editor-field textarea {
+      min-height: 96px;
+      resize: vertical;
+    }
+
+    .dashboard-product-editor-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 14px;
+      flex-wrap: wrap;
+    }
+
+    .dashboard-products-empty {
+      background: #fff;
+      border: 1px solid #dbe3ee;
+      border-radius: 20px;
+      padding: 24px;
+      color: #64748b;
+      font-weight: 700;
+    }
+
+    .dashboard-products-note {
+      margin-top: 14px;
+      color: #64748b;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    @media (max-width: 900px) {
+      .dashboard-product-top {
+        grid-template-columns: 80px 1fr;
+      }
+
+      .dashboard-product-actions {
+        grid-column: 1 / -1;
+        justify-content: flex-start;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .dashboard-product-editor-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .dashboard-product-name {
+        font-size: 22px;
+      }
+    }
+  `;
+  document.head.appendChild(style);
+}
+
+function getProductsOverrides() {
+  try {
+    return safeObject(JSON.parse(localStorage.getItem(PRODUCT_OVERRIDES_STORAGE_KEY) || "{}"));
+  } catch {
+    return {};
   }
 }
+
+function saveProductsOverrides(overrides) {
+  localStorage.setItem(PRODUCT_OVERRIDES_STORAGE_KEY, JSON.stringify(safeObject(overrides)));
+}
+
+function getProductsMount() {
+  return (
+    document.getElementById("dashboardProductsList") ||
+    document.getElementById("productsListWrap") ||
+    document.getElementById("dashboardProductsGrid") ||
+    document.getElementById("productsManagementGrid") ||
+    document.getElementById("productsManagementMount") ||
+    document.getElementById("dashboardProductsView")
+  );
+}
+
+function getRawProductSource() {
+  if (Array.isArray(window.AXIOM_PRODUCTS)) {
+    return window.AXIOM_PRODUCTS;
+  }
+
+  if (Array.isArray(window.productData)) {
+    return window.productData;
+  }
+
+  if (Array.isArray(window.PRODUCTS)) {
+    return window.PRODUCTS;
+  }
+
+  return [];
+}
+
+function getProductKey(product, index) {
+  if (product.slug) return `slug:${product.slug}`;
+  if (product.id !== undefined && product.id !== null && String(product.id).trim() !== "") {
+    return `id:${product.id}`;
+  }
+  return `idx:${index}`;
+}
+
+function getProductBasePrice(product) {
+  if (product.price !== undefined && product.price !== null && product.price !== "") {
+    return Number(product.price) || 0;
+  }
+
+  const variants = safeArray(product.variants);
+  if (variants.length) {
+    const firstVariantWithPrice = variants.find((variant) => variant && (variant.price !== undefined && variant.price !== null));
+    if (firstVariantWithPrice) {
+      return Number(firstVariantWithPrice.price) || 0;
+    }
+  }
+
+  return 0;
+}
+
+function getProductCompareAtPrice(product) {
+  if (product.compareAtPrice !== undefined && product.compareAtPrice !== null && product.compareAtPrice !== "") {
+    return Number(product.compareAtPrice) || 0;
+  }
+
+  if (product.compare_at_price !== undefined && product.compare_at_price !== null && product.compare_at_price !== "") {
+    return Number(product.compare_at_price) || 0;
+  }
+
+  return 0;
+}
+
+function getProductImage(product) {
+  if (typeof product.image === "string" && product.image.trim()) {
+    return normalizeImagePath(product.image);
+  }
+
+  const images = safeArray(product.images);
+  const firstStringImage = images.find((img) => typeof img === "string" && img.trim());
+  if (firstStringImage) {
+    return normalizeImagePath(firstStringImage);
+  }
+
+  return "../images/products/placeholder.PNG";
+}
+
+function getProductVariants(product) {
+  const variants = safeArray(product.variants);
+
+  if (!variants.length) {
+    return [];
+  }
+
+  return variants.map((variant, index) => {
+    const safeVariant = safeObject(variant);
+    return {
+      id: safeVariant.id || `variant-${index + 1}`,
+      label:
+        safeVariant.label ||
+        safeVariant.name ||
+        safeVariant.variant ||
+        safeVariant.title ||
+        `Variant ${index + 1}`,
+      price:
+        safeVariant.price !== undefined && safeVariant.price !== null
+          ? Number(safeVariant.price) || 0
+          : null,
+      stock:
+        safeVariant.stock !== undefined && safeVariant.stock !== null
+          ? safeVariant.stock
+          : safeVariant.inStock !== undefined
+            ? safeVariant.inStock
+            : safeVariant.in_stock !== undefined
+              ? safeVariant.in_stock
+              : "—"
+    };
+  });
+}
+
+function getProductStockLabel(product) {
+  if (product.stock !== undefined && product.stock !== null && product.stock !== "") {
+    return String(product.stock);
+  }
+
+  if (product.inStock !== undefined) {
+    return product.inStock ? "In stock" : "Out of stock";
+  }
+
+  if (product.in_stock !== undefined) {
+    return product.in_stock ? "In stock" : "Out of stock";
+  }
+
+  return "—";
+}
+
+function mergeProductWithOverride(product, override) {
+  const merged = {
+    ...safeObject(product),
+    ...safeObject(override)
+  };
+
+  if (safeObject(override).variants && Array.isArray(override.variants)) {
+    merged.variants = override.variants;
+  }
+
+  return merged;
+}
+
+function getDashboardProducts() {
+  const rawProducts = safeArray(getRawProductSource());
+  const overrides = getProductsOverrides();
+
+  return rawProducts.map((product, index) => {
+    const key = getProductKey(product, index);
+    return mergeProductWithOverride(product, overrides[key]);
+  });
+}
+
+function buildVariantsSummaryHtml(product) {
+  const variants = getProductVariants(product);
+  if (!variants.length) {
+    return `<p class="dashboard-product-variants"><strong>Variants:</strong> —</p>`;
+  }
+
+  return `
+    <p class="dashboard-product-variants">
+      <strong>Variants:</strong>
+      ${variants.map((variant) => {
+        const pieces = [variant.label];
+        if (variant.price !== null) pieces.push(formatMoney(variant.price));
+        if (variant.stock !== "—") pieces.push(`Stock: ${variant.stock}`);
+        return escapeHtml(pieces.join(" • "));
+      }).join("<br>")}
+    </p>
+  `;
+}
+
+function serializeVariantsForEditor(product) {
+  const variants = safeArray(product.variants);
+  if (!variants.length) return "";
+  return JSON.stringify(variants, null, 2);
+}
+
+function getProductsSearchValue() {
+  return (document.getElementById("dashboardProductsSearch")?.value || "").trim().toLowerCase();
+}
+
+function getFilteredProducts() {
+  const search = getProductsSearchValue();
+
+  if (!search) return allProducts;
+
+  return allProducts.filter((product, index) => {
+    const key = getProductKey(product, index);
+    const haystack = [
+      key,
+      product.id,
+      product.slug,
+      product.name,
+      product.title,
+      product.category,
+      product.type,
+      product.shortDescription,
+      product.description
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase();
+
+    return haystack.includes(search);
+  });
+}
+
+function renderProductsToolbar(mount) {
+  const existingToolbar = document.getElementById("dashboardProductsToolbar");
+  if (existingToolbar) return;
+
+  const toolbar = document.createElement("div");
+  toolbar.id = "dashboardProductsToolbar";
+  toolbar.className = "dashboard-products-toolbar";
+  toolbar.innerHTML = `
+    <input
+      type="text"
+      id="dashboardProductsSearch"
+      class="dashboard-products-search"
+      placeholder="Search products by name, slug, category, or id"
+      autocomplete="off"
+    />
+    <div class="dashboard-products-meta" id="dashboardProductsMeta">0 products</div>
+  `;
+
+  mount.parentNode.insertBefore(toolbar, mount);
+
+  document.getElementById("dashboardProductsSearch")?.addEventListener("input", renderProductsList);
+}
+
+function renderProductsList() {
+  injectProductsStyles();
+
+  const mount = getProductsMount();
+  if (!mount) return;
+
+  renderProductsToolbar(mount);
+
+  const products = getFilteredProducts();
+  const meta = document.getElementById("dashboardProductsMeta");
+  if (meta) {
+    meta.textContent = `${products.length} product${products.length === 1 ? "" : "s"}`;
+  }
+
+  if (!products.length) {
+    mount.innerHTML = `<div class="dashboard-products-empty">No products found.</div>`;
+    return;
+  }
+
+  mount.innerHTML = `
+    <div class="dashboard-products-grid">
+      ${products.map((product, index) => {
+        const key = getProductKey(product, index);
+        const name = product.name || product.title || "Untitled Product";
+        const slug = product.slug || "—";
+        const image = getProductImage(product);
+        const price = getProductBasePrice(product);
+        const compareAtPrice = getProductCompareAtPrice(product);
+        const stock = getProductStockLabel(product);
+        const category = product.category || product.type || "—";
+        const shortDescription = product.shortDescription || product.description || "";
+        const variantsSummary = buildVariantsSummaryHtml(product);
+
+        return `
+          <div class="dashboard-product-card" data-product-key="${escapeHtml(key)}">
+            <div class="dashboard-product-top">
+              <div class="dashboard-product-image">
+                <img src="${image}" alt="${escapeHtml(name)}" onerror="this.onerror=null;this.src='../images/products/placeholder.PNG';">
+              </div>
+
+              <div class="dashboard-product-main">
+                <h3 class="dashboard-product-name">${escapeHtml(name)}</h3>
+                <p class="dashboard-product-subline"><strong>Slug:</strong> ${escapeHtml(slug)}</p>
+                <p class="dashboard-product-subline"><strong>Category:</strong> ${escapeHtml(category)}</p>
+                <p class="dashboard-product-subline"><strong>Base price:</strong> ${formatMoney(price)}${compareAtPrice > 0 ? ` • <strong>Compare at:</strong> ${formatMoney(compareAtPrice)}` : ""}</p>
+                <p class="dashboard-product-stockline"><strong>Stock:</strong> ${escapeHtml(stock)}</p>
+                ${variantsSummary}
+              </div>
+
+              <div class="dashboard-product-actions">
+                <button type="button" class="dashboard-product-btn secondary" data-product-edit="${escapeHtml(key)}">Edit</button>
+              </div>
+            </div>
+
+            <div class="dashboard-product-editor">
+              <div class="dashboard-product-editor-grid">
+                <div class="dashboard-product-editor-field">
+                  <label>Name</label>
+                  <input type="text" data-field="name" value="${escapeHtml(name)}">
+                </div>
+
+                <div class="dashboard-product-editor-field">
+                  <label>Slug</label>
+                  <input type="text" data-field="slug" value="${escapeHtml(slug === "—" ? "" : slug)}">
+                </div>
+
+                <div class="dashboard-product-editor-field">
+                  <label>Category</label>
+                  <input type="text" data-field="category" value="${escapeHtml(category === "—" ? "" : category)}">
+                </div>
+
+                <div class="dashboard-product-editor-field">
+                  <label>Base Price</label>
+                  <input type="number" step="0.01" data-field="price" value="${Number(price || 0)}">
+                </div>
+
+                <div class="dashboard-product-editor-field">
+                  <label>Compare At Price</label>
+                  <input type="number" step="0.01" data-field="compareAtPrice" value="${Number(compareAtPrice || 0)}">
+                </div>
+
+                <div class="dashboard-product-editor-field">
+                  <label>Stock</label>
+                  <input type="text" data-field="stock" value="${escapeHtml(stock === "—" ? "" : stock)}">
+                </div>
+
+                <div class="dashboard-product-editor-field full">
+                  <label>Image Path</label>
+                  <input type="text" data-field="image" value="${escapeHtml(image)}">
+                </div>
+
+                <div class="dashboard-product-editor-field full">
+                  <label>Short Description</label>
+                  <textarea data-field="shortDescription">${escapeHtml(shortDescription)}</textarea>
+                </div>
+
+                <div class="dashboard-product-editor-field full">
+                  <label>Variants JSON</label>
+                  <textarea data-field="variants">${escapeHtml(serializeVariantsForEditor(product))}</textarea>
+                </div>
+              </div>
+
+              <div class="dashboard-product-editor-actions">
+                <button type="button" class="dashboard-product-btn primary" data-product-save="${escapeHtml(key)}">Save</button>
+                <button type="button" class="dashboard-product-btn" data-product-cancel="${escapeHtml(key)}">Cancel</button>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join("")}
+    </div>
+
+    <div class="dashboard-products-note">
+      Dashboard product edits are saved in this browser only unless you wire them to Supabase or another backend source of truth.
+    </div>
+  `;
+
+  mount.querySelectorAll("[data-product-edit]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const key = button.getAttribute("data-product-edit");
+      const card = mount.querySelector(`[data-product-key="${CSS.escape(key)}"]`);
+      if (!card) return;
+      card.classList.add("is-editing");
+    });
+  });
+
+  mount.querySelectorAll("[data-product-cancel]").forEach((button) => {
+    button.addEventListener("click", () => {
+      renderProductsList();
+    });
+  });
+
+  mount.querySelectorAll("[data-product-save]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const key = button.getAttribute("data-product-save");
+      const card = mount.querySelector(`[data-product-key="${CSS.escape(key)}"]`);
+      if (!card) return;
+
+      const overrides = getProductsOverrides();
+      const fields = Array.from(card.querySelectorAll("[data-field]"));
+
+      const draft = {};
+      fields.forEach((field) => {
+        const name = field.getAttribute("data-field");
+        if (!name) return;
+        draft[name] = field.value;
+      });
+
+      let parsedVariants = [];
+      if (draft.variants && String(draft.variants).trim()) {
+        try {
+          const parsed = JSON.parse(draft.variants);
+          parsedVariants = Array.isArray(parsed) ? parsed : [];
+        } catch (error) {
+          alert("Variants JSON is invalid. Please fix it before saving.");
+          return;
+        }
+      }
+
+      overrides[key] = {
+        name: draft.name || "",
+        title: draft.name || "",
+        slug: draft.slug || "",
+        category: draft.category || "",
+        type: draft.category || "",
+        price: Number(draft.price || 0),
+        compareAtPrice: Number(draft.compareAtPrice || 0),
+        compare_at_price: Number(draft.compareAtPrice || 0),
+        stock: draft.stock || "",
+        shortDescription: draft.shortDescription || "",
+        description: draft.shortDescription || "",
+        image: draft.image || "",
+        variants: parsedVariants
+      };
+
+      saveProductsOverrides(overrides);
+      allProducts = getDashboardProducts();
+      renderProductsList();
+    });
+  });
+}
+
+async function refreshProducts() {
+  injectProductsStyles();
+
+  const mount = getProductsMount();
+  if (mount) {
+    mount.innerHTML = `<div class="dashboard-loading">Loading products...</div>`;
+  }
+
+  allProducts = getDashboardProducts();
+
+  renderProductsList();
+}
+
+/* =========================
+   END PRODUCTS MANAGEMENT
+========================= */
 
 async function refreshDashboard() {
   const list = document.getElementById("sessionsList");
@@ -824,7 +1492,8 @@ async function refreshAllDashboardData() {
   await Promise.all([
     refreshHomeDashboard(),
     refreshDashboard(),
-    refreshOrders()
+    refreshOrders(),
+    refreshProducts()
   ]);
 }
 
@@ -970,7 +1639,8 @@ document.addEventListener("DOMContentLoaded", async function () {
     renderOrdersList,
     renderRecentOrders: refreshHomeDashboard,
     orders: allOrders,
-    checkoutSessionsForTracking: allSessions
+    checkoutSessionsForTracking: allSessions,
+    products: allProducts
   };
 
   try {
@@ -996,6 +1666,7 @@ document.addEventListener("DOMContentLoaded", async function () {
     await refreshHomeDashboard();
     await refreshDashboard();
     await refreshOrders();
+    await refreshProducts();
 
     document.getElementById("sessionSearch")?.addEventListener("input", renderSessionsList);
     document.getElementById("statusFilter")?.addEventListener("change", renderSessionsList);
