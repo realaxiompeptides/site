@@ -42,7 +42,7 @@ window.AXIOM_PRODUCTS_API = (function () {
 
   function normalizeVariant(variant, productId, index) {
     return {
-      id: variant && variant.id ? variant.id : undefined,
+      id: variant && variant.id ? variant.id : "",
       product_id: productId,
       variant_id: safeString(variant && variant.variant_id),
       label: safeString(variant && variant.label),
@@ -259,6 +259,7 @@ window.AXIOM_PRODUCTS_API = (function () {
     }
 
     const productId = savedProduct.id;
+
     const incomingVariants = safeArray(product.product_variants)
       .map(function (variant, index) {
         return normalizeVariant(variant, productId, index);
@@ -305,8 +306,7 @@ window.AXIOM_PRODUCTS_API = (function () {
 
     if (incomingVariants.length) {
       const upsertPayload = incomingVariants.map(function (variant) {
-        return {
-          id: variant.id || undefined,
+        const row = {
           product_id: variant.product_id,
           variant_id: variant.variant_id,
           label: variant.label,
@@ -320,14 +320,40 @@ window.AXIOM_PRODUCTS_API = (function () {
           sort_order: variant.sort_order,
           updated_at: new Date().toISOString()
         };
+
+        if (variant.id) {
+          row.id = variant.id;
+        }
+
+        return row;
       });
 
-      const { error: upsertError } = await supabase
-        .from("product_variants")
-        .upsert(upsertPayload, { onConflict: "id" });
+      const existingRows = upsertPayload.filter(function (row) {
+        return !!row.id;
+      });
 
-      if (upsertError) {
-        throw new Error(upsertError.message || "Failed to save variants.");
+      const newRows = upsertPayload.filter(function (row) {
+        return !row.id;
+      });
+
+      if (existingRows.length) {
+        const { error: updateError } = await supabase
+          .from("product_variants")
+          .upsert(existingRows, { onConflict: "id" });
+
+        if (updateError) {
+          throw new Error(updateError.message || "Failed to update variants.");
+        }
+      }
+
+      if (newRows.length) {
+        const { error: insertError } = await supabase
+          .from("product_variants")
+          .insert(newRows);
+
+        if (insertError) {
+          throw new Error(insertError.message || "Failed to create new variants.");
+        }
       }
     }
 
