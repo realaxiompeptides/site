@@ -32,7 +32,8 @@
   <link rel="stylesheet" href="homepage/homepage-collection.css" />
   <link rel="stylesheet" href="trust/trust-strip.css" />
   <link rel="stylesheet" href="faq/faq-section.css" />
-  
+  <link rel="stylesheet" href="age-gate/age-gate.css" />
+
   <style>
     .cart-btn {
       position: relative !important;
@@ -131,13 +132,14 @@
     .hamburger-btn {
       margin-left: 0 !important;
     }
-    
+
     .cart-btn {
       margin-right: 0 !important;
     }
   </style>
 </head>
 <body class="home-page">
+  <div id="ageGateMount"></div>
 
   <div class="top-announcement-bar">
     <div class="top-announcement-track">
@@ -302,6 +304,14 @@
 
   <div id="site-footer"></div>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="admin-dashboard/dashboard-config.js" defer></script>
+  <script src="admin-dashboard/shared/tracking-config.js" defer></script>
+  <script src="admin-dashboard/shared/helpers.js" defer></script>
+  <script src="admin-dashboard/supabase-client.js" defer></script>
+  <script src="admin-dashboard/visitor-session.js" defer></script>
+  <script src="admin-dashboard/cart-session/cart-session.js" defer></script>
+
   <script src="js/product-data.js" defer></script>
   <script src="trust/trust-strip-loader.js" defer></script>
   <script src="homepage/homepage-collection-data.js" defer></script>
@@ -312,9 +322,35 @@
   <script src="cart/cart.js" defer></script>
   <script src="js/app.js" defer></script>
   <script src="footer/footer-loader.js" defer></script>
+  <script src="age-gate/age-gate.js" defer></script>
 
   <script>
     document.addEventListener("DOMContentLoaded", function () {
+      const mount = document.getElementById("ageGateMount");
+
+      if (mount) {
+        fetch("age-gate/age-gate.html", { cache: "no-store" })
+          .then(function (response) {
+            if (!response.ok) {
+              throw new Error("Could not load age-gate/age-gate.html");
+            }
+            return response.text();
+          })
+          .then(function (html) {
+            mount.innerHTML = html;
+
+            if (window.AXIOM_AGE_GATE && typeof window.AXIOM_AGE_GATE.init === "function") {
+              window.AXIOM_AGE_GATE.init({
+                logoPath: "images/axiom-menu-logo.PNG",
+                exitUrl: "https://www.google.com"
+              });
+            }
+          })
+          .catch(function (error) {
+            console.error("Age gate failed to load:", error);
+          });
+      }
+
       setTimeout(function () {
         try {
           const rawCart = localStorage.getItem("axiom_cart");
@@ -408,13 +444,5 @@
       }, 500);
     });
   </script>
-
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="admin-dashboard/dashboard-config.js" defer></script>
-  <script src="admin-dashboard/shared/tracking-config.js" defer></script>
-  <script src="admin-dashboard/shared/helpers.js" defer></script>
-  <script src="admin-dashboard/supabase-client.js" defer></script>
-  <script src="admin-dashboard/visitor-session.js" defer></script>
-  <script src="admin-dashboard/cart-session/cart-session.js" defer></script>
 </body>
 </html>
