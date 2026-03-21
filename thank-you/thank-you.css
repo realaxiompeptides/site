@@ -338,3 +338,62 @@ header .checkout-logo img {
   object-fit: contain;
   display: block;
 }
+
+.thank-you-payment-copy-row {
+  margin-top: 14px;
+}
+
+.thank-you-payment-copy-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 800;
+  color: #64748b;
+  margin-bottom: 8px;
+}
+
+.thank-you-payment-copy-box {
+  display: flex;
+  gap: 10px;
+  align-items: stretch;
+}
+
+.thank-you-payment-copy-input {
+  flex: 1;
+  min-height: 50px;
+  border-radius: 16px;
+  border: 1px solid #dbe4ef;
+  background: #ffffff;
+  padding: 0 16px;
+  font-family: "Inter", sans-serif;
+  font-size: 14px;
+  color: #12203f;
+  outline: none;
+}
+
+.thank-you-payment-copy-btn {
+  min-width: 88px;
+  min-height: 50px;
+  border-radius: 16px;
+  border: 1px solid #dbe4ef;
+  background: #2f84bf;
+  color: #ffffff;
+  font-family: "Inter", sans-serif;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.thank-you-payment-qr-wrap {
+  margin-top: 16px;
+  margin-bottom: 16px;
+}
+
+.thank-you-payment-qr {
+  width: 220px;
+  max-width: 100%;
+  height: auto;
+  display: block;
+  border-radius: 18px;
+  border: 1px solid #dbe4ef;
+  background: #ffffff;
+}
