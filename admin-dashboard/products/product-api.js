@@ -1,24 +1,60 @@
 window.AXIOM_PRODUCTS_API = (function () {
   function getSupabase() {
     if (!window.axiomSupabase) {
-      throw new Error("Supabase client is missing.");
+      throw new Error("Supabase client is not available.");
     }
     return window.axiomSupabase;
   }
 
+  function safeArray(value) {
+    return Array.isArray(value) ? value : [];
+  }
+
+  function safeString(value) {
+    return String(value || "").trim();
+  }
+
+  function safeNumber(value, fallback) {
+    const num = Number(value);
+    return Number.isFinite(num) ? num : fallback;
+  }
+
   function normalizeGalleryImages(value) {
     if (Array.isArray(value)) {
-      return value.filter(Boolean).map(String);
+      return value
+        .map(function (item) {
+          return safeString(item);
+        })
+        .filter(Boolean);
     }
 
     if (typeof value === "string") {
       return value
         .split("\n")
-        .map(function (line) { return line.trim(); })
+        .map(function (line) {
+          return safeString(line);
+        })
         .filter(Boolean);
     }
 
     return [];
+  }
+
+  function normalizeVariant(variant, productId, index) {
+    return {
+      id: variant && variant.id ? variant.id : undefined,
+      product_id: productId,
+      variant_id: safeString(variant && variant.variant_id),
+      label: safeString(variant && variant.label),
+      price: safeNumber(variant && variant.price, 0),
+      compare_at_price: safeNumber(variant && variant.compare_at_price, 0),
+      weight_oz: safeNumber(variant && variant.weight_oz, 0),
+      stock_quantity: safeNumber(variant && variant.stock_quantity, 0),
+      image: safeString(variant && variant.image),
+      allow_backorder: !!(variant && variant.allow_backorder),
+      is_active: variant && variant.is_active === false ? false : true,
+      sort_order: safeNumber(variant && variant.sort_order, index)
+    };
   }
 
   async function listProducts() {
@@ -27,7 +63,19 @@ window.AXIOM_PRODUCTS_API = (function () {
     const { data, error } = await supabase
       .from("products")
       .select(`
-        *,
+        id,
+        slug,
+        name,
+        badge,
+        category,
+        description,
+        long_description,
+        main_image,
+        gallery_images,
+        is_active,
+        sort_order,
+        created_at,
+        updated_at,
         product_variants (
           id,
           product_id,
@@ -37,6 +85,7 @@ window.AXIOM_PRODUCTS_API = (function () {
           compare_at_price,
           weight_oz,
           stock_quantity,
+          image,
           allow_backorder,
           is_active,
           sort_order,
@@ -51,121 +100,193 @@ window.AXIOM_PRODUCTS_API = (function () {
       throw new Error(error.message || "Failed to load products.");
     }
 
-    return Array.isArray(data) ? data.map(function (product) {
+    return safeArray(data).map(function (product) {
       return {
         ...product,
-        gallery_images: Array.isArray(product.gallery_images) ? product.gallery_images : [],
-        product_variants: Array.isArray(product.product_variants)
-          ? product.product_variants.sort(function (a, b) {
-              return Number(a.sort_order || 0) - Number(b.sort_order || 0);
-            })
-          : []
+        gallery_images: normalizeGalleryImages(product.gallery_images),
+        product_variants: safeArray(product.product_variants).sort(function (a, b) {
+          return safeNumber(a.sort_order, 0) - safeNumber(b.sort_order, 0);
+        })
       };
-    }) : [];
+    });
   }
 
   async function createProduct() {
     const supabase = getSupabase();
 
     const timestamp = Date.now();
-    const slug = `new-product-${timestamp}`;
+    const defaultSlug = `new-product-${timestamp}`;
+
+    const insertPayload = {
+      slug: defaultSlug,
+      name: "New Product",
+      badge: "SALE",
+      category: "",
+      description: "",
+      long_description: "",
+      main_image: "",
+      gallery_images: [],
+      is_active: true,
+      sort_order: 9999
+    };
 
     const { data, error } = await supabase
       .from("products")
-      .insert([
-        {
-          slug: slug,
-          name: "New Product",
-          badge: "SALE",
-          category: "",
-          description: "",
-          long_description: "",
-          main_image: "",
-          gallery_images: [],
-          is_active: true,
-          sort_order: 0
-        }
-      ])
-      .select()
+      .insert(insertPayload)
+      .select(`
+        id,
+        slug,
+        name,
+        badge,
+        category,
+        description,
+        long_description,
+        main_image,
+        gallery_images,
+        is_active,
+        sort_order,
+        created_at,
+        updated_at,
+        product_variants (
+          id,
+          product_id,
+          variant_id,
+          label,
+          price,
+          compare_at_price,
+          weight_oz,
+          stock_quantity,
+          image,
+          allow_backorder,
+          is_active,
+          sort_order,
+          created_at,
+          updated_at
+        )
+      `)
       .single();
 
     if (error) {
       throw new Error(error.message || "Failed to create product.");
     }
 
-    return data;
+    return {
+      ...data,
+      gallery_images: normalizeGalleryImages(data.gallery_images),
+      product_variants: safeArray(data.product_variants)
+    };
   }
 
-  async function deleteProduct(productId) {
+  async function saveProduct(product) {
     const supabase = getSupabase();
 
-    const { error: variantsError } = await supabase
-      .from("product_variants")
-      .delete()
-      .eq("product_id", productId);
-
-    if (variantsError) {
-      throw new Error(variantsError.message || "Failed to delete product variants.");
+    if (!product || !safeString(product.name)) {
+      throw new Error("Product name is required.");
     }
 
-    const { error } = await supabase
-      .from("products")
-      .delete()
-      .eq("id", productId);
-
-    if (error) {
-      throw new Error(error.message || "Failed to delete product.");
+    if (!safeString(product.slug)) {
+      throw new Error("Product slug is required.");
     }
 
-    return true;
-  }
-
-  async function saveProduct(payload) {
-    const supabase = getSupabase();
-
-    if (!payload || !payload.id) {
-      throw new Error("Product payload is missing an id.");
-    }
-
-    const productUpdate = {
-      name: String(payload.name || "").trim(),
-      slug: String(payload.slug || "").trim(),
-      badge: String(payload.badge || "").trim(),
-      category: String(payload.category || "").trim(),
-      description: String(payload.description || "").trim(),
-      long_description: String(payload.long_description || "").trim(),
-      main_image: String(payload.main_image || "").trim(),
-      gallery_images: normalizeGalleryImages(payload.gallery_images),
-      is_active: payload.is_active !== false,
+    const productPayload = {
+      slug: safeString(product.slug),
+      name: safeString(product.name),
+      badge: safeString(product.badge),
+      category: safeString(product.category),
+      description: safeString(product.description),
+      long_description: safeString(product.long_description),
+      main_image: safeString(product.main_image),
+      gallery_images: normalizeGalleryImages(product.gallery_images),
+      is_active: product.is_active === false ? false : true,
       updated_at: new Date().toISOString()
     };
 
-    const { error: productError } = await supabase
-      .from("products")
-      .update(productUpdate)
-      .eq("id", payload.id);
+    let savedProduct;
 
-    if (productError) {
-      throw new Error(productError.message || "Failed to save product.");
+    if (product.id) {
+      const { data, error } = await supabase
+        .from("products")
+        .update(productPayload)
+        .eq("id", product.id)
+        .select(`
+          id,
+          slug,
+          name,
+          badge,
+          category,
+          description,
+          long_description,
+          main_image,
+          gallery_images,
+          is_active,
+          sort_order,
+          created_at,
+          updated_at
+        `)
+        .single();
+
+      if (error) {
+        throw new Error(error.message || "Failed to update product.");
+      }
+
+      savedProduct = data;
+    } else {
+      const { data, error } = await supabase
+        .from("products")
+        .insert(productPayload)
+        .select(`
+          id,
+          slug,
+          name,
+          badge,
+          category,
+          description,
+          long_description,
+          main_image,
+          gallery_images,
+          is_active,
+          sort_order,
+          created_at,
+          updated_at
+        `)
+        .single();
+
+      if (error) {
+        throw new Error(error.message || "Failed to create product.");
+      }
+
+      savedProduct = data;
     }
 
-    const variants = Array.isArray(payload.product_variants) ? payload.product_variants : [];
-    const incomingIds = variants
-      .map(function (variant) { return variant.id; })
-      .filter(Boolean);
+    const productId = savedProduct.id;
+    const incomingVariants = safeArray(product.product_variants)
+      .map(function (variant, index) {
+        return normalizeVariant(variant, productId, index);
+      })
+      .filter(function (variant) {
+        return variant.variant_id || variant.label;
+      });
 
     const { data: existingVariants, error: existingError } = await supabase
       .from("product_variants")
       .select("id")
-      .eq("product_id", payload.id);
+      .eq("product_id", productId);
 
     if (existingError) {
       throw new Error(existingError.message || "Failed to load existing variants.");
     }
 
-    const existingIds = Array.isArray(existingVariants)
-      ? existingVariants.map(function (variant) { return variant.id; })
-      : [];
+    const existingIds = safeArray(existingVariants)
+      .map(function (row) {
+        return row.id;
+      })
+      .filter(Boolean);
+
+    const incomingIds = incomingVariants
+      .map(function (variant) {
+        return variant.id;
+      })
+      .filter(Boolean);
 
     const idsToDelete = existingIds.filter(function (id) {
       return !incomingIds.includes(id);
@@ -182,56 +303,106 @@ window.AXIOM_PRODUCTS_API = (function () {
       }
     }
 
-    for (let index = 0; index < variants.length; index += 1) {
-      const variant = variants[index];
+    if (incomingVariants.length) {
+      const upsertPayload = incomingVariants.map(function (variant) {
+        return {
+          id: variant.id || undefined,
+          product_id: variant.product_id,
+          variant_id: variant.variant_id,
+          label: variant.label,
+          price: variant.price,
+          compare_at_price: variant.compare_at_price,
+          weight_oz: variant.weight_oz,
+          stock_quantity: variant.stock_quantity,
+          image: variant.image,
+          allow_backorder: variant.allow_backorder,
+          is_active: variant.is_active,
+          sort_order: variant.sort_order,
+          updated_at: new Date().toISOString()
+        };
+      });
 
-      const variantPayload = {
-        product_id: payload.id,
-        variant_id: String(variant.variant_id || "").trim(),
-        label: String(variant.label || "").trim(),
-        price: Number(variant.price || 0),
-        compare_at_price: Number(variant.compare_at_price || 0),
-        weight_oz: Number(variant.weight_oz || 0),
-        stock_quantity: Number(variant.stock_quantity || 0),
-        allow_backorder: variant.allow_backorder === true,
-        is_active: variant.is_active !== false,
-        sort_order: Number.isFinite(Number(variant.sort_order))
-          ? Number(variant.sort_order)
-          : index,
-        updated_at: new Date().toISOString()
-      };
+      const { error: upsertError } = await supabase
+        .from("product_variants")
+        .upsert(upsertPayload, { onConflict: "id" });
 
-      if (!variantPayload.variant_id) {
-        throw new Error(`Variant ${index + 1} is missing a variant ID.`);
+      if (upsertError) {
+        throw new Error(upsertError.message || "Failed to save variants.");
       }
+    }
 
-      if (!variantPayload.label) {
-        throw new Error(`Variant ${index + 1} is missing a label.`);
-      }
+    const { data: finalProduct, error: finalError } = await supabase
+      .from("products")
+      .select(`
+        id,
+        slug,
+        name,
+        badge,
+        category,
+        description,
+        long_description,
+        main_image,
+        gallery_images,
+        is_active,
+        sort_order,
+        created_at,
+        updated_at,
+        product_variants (
+          id,
+          product_id,
+          variant_id,
+          label,
+          price,
+          compare_at_price,
+          weight_oz,
+          stock_quantity,
+          image,
+          allow_backorder,
+          is_active,
+          sort_order,
+          created_at,
+          updated_at
+        )
+      `)
+      .eq("id", productId)
+      .single();
 
-      if (variant.id) {
-        const { error: updateVariantError } = await supabase
-          .from("product_variants")
-          .update(variantPayload)
-          .eq("id", variant.id);
+    if (finalError) {
+      throw new Error(finalError.message || "Product saved, but failed to reload it.");
+    }
 
-        if (updateVariantError) {
-          throw new Error(updateVariantError.message || `Failed to update variant ${index + 1}.`);
-        }
-      } else {
-        const { error: insertVariantError } = await supabase
-          .from("product_variants")
-          .insert([
-            {
-              ...variantPayload,
-              created_at: new Date().toISOString()
-            }
-          ]);
+    return {
+      ...finalProduct,
+      gallery_images: normalizeGalleryImages(finalProduct.gallery_images),
+      product_variants: safeArray(finalProduct.product_variants).sort(function (a, b) {
+        return safeNumber(a.sort_order, 0) - safeNumber(b.sort_order, 0);
+      })
+    };
+  }
 
-        if (insertVariantError) {
-          throw new Error(insertVariantError.message || `Failed to create variant ${index + 1}.`);
-        }
-      }
+  async function deleteProduct(productId) {
+    const supabase = getSupabase();
+
+    if (!productId) {
+      throw new Error("Product ID is required.");
+    }
+
+    const { error: variantDeleteError } = await supabase
+      .from("product_variants")
+      .delete()
+      .eq("product_id", productId);
+
+    if (variantDeleteError) {
+      throw new Error(variantDeleteError.message || "Failed to delete product variants.");
+    }
+
+    const { error: productDeleteError } = await supabase
+      .from("products")
+      .delete()
+      .eq("id", productId);
+
+    if (productDeleteError) {
+      throw new Error(productDeleteError.message || "Failed to delete product.");
     }
 
     return true;
