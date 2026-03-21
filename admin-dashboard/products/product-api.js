@@ -35,13 +35,14 @@ window.AXIOM_PRODUCTS_API = window.AXIOM_PRODUCTS_API || {};
       throw new Error(variantsError.message || "Failed to load product variants.");
     }
 
-    const variantsByProductId = safeArray(variants).reduce(function (map, variant) {
-      const key = variant.product_id;
-      if (!key) return map;
-      if (!map[key]) map[key] = [];
-      map[key].push(variant);
-      return map;
-    }, {});
+    const variantsByProductId = {};
+    safeArray(variants).forEach(function (variant) {
+      if (!variant.product_id) return;
+      if (!variantsByProductId[variant.product_id]) {
+        variantsByProductId[variant.product_id] = [];
+      }
+      variantsByProductId[variant.product_id].push(variant);
+    });
 
     return safeArray(products).map(function (product) {
       return {
@@ -85,15 +86,56 @@ window.AXIOM_PRODUCTS_API = window.AXIOM_PRODUCTS_API || {};
     };
   }
 
+  async function createProduct(productData) {
+    const supabase = getSupabase();
+
+    const safeProductData = productData && typeof productData === "object" ? productData : {};
+
+    const payload = {
+      slug: String(safeProductData.slug || "").trim(),
+      name: String(safeProductData.name || "New Product").trim(),
+      badge: String(safeProductData.badge ?? "SALE"),
+      category: String(safeProductData.category ?? ""),
+      description: String(safeProductData.description ?? ""),
+      long_description: String(safeProductData.long_description ?? ""),
+      main_image: String(safeProductData.main_image ?? ""),
+      gallery_images: Array.isArray(safeProductData.gallery_images) ? safeProductData.gallery_images : [],
+      is_active: safeProductData.is_active !== false,
+      sort_order: Number(safeProductData.sort_order || 0),
+      updated_at: new Date().toISOString()
+    };
+
+    if (!payload.slug) {
+      throw new Error("Product slug is required.");
+    }
+
+    if (!payload.name) {
+      throw new Error("Product name is required.");
+    }
+
+    const { data, error } = await supabase
+      .from("products")
+      .insert(payload)
+      .select()
+      .single();
+
+    if (error) {
+      throw new Error(error.message || "Failed to create product.");
+    }
+
+    return data;
+  }
+
   async function updateProduct(productId, updates) {
     if (!productId) {
       throw new Error("Product ID is required.");
     }
 
     const supabase = getSupabase();
+    const safeUpdates = updates && typeof updates === "object" ? updates : {};
 
     const payload = {
-      ...updates,
+      ...safeUpdates,
       updated_at: new Date().toISOString()
     };
 
@@ -106,37 +148,6 @@ window.AXIOM_PRODUCTS_API = window.AXIOM_PRODUCTS_API || {};
 
     if (error) {
       throw new Error(error.message || "Failed to update product.");
-    }
-
-    return data;
-  }
-
-  async function createProduct(productData) {
-    const supabase = getSupabase();
-
-    const payload = {
-      slug: productData.slug || "",
-      name: productData.name || "New Product",
-      badge: productData.badge ?? "SALE",
-      category: productData.category ?? "",
-      description: productData.description ?? "",
-      long_description: productData.long_description ?? "",
-      main_image: productData.main_image ?? "",
-      gallery_images: Array.isArray(productData.gallery_images) ? productData.gallery_images : [],
-      is_active: productData.is_active !== false,
-      sort_order: Number(productData.sort_order || 0),
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    };
-
-    const { data, error } = await supabase
-      .from("products")
-      .insert(payload)
-      .select()
-      .single();
-
-    if (error) {
-      throw new Error(error.message || "Failed to create product.");
     }
 
     return data;
@@ -176,19 +187,19 @@ window.AXIOM_PRODUCTS_API = window.AXIOM_PRODUCTS_API || {};
     }
 
     const supabase = getSupabase();
+    const safeVariantData = variantData && typeof variantData === "object" ? variantData : {};
 
     const payload = {
       product_id: productId,
-      variant_id: variantData.variant_id || crypto.randomUUID(),
-      label: variantData.label || "Default",
-      price: Number(variantData.price || 0),
-      compare_at_price: Number(variantData.compare_at_price || 0),
-      weight_oz: Number(variantData.weight_oz || 0),
-      stock_quantity: Number(variantData.stock_quantity || 0),
-      allow_backorder: variantData.allow_backorder === true,
-      is_active: variantData.is_active !== false,
-      sort_order: Number(variantData.sort_order || 0),
-      created_at: new Date().toISOString(),
+      variant_id: String(safeVariantData.variant_id || crypto.randomUUID()),
+      label: String(safeVariantData.label || "Default"),
+      price: Number(safeVariantData.price || 0),
+      compare_at_price: Number(safeVariantData.compare_at_price || 0),
+      weight_oz: Number(safeVariantData.weight_oz || 0),
+      stock_quantity: Number(safeVariantData.stock_quantity || 0),
+      allow_backorder: safeVariantData.allow_backorder === true,
+      is_active: safeVariantData.is_active !== false,
+      sort_order: Number(safeVariantData.sort_order || 0),
       updated_at: new Date().toISOString()
     };
 
@@ -207,13 +218,14 @@ window.AXIOM_PRODUCTS_API = window.AXIOM_PRODUCTS_API || {};
 
   async function updateVariant(variantRowId, updates) {
     if (!variantRowId) {
-      throw new Error("Variant row ID is required.");
+      throw new Error("Variant ID is required.");
     }
 
     const supabase = getSupabase();
+    const safeUpdates = updates && typeof updates === "object" ? updates : {};
 
     const payload = {
-      ...updates,
+      ...safeUpdates,
       updated_at: new Date().toISOString()
     };
 
@@ -233,7 +245,7 @@ window.AXIOM_PRODUCTS_API = window.AXIOM_PRODUCTS_API || {};
 
   async function deleteVariant(variantRowId) {
     if (!variantRowId) {
-      throw new Error("Variant row ID is required.");
+      throw new Error("Variant ID is required.");
     }
 
     const supabase = getSupabase();
@@ -252,8 +264,8 @@ window.AXIOM_PRODUCTS_API = window.AXIOM_PRODUCTS_API || {};
 
   window.AXIOM_PRODUCTS_API.listProducts = listProducts;
   window.AXIOM_PRODUCTS_API.getProduct = getProduct;
-  window.AXIOM_PRODUCTS_API.updateProduct = updateProduct;
   window.AXIOM_PRODUCTS_API.createProduct = createProduct;
+  window.AXIOM_PRODUCTS_API.updateProduct = updateProduct;
   window.AXIOM_PRODUCTS_API.deleteProduct = deleteProduct;
   window.AXIOM_PRODUCTS_API.createVariant = createVariant;
   window.AXIOM_PRODUCTS_API.updateVariant = updateVariant;
