@@ -1,0 +1,61 @@
+.checkout-coupon-input {
+  flex: 1;
+  min-width: 180px;
+  min-height: 58px;
+  padding: 0 18px;
+  border-radius: 18px;
+  border: 1px solid #dbe4ef;
+  background: #ffffff !important;
+  color: #12203f !important;
+  font-family: "Inter", sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  outline: none;
+  box-shadow: none;
+}
+
+.checkout-coupon-input::placeholder {
+  color: #9aa8bc;
+  font-weight: 500;
+}
+
+.checkout-coupon-btn {
+  min-height: 58px;
+  padding: 0 24px;
+  border-radius: 18px;
+  border: 1px solid #dbe4ef;
+  background: #ffffff;
+  color: #12203f;
+  font-family: "Inter", sans-serif;
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.checkout-coupon-btn:hover {
+  border-color: #2f84bf;
+  box-shadow: 0 8px 18px rgba(47, 132, 191, 0.08);
+}
+
+.checkout-coupon-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.checkout-coupon-feedback {
+  margin-top: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  min-height: 18px;
+}
+
+.checkout-coupon-feedback.success {
+  color: #0f766e;
+}
+
+.checkout-coupon-feedback.error {
+  color: #b42318;
+}
