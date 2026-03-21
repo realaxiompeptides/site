@@ -85,6 +85,16 @@
             <span>Orders</span>
           </button>
 
+          <button
+            type="button"
+            class="dashboard-nav-link"
+            id="showProductsViewBtn"
+            data-dashboard-view="products"
+          >
+            <i class="fa-solid fa-boxes-stacked"></i>
+            <span>Products</span>
+          </button>
+
         </nav>
       </div>
 
@@ -129,6 +139,16 @@
           id="refreshOrdersBtn"
         >
           Refresh Orders
+        </button>
+      </div>
+
+      <div class="dashboard-search-wrap" id="dashboardProductsSidebar" hidden>
+        <button
+          type="button"
+          class="dashboard-btn dashboard-btn-secondary"
+          id="refreshProductsBtn"
+        >
+          Refresh Products
         </button>
       </div>
 
@@ -375,6 +395,39 @@
           </div>
 
           <div id="orderDetailMount" class="dashboard-span-2"></div>
+        </section>
+
+      </section>
+
+      <!-- PRODUCTS VIEW -->
+      <section id="dashboardProductsView" hidden>
+
+        <section class="dashboard-main-header">
+          <div>
+            <p class="dashboard-kicker">Products</p>
+            <h2>Product Management</h2>
+          </div>
+
+          <button
+            type="button"
+            class="dashboard-btn dashboard-btn-secondary"
+            id="refreshProductsBtnTop"
+          >
+            Refresh
+          </button>
+        </section>
+
+        <section class="dashboard-details-grid">
+          <div class="dashboard-card dashboard-span-2">
+            <div class="dashboard-card-header">
+              <h3>Products</h3>
+            </div>
+            <div id="productsListWrap" class="dashboard-items-wrap">
+              <div class="dashboard-loading">Loading products...</div>
+            </div>
+          </div>
+
+          <div id="productDetailMount" class="dashboard-span-2"></div>
         </section>
 
       </section>
