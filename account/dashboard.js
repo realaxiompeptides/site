@@ -11,6 +11,9 @@ document.addEventListener("DOMContentLoaded", function () {
   const EMAIL_CACHE_KEY = "axiom_account_email";
   const ORDERS_CACHE_KEY = "axiom_account_orders";
 
+  let supabase = null;
+  let isRefreshing = false;
+
   function accountPageUrl() {
     return window.location.hostname.includes("github.io")
       ? "/site/account/account.html"
@@ -112,6 +115,54 @@ document.addEventListener("DOMContentLoaded", function () {
       await wait(delay);
     }
     return null;
+  }
+
+  function clearCachedAccountData() {
+    try {
+      localStorage.removeItem(EMAIL_CACHE_KEY);
+      localStorage.removeItem(ORDERS_CACHE_KEY);
+    } catch (error) {
+      console.error("Failed clearing cached account data:", error);
+    }
+  }
+
+  function cacheEmail(email) {
+    try {
+      if (email) {
+        localStorage.setItem(EMAIL_CACHE_KEY, email);
+      }
+    } catch (error) {
+      console.error("Failed to cache email:", error);
+    }
+  }
+
+  function getCachedEmail() {
+    try {
+      return localStorage.getItem(EMAIL_CACHE_KEY) || "";
+    } catch (error) {
+      console.error("Failed reading cached email:", error);
+      return "";
+    }
+  }
+
+  function cacheOrders(orders) {
+    try {
+      localStorage.setItem(ORDERS_CACHE_KEY, JSON.stringify(Array.isArray(orders) ? orders : []));
+    } catch (error) {
+      console.error("Failed caching orders:", error);
+    }
+  }
+
+  function getCachedOrders() {
+    try {
+      const raw = localStorage.getItem(ORDERS_CACHE_KEY);
+      if (!raw) return [];
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (error) {
+      console.error("Failed reading cached orders:", error);
+      return [];
+    }
   }
 
   function normalizeStatus(order) {
@@ -307,45 +358,6 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
-  function cacheEmail(email) {
-    try {
-      if (email) {
-        localStorage.setItem(EMAIL_CACHE_KEY, email);
-      }
-    } catch (error) {
-      console.error("Failed to cache email:", error);
-    }
-  }
-
-  function getCachedEmail() {
-    try {
-      return localStorage.getItem(EMAIL_CACHE_KEY) || "";
-    } catch (error) {
-      console.error("Failed to read cached email:", error);
-      return "";
-    }
-  }
-
-  function cacheOrders(orders) {
-    try {
-      localStorage.setItem(ORDERS_CACHE_KEY, JSON.stringify(Array.isArray(orders) ? orders : []));
-    } catch (error) {
-      console.error("Failed to cache orders:", error);
-    }
-  }
-
-  function getCachedOrders() {
-    try {
-      const raw = localStorage.getItem(ORDERS_CACHE_KEY);
-      if (!raw) return [];
-      const parsed = JSON.parse(raw);
-      return Array.isArray(parsed) ? parsed : [];
-    } catch (error) {
-      console.error("Failed to read cached orders:", error);
-      return [];
-    }
-  }
-
   function renderCachedDataImmediately() {
     const cachedEmail = getCachedEmail();
     const cachedOrders = getCachedOrders();
@@ -356,18 +368,13 @@ document.addEventListener("DOMContentLoaded", function () {
 
     if (cachedOrders.length) {
       renderOrders(cachedOrders);
-    } else {
-      if (ordersEmptyState) ordersEmptyState.hidden = true;
-      if (ordersList) ordersList.innerHTML = "";
-      if (orderCount) orderCount.textContent = "0";
-      if (latestStatus) latestStatus.textContent = "—";
     }
   }
 
-  async function getLoggedInUser(supabase) {
-    for (let i = 0; i < 10; i += 1) {
+  async function getLoggedInUser(client) {
+    for (let i = 0; i < 12; i += 1) {
       try {
-        const sessionResult = await supabase.auth.getSession();
+        const sessionResult = await client.auth.getSession();
         const sessionUser =
           sessionResult &&
           sessionResult.data &&
@@ -376,9 +383,11 @@ document.addEventListener("DOMContentLoaded", function () {
             ? sessionResult.data.session.user
             : null;
 
-        if (sessionUser) return sessionUser;
+        if (sessionUser) {
+          return sessionUser;
+        }
 
-        const userResult = await supabase.auth.getUser();
+        const userResult = await client.auth.getUser();
         const user =
           userResult &&
           userResult.data &&
@@ -386,7 +395,9 @@ document.addEventListener("DOMContentLoaded", function () {
             ? userResult.data.user
             : null;
 
-        if (user) return user;
+        if (user) {
+          return user;
+        }
       } catch (error) {
         console.error("getLoggedInUser exception:", error);
       }
@@ -397,9 +408,9 @@ document.addEventListener("DOMContentLoaded", function () {
     return null;
   }
 
-  async function claimOrdersForUser(supabase) {
+  async function claimOrdersForUser(client) {
     try {
-      const { error } = await supabase.rpc("claim_my_orders");
+      const { error } = await client.rpc("claim_my_orders");
       if (error) {
         console.error("claim_my_orders failed:", error);
       }
@@ -408,79 +419,97 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
-  async function fetchOrdersForUser(supabase) {
-    const { data, error } = await supabase.rpc("get_my_orders");
+  async function loadOrders(client, options) {
+    const opts = options || {};
+    const silent = opts.silent === true;
 
-    if (error) {
-      console.error("get_my_orders failed:", error);
+    if (isRefreshing) return;
+    isRefreshing = true;
+
+    if (!silent) {
+      clearMessage();
+    }
+
+    try {
+      const user = await getLoggedInUser(client);
+
+      if (!user) {
+        if (accountEmailDisplay) {
+          accountEmailDisplay.textContent = "Not signed in";
+        }
+        clearCachedAccountData();
+        redirectToAccount();
+        return;
+      }
+
+      const userEmail =
+        user.email ||
+        (user.user_metadata && user.user_metadata.email) ||
+        (user.identities &&
+          Array.isArray(user.identities) &&
+          user.identities[0] &&
+          user.identities[0].identity_data &&
+          user.identities[0].identity_data.email) ||
+        "Account";
+
+      if (accountEmailDisplay) {
+        accountEmailDisplay.textContent = userEmail;
+      }
+
+      cacheEmail(userEmail);
+
+      await claimOrdersForUser(client);
+
+      const { data, error } = await client.rpc("get_my_orders");
+
+      if (error) {
+        console.error("get_my_orders failed:", error);
+        showMessage("Could not load your orders right now.", "error");
+        return;
+      }
+
+      const orders = Array.isArray(data) ? data : [];
+      cacheOrders(orders);
+      renderOrders(orders);
+
+      if (!silent) {
+        showMessage("Orders refreshed.", "success");
+        setTimeout(function () {
+          clearMessage();
+        }, 1200);
+      }
+    } catch (error) {
+      console.error("loadOrders exception:", error);
       showMessage("Could not load your orders right now.", "error");
-      return null;
+    } finally {
+      isRefreshing = false;
     }
-
-    return Array.isArray(data) ? data : [];
-  }
-
-  async function loadDashboardData(supabase) {
-    clearMessage();
-
-    const user = await getLoggedInUser(supabase);
-
-    if (!user) {
-      showMessage("Could not restore your session. Try signing in again.", "error");
-      return;
-    }
-
-    const userEmail =
-      user.email ||
-      (user.user_metadata && user.user_metadata.email) ||
-      (user.identities &&
-        Array.isArray(user.identities) &&
-        user.identities[0] &&
-        user.identities[0].identity_data &&
-        user.identities[0].identity_data.email) ||
-      "Account";
-
-    if (accountEmailDisplay) {
-      accountEmailDisplay.textContent = userEmail;
-    }
-
-    cacheEmail(userEmail);
-
-    await claimOrdersForUser(supabase);
-
-    const orders = await fetchOrdersForUser(supabase);
-    if (!orders) return;
-
-    cacheOrders(orders);
-    renderOrders(orders);
   }
 
   async function initDashboard() {
     renderCachedDataImmediately();
 
-    const supabase = await waitForSupabaseClient();
+    supabase = await waitForSupabaseClient();
 
     if (!supabase) {
+      if (accountEmailDisplay) {
+        accountEmailDisplay.textContent = "Could not connect";
+      }
       showMessage("Supabase client did not load on this page.", "error");
       return;
     }
 
     if (logoutBtn) {
-      logoutBtn.addEventListener("click", async function () {
+      logoutBtn.onclick = async function () {
         clearMessage();
 
         try {
+          clearCachedAccountData();
+
           const { error } = await supabase.auth.signOut();
           if (error) {
             showMessage(error.message || "Unable to log out.", "error");
             return;
-          }
-
-          try {
-            localStorage.removeItem(EMAIL_CACHE_KEY);
-            localStorage.removeItem(ORDERS_CACHE_KEY);
-          } catch (storageError) {
-            console.error("Failed clearing cache:", storageError);
           }
 
           redirectToAccount();
@@ -488,24 +517,19 @@ document.addEventListener("DOMContentLoaded", function () {
           console.error("signOut exception:", error);
           showMessage("Unable to log out.", "error");
         }
-      });
+      };
     }
 
     if (refreshOrdersBtn) {
-      refreshOrdersBtn.addEventListener("click", async function () {
-        await loadDashboardData(supabase);
-      });
+      refreshOrdersBtn.onclick = async function () {
+        await loadOrders(supabase, { silent: false });
+      };
     }
 
     if (supabase.auth && typeof supabase.auth.onAuthStateChange === "function") {
       supabase.auth.onAuthStateChange(async function (event) {
         if (event === "SIGNED_OUT") {
-          try {
-            localStorage.removeItem(EMAIL_CACHE_KEY);
-            localStorage.removeItem(ORDERS_CACHE_KEY);
-          } catch (storageError) {
-            console.error("Failed clearing cache:", storageError);
-          }
+          clearCachedAccountData();
           redirectToAccount();
           return;
         }
@@ -516,12 +540,12 @@ document.addEventListener("DOMContentLoaded", function () {
           event === "TOKEN_REFRESHED" ||
           event === "USER_UPDATED"
         ) {
-          await loadDashboardData(supabase);
+          await loadOrders(supabase, { silent: true });
         }
       });
     }
 
-    await loadDashboardData(supabase);
+    await loadOrders(supabase, { silent: true });
   }
 
   initDashboard();
