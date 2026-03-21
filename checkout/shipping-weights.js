@@ -1,6 +1,9 @@
 window.AXIOM_SHIPPING_WEIGHTS = (function () {
-  const PEPTIDE_VIAL_LBS = 0.188;
-  const BAC_WATER_LBS = 0.6;
+  const PEPTIDE_VIAL_OZ = 3;
+  const BAC_WATER_OZ = 6;
+
+  const PEPTIDE_VIAL_LBS = PEPTIDE_VIAL_OZ / 16;
+  const BAC_WATER_LBS = BAC_WATER_OZ / 16;
 
   function toNumber(value, fallback = 0) {
     const num = Number(value);
@@ -31,61 +34,87 @@ window.AXIOM_SHIPPING_WEIGHTS = (function () {
     return toNumber(item?.quantity ?? item?.qty ?? 1, 1);
   }
 
-  function getPerItemWeightLbs(item) {
-    const explicitLbs = item?.weight_lbs ?? item?.weightLbs;
-    if (explicitLbs !== undefined && explicitLbs !== null && explicitLbs !== "") {
-      return toNumber(explicitLbs, 0);
-    }
-
+  function getPerItemWeightOz(item) {
     const explicitOz = item?.weight_oz ?? item?.weightOz;
     if (explicitOz !== undefined && explicitOz !== null && explicitOz !== "") {
-      return toNumber(explicitOz, 0) / 16;
+      return toNumber(explicitOz, 0);
     }
 
-    return isBacWaterItem(item) ? BAC_WATER_LBS : PEPTIDE_VIAL_LBS;
+    const explicitLbs = item?.weight_lbs ?? item?.weightLbs;
+    if (explicitLbs !== undefined && explicitLbs !== null && explicitLbs !== "") {
+      return toNumber(explicitLbs, 0) * 16;
+    }
+
+    return isBacWaterItem(item) ? BAC_WATER_OZ : PEPTIDE_VIAL_OZ;
+  }
+
+  function getPerItemWeightLbs(item) {
+    return getPerItemWeightOz(item) / 16;
+  }
+
+  function getLineWeightOz(item) {
+    return getPerItemWeightOz(item) * getItemQuantity(item);
   }
 
   function getLineWeightLbs(item) {
-    return getPerItemWeightLbs(item) * getItemQuantity(item);
-  }
-
-  function getTotalWeightLbs(items) {
-    if (!Array.isArray(items)) return 0;
-
-    return items.reduce((sum, item) => {
-      return sum + getLineWeightLbs(item);
-    }, 0);
+    return getLineWeightOz(item) / 16;
   }
 
   function getTotalWeightOz(items) {
-    return getTotalWeightLbs(items) * 16;
+    if (!Array.isArray(items)) return 0;
+
+    return items.reduce(function (sum, item) {
+      return sum + getLineWeightOz(item);
+    }, 0);
+  }
+
+  function getTotalWeightLbs(items) {
+    return getTotalWeightOz(items) / 16;
+  }
+
+  function getTotalItemCount(items) {
+    if (!Array.isArray(items)) return 0;
+
+    return items.reduce(function (sum, item) {
+      return sum + getItemQuantity(item);
+    }, 0);
   }
 
   function enrichCartItemsWithWeights(items) {
     if (!Array.isArray(items)) return [];
 
-    return items.map((item) => {
-      const perItemWeightLbs = getPerItemWeightLbs(item);
-      const lineWeightLbs = getLineWeightLbs(item);
+    return items.map(function (item) {
+      const perItemWeightOz = getPerItemWeightOz(item);
+      const perItemWeightLbs = perItemWeightOz / 16;
+      const lineWeightOz = getLineWeightOz(item);
+      const lineWeightLbs = lineWeightOz / 16;
 
       return {
         ...item,
+        weight_oz: perItemWeightOz,
+        weightOz: perItemWeightOz,
         weight_lbs: perItemWeightLbs,
-        weight_oz: perItemWeightLbs * 16,
-        line_weight_lbs: lineWeightLbs,
-        line_weight_oz: lineWeightLbs * 16
+        weightLbs: perItemWeightLbs,
+        line_weight_oz: lineWeightOz,
+        line_weight_lbs: lineWeightLbs
       };
     });
   }
 
   return {
+    PEPTIDE_VIAL_OZ,
+    BAC_WATER_OZ,
     PEPTIDE_VIAL_LBS,
     BAC_WATER_LBS,
     isBacWaterItem,
+    getItemQuantity,
+    getPerItemWeightOz,
     getPerItemWeightLbs,
+    getLineWeightOz,
     getLineWeightLbs,
-    getTotalWeightLbs,
     getTotalWeightOz,
+    getTotalWeightLbs,
+    getTotalItemCount,
     enrichCartItemsWithWeights
   };
 })();
