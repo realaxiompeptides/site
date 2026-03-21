@@ -22,8 +22,19 @@ function normalizeImagePath(path) {
   return `../${cleanPath}`;
 }
 
+function escapeHtml(value) {
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 /*
-  Replace these with your real payment handles / wallet addresses.
+  Update these whenever you want.
+  Venmo QR image should be saved as:
+  ../images/venmo-qr.PNG
 */
 const PAYMENT_DETAILS = {
   cashapp: {
@@ -34,26 +45,35 @@ const PAYMENT_DETAILS = {
   },
   applepay: {
     label: "Apple Pay",
-    destination: "REPLACE_WITH_YOUR_APPLE_PAY_NUMBER_OR_EMAIL",
+    destination: "916-233-5312",
     instructions:
       "Send the payment through Apple Pay and include only your order number with the payment."
   },
   zelle: {
     label: "Zelle",
-    destination: "REPLACE_WITH_YOUR_ZELLE_EMAIL_OR_PHONE",
+    phone: "916-233-5312",
+    email: "testzelle@axiomtest.com",
     instructions:
       "Send the payment through Zelle and include only your order number with the payment."
+  },
+  venmo: {
+    label: "Venmo",
+    handle: "@jax-ferone-839",
+    url: "https://venmo.com/u/jax-ferone-839",
+    qrImage: "../images/venmo-qr.PNG",
+    instructions:
+      "Send the payment through Venmo and include only your order number in the payment note."
   },
   crypto: {
     label: "Crypto",
     instructions:
       "Send the exact total using your selected crypto method. Double-check the network before sending.",
     wallets: {
-      bitcoin: "REPLACE_WITH_YOUR_BITCOIN_WALLET",
-      solana: "REPLACE_WITH_YOUR_SOLANA_WALLET",
-      ethereum: "REPLACE_WITH_YOUR_ETHEREUM_WALLET",
-      usdc: "REPLACE_WITH_YOUR_USDC_WALLET",
-      usdt: "REPLACE_WITH_YOUR_USDT_WALLET"
+      bitcoin: "bc1qexamplebtcaddress1234567890test",
+      solana: "So1anaExampleWalletAddress123456789ABCDEFG",
+      ethereum: "0xExampleEthereumAddress1234567890ABCDEF",
+      usdc: "0xExampleUSDCAddress1234567890ABCDEF",
+      usdt: "TExampleUSDTWalletAddress123456789ABCDEFG"
     }
   }
 };
@@ -147,10 +167,13 @@ function getPaymentMethodKey(rawValue) {
   if (value.includes("cash")) return "cashapp";
   if (value.includes("apple")) return "applepay";
   if (value.includes("zelle")) return "zelle";
+  if (value.includes("venmo")) return "venmo";
   if (value.includes("crypto")) return "crypto";
   if (value.includes("bitcoin")) return "crypto";
   if (value.includes("solana")) return "crypto";
   if (value.includes("ethereum")) return "crypto";
+  if (value.includes("usdc")) return "crypto";
+  if (value.includes("usdt")) return "crypto";
 
   return value.replace(/\s+/g, "");
 }
@@ -210,11 +233,79 @@ function makeTopLogoBigger() {
 
   selectors.forEach(function (selector) {
     document.querySelectorAll(selector).forEach(function (img) {
-      img.style.width = "120px";
-      img.style.maxWidth = "120px";
+      img.style.width = "132px";
+      img.style.maxWidth = "132px";
       img.style.height = "auto";
       img.style.objectFit = "contain";
       img.style.display = "block";
+    });
+  });
+}
+
+function createCopyRow(label, value) {
+  const safeLabel = escapeHtml(label);
+  const safeValue = escapeHtml(value);
+
+  return `
+    <div class="thank-you-payment-detail-row thank-you-payment-copy-row">
+      <span>${safeLabel}</span>
+      <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; justify-content:flex-end; max-width:100%;">
+        <input
+          type="text"
+          value="${safeValue}"
+          readonly
+          class="thank-you-copy-input"
+          style="min-width:180px; max-width:100%; padding:10px 12px; border:1px solid #dbe4ef; border-radius:12px; background:#ffffff; color:#12203f; font-size:13px;"
+        />
+        <button
+          type="button"
+          class="thank-you-copy-btn"
+          data-copy="${safeValue}"
+          style="padding:10px 14px; border:1px solid #dbe4ef; border-radius:12px; background:#2f84bf; color:#ffffff; font-weight:800; cursor:pointer;"
+        >
+          Copy
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+function bindCopyButtons() {
+  const buttons = document.querySelectorAll(".thank-you-copy-btn");
+
+  buttons.forEach(function (button) {
+    if (button.dataset.bound === "true") return;
+    button.dataset.bound = "true";
+
+    button.addEventListener("click", async function () {
+      const value = button.getAttribute("data-copy") || "";
+      const originalText = button.textContent;
+
+      try {
+        await navigator.clipboard.writeText(value);
+        button.textContent = "Copied";
+      } catch (error) {
+        console.error("Failed to copy value:", error);
+
+        const input = button.parentElement?.querySelector(".thank-you-copy-input");
+        if (input) {
+          input.focus();
+          input.select();
+          try {
+            document.execCommand("copy");
+            button.textContent = "Copied";
+          } catch (execError) {
+            console.error("Fallback copy failed:", execError);
+            button.textContent = "Copy Failed";
+          }
+        } else {
+          button.textContent = "Copy Failed";
+        }
+      }
+
+      setTimeout(function () {
+        button.textContent = originalText;
+      }, 1200);
     });
   });
 }
@@ -235,17 +326,12 @@ function renderPaymentInstructions(order) {
     instructionsMount.innerHTML = `
       <div class="thank-you-payment-card">
         <h3>Cash App Instructions</h3>
-        <p>${PAYMENT_DETAILS.cashapp.instructions}</p>
-        <div class="thank-you-payment-detail-row">
-          <span>Cash App</span>
-          <strong>${PAYMENT_DETAILS.cashapp.handle}</strong>
-        </div>
-        <div class="thank-you-payment-detail-row">
-          <span>Order Number</span>
-          <strong>#${order.order_number}</strong>
-        </div>
+        <p>${escapeHtml(PAYMENT_DETAILS.cashapp.instructions)}</p>
+        ${createCopyRow("Cash App", PAYMENT_DETAILS.cashapp.handle)}
+        ${createCopyRow("Order Number", `#${order.order_number}`)}
       </div>
     `;
+    bindCopyButtons();
     return;
   }
 
@@ -253,17 +339,12 @@ function renderPaymentInstructions(order) {
     instructionsMount.innerHTML = `
       <div class="thank-you-payment-card">
         <h3>Apple Pay Instructions</h3>
-        <p>${PAYMENT_DETAILS.applepay.instructions}</p>
-        <div class="thank-you-payment-detail-row">
-          <span>Send To</span>
-          <strong>${PAYMENT_DETAILS.applepay.destination}</strong>
-        </div>
-        <div class="thank-you-payment-detail-row">
-          <span>Order Number</span>
-          <strong>#${order.order_number}</strong>
-        </div>
+        <p>${escapeHtml(PAYMENT_DETAILS.applepay.instructions)}</p>
+        ${createCopyRow("Apple Pay", PAYMENT_DETAILS.applepay.destination)}
+        ${createCopyRow("Order Number", `#${order.order_number}`)}
       </div>
     `;
+    bindCopyButtons();
     return;
   }
 
@@ -271,17 +352,37 @@ function renderPaymentInstructions(order) {
     instructionsMount.innerHTML = `
       <div class="thank-you-payment-card">
         <h3>Zelle Instructions</h3>
-        <p>${PAYMENT_DETAILS.zelle.instructions}</p>
-        <div class="thank-you-payment-detail-row">
-          <span>Send To</span>
-          <strong>${PAYMENT_DETAILS.zelle.destination}</strong>
-        </div>
-        <div class="thank-you-payment-detail-row">
-          <span>Order Number</span>
-          <strong>#${order.order_number}</strong>
-        </div>
+        <p>${escapeHtml(PAYMENT_DETAILS.zelle.instructions)}</p>
+        ${createCopyRow("Zelle Phone", PAYMENT_DETAILS.zelle.phone)}
+        ${createCopyRow("Zelle Email", PAYMENT_DETAILS.zelle.email)}
+        ${createCopyRow("Order Number", `#${order.order_number}`)}
       </div>
     `;
+    bindCopyButtons();
+    return;
+  }
+
+  if (paymentKey === "venmo") {
+    instructionsMount.innerHTML = `
+      <div class="thank-you-payment-card">
+        <h3>Venmo Instructions</h3>
+        <p>${escapeHtml(PAYMENT_DETAILS.venmo.instructions)}</p>
+
+        <div style="margin:16px 0 18px;">
+          <img
+            src="${escapeHtml(PAYMENT_DETAILS.venmo.qrImage)}"
+            alt="Venmo QR Code"
+            style="width:220px; max-width:100%; height:auto; border:1px solid #dbe4ef; border-radius:16px; background:#ffffff; display:block;"
+            onerror="this.style.display='none';"
+          />
+        </div>
+
+        ${createCopyRow("Venmo Handle", PAYMENT_DETAILS.venmo.handle)}
+        ${createCopyRow("Venmo Link", PAYMENT_DETAILS.venmo.url)}
+        ${createCopyRow("Order Number", `#${order.order_number}`)}
+      </div>
+    `;
+    bindCopyButtons();
     return;
   }
 
@@ -289,41 +390,17 @@ function renderPaymentInstructions(order) {
     instructionsMount.innerHTML = `
       <div class="thank-you-payment-card">
         <h3>Crypto Instructions</h3>
-        <p>${PAYMENT_DETAILS.crypto.instructions}</p>
+        <p>${escapeHtml(PAYMENT_DETAILS.crypto.instructions)}</p>
 
-        <div class="thank-you-payment-detail-row">
-          <span>Order Number</span>
-          <strong>#${order.order_number}</strong>
-        </div>
-
-        <div class="thank-you-wallet-list">
-          <div class="thank-you-payment-detail-row">
-            <span>Bitcoin</span>
-            <strong>${PAYMENT_DETAILS.crypto.wallets.bitcoin}</strong>
-          </div>
-
-          <div class="thank-you-payment-detail-row">
-            <span>Solana</span>
-            <strong>${PAYMENT_DETAILS.crypto.wallets.solana}</strong>
-          </div>
-
-          <div class="thank-you-payment-detail-row">
-            <span>Ethereum</span>
-            <strong>${PAYMENT_DETAILS.crypto.wallets.ethereum}</strong>
-          </div>
-
-          <div class="thank-you-payment-detail-row">
-            <span>USDC</span>
-            <strong>${PAYMENT_DETAILS.crypto.wallets.usdc}</strong>
-          </div>
-
-          <div class="thank-you-payment-detail-row">
-            <span>USDT</span>
-            <strong>${PAYMENT_DETAILS.crypto.wallets.usdt}</strong>
-          </div>
-        </div>
+        ${createCopyRow("Order Number", `#${order.order_number}`)}
+        ${createCopyRow("Bitcoin (BTC)", PAYMENT_DETAILS.crypto.wallets.bitcoin)}
+        ${createCopyRow("Solana (SOL)", PAYMENT_DETAILS.crypto.wallets.solana)}
+        ${createCopyRow("Ethereum (ETH)", PAYMENT_DETAILS.crypto.wallets.ethereum)}
+        ${createCopyRow("USDC", PAYMENT_DETAILS.crypto.wallets.usdc)}
+        ${createCopyRow("USDT", PAYMENT_DETAILS.crypto.wallets.usdt)}
       </div>
     `;
+    bindCopyButtons();
     return;
   }
 
@@ -331,16 +408,11 @@ function renderPaymentInstructions(order) {
     <div class="thank-you-payment-card">
       <h3>Payment Instructions</h3>
       <p>Please use the selected payment method and include your order number when required.</p>
-      <div class="thank-you-payment-detail-row">
-        <span>Payment Method</span>
-        <strong>${paymentMethod || "Not selected"}</strong>
-      </div>
-      <div class="thank-you-payment-detail-row">
-        <span>Order Number</span>
-        <strong>#${order.order_number}</strong>
-      </div>
+      ${createCopyRow("Payment Method", paymentMethod || "Not selected")}
+      ${createCopyRow("Order Number", `#${order.order_number}`)}
     </div>
   `;
+  bindCopyButtons();
 }
 
 function renderOrder(order) {
@@ -414,14 +486,14 @@ function renderOrder(order) {
           <div class="thank-you-item-image">
             <img
               src="${normalizeImagePath(item.image || "")}"
-              alt="${itemName}"
+              alt="${escapeHtml(itemName)}"
               onerror="this.onerror=null;this.src='../images/products/placeholder.PNG';"
             />
           </div>
 
           <div class="thank-you-item-info">
-            <h4>${itemName}</h4>
-            ${variant ? `<p>${variant}</p>` : ""}
+            <h4>${escapeHtml(itemName)}</h4>
+            ${variant ? `<p>${escapeHtml(variant)}</p>` : ""}
             <p>Qty: ${qty}</p>
           </div>
 
