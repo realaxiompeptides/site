@@ -80,6 +80,62 @@
       border: 2px solid #ffffff !important;
     }
 
+    .checkout-select {
+      width: 100%;
+      min-height: 58px;
+      padding: 0 18px;
+      border-radius: 18px;
+      border: 1px solid #dbe4ef;
+      background: #ffffff;
+      color: #12203f;
+      font-family: "Inter", sans-serif;
+      font-size: 16px;
+      font-weight: 600;
+      outline: none;
+      appearance: none;
+      -webkit-appearance: none;
+      background-image:
+        linear-gradient(45deg, transparent 50%, #64748b 50%),
+        linear-gradient(135deg, #64748b 50%, transparent 50%);
+      background-position:
+        calc(100% - 24px) calc(50% - 4px),
+        calc(100% - 18px) calc(50% - 4px);
+      background-size: 6px 6px, 6px 6px;
+      background-repeat: no-repeat;
+    }
+
+    .checkout-help-text,
+    .checkout-validation-text {
+      margin-top: 10px;
+      font-size: 13px;
+      line-height: 1.5;
+      color: #64748b;
+    }
+
+    .checkout-validation-text {
+      color: #b42318;
+      display: none;
+    }
+
+    .checkout-validation-text.active {
+      display: block;
+    }
+
+    .shipping-status-text {
+      margin-top: 12px;
+      font-size: 14px;
+      font-weight: 700;
+      color: #51627c;
+    }
+
+    .shipping-status-text.error {
+      color: #b42318;
+    }
+
+    .shipping-status-text.success {
+      color: #0f766e;
+    }
+
     @media (max-width: 640px) {
       .checkout-cart-link.cart-btn {
         width: 54px !important;
@@ -144,8 +200,26 @@
                     name="email"
                     placeholder="Email Address"
                     autocomplete="email"
+                    inputmode="email"
+                    spellcheck="false"
                     required
                   />
+                  <div id="checkoutEmailError" class="checkout-validation-text"></div>
+                </div>
+
+                <div class="checkout-field-group">
+                  <input
+                    class="checkout-input"
+                    type="tel"
+                    id="phone"
+                    name="phone"
+                    placeholder="Phone Number"
+                    autocomplete="tel"
+                    inputmode="tel"
+                    minlength="7"
+                    required
+                  />
+                  <div id="checkoutPhoneError" class="checkout-validation-text"></div>
                 </div>
               </section>
 
@@ -172,6 +246,79 @@
                     autocomplete="family-name"
                     required
                   />
+
+                  <select
+                    class="checkout-select checkout-span-2"
+                    id="country"
+                    name="country"
+                    autocomplete="country"
+                    required
+                  >
+                    <option value="US" selected>United States</option>
+                    <option value="CA">Canada</option>
+                    <option value="MX">Mexico</option>
+                    <option value="GB">United Kingdom</option>
+                    <option value="AU">Australia</option>
+                    <option value="NZ">New Zealand</option>
+                    <option value="DE">Germany</option>
+                    <option value="FR">France</option>
+                    <option value="IT">Italy</option>
+                    <option value="ES">Spain</option>
+                    <option value="NL">Netherlands</option>
+                    <option value="BE">Belgium</option>
+                    <option value="IE">Ireland</option>
+                    <option value="AT">Austria</option>
+                    <option value="CH">Switzerland</option>
+                    <option value="SE">Sweden</option>
+                    <option value="NO">Norway</option>
+                    <option value="DK">Denmark</option>
+                    <option value="FI">Finland</option>
+                    <option value="PL">Poland</option>
+                    <option value="PT">Portugal</option>
+                    <option value="CZ">Czech Republic</option>
+                    <option value="HU">Hungary</option>
+                    <option value="RO">Romania</option>
+                    <option value="BG">Bulgaria</option>
+                    <option value="HR">Croatia</option>
+                    <option value="SI">Slovenia</option>
+                    <option value="SK">Slovakia</option>
+                    <option value="GR">Greece</option>
+                    <option value="EE">Estonia</option>
+                    <option value="LV">Latvia</option>
+                    <option value="LT">Lithuania</option>
+                    <option value="LU">Luxembourg</option>
+                    <option value="MT">Malta</option>
+                    <option value="CY">Cyprus</option>
+                    <option value="IS">Iceland</option>
+                    <option value="JP">Japan</option>
+                    <option value="KR">South Korea</option>
+                    <option value="SG">Singapore</option>
+                    <option value="HK">Hong Kong</option>
+                    <option value="TW">Taiwan</option>
+                    <option value="TH">Thailand</option>
+                    <option value="MY">Malaysia</option>
+                    <option value="ID">Indonesia</option>
+                    <option value="PH">Philippines</option>
+                    <option value="VN">Vietnam</option>
+                    <option value="IN">India</option>
+                    <option value="AE">United Arab Emirates</option>
+                    <option value="SA">Saudi Arabia</option>
+                    <option value="IL">Israel</option>
+                    <option value="TR">Turkey</option>
+                    <option value="ZA">South Africa</option>
+                    <option value="EG">Egypt</option>
+                    <option value="BR">Brazil</option>
+                    <option value="AR">Argentina</option>
+                    <option value="CL">Chile</option>
+                    <option value="CO">Colombia</option>
+                    <option value="PE">Peru</option>
+                    <option value="UY">Uruguay</option>
+                    <option value="CR">Costa Rica</option>
+                    <option value="PA">Panama</option>
+                    <option value="DO">Dominican Republic</option>
+                    <option value="JM">Jamaica</option>
+                    <option value="PR">Puerto Rico</option>
+                  </select>
 
                   <input
                     class="checkout-input checkout-span-2"
@@ -207,41 +354,26 @@
                     type="text"
                     id="state"
                     name="state"
-                    placeholder="State"
+                    placeholder="State / Province / Region"
                     autocomplete="address-level1"
-                    required
-                  />
-
-                  <input
-                    class="checkout-input"
-                    type="text"
-                    id="zip"
-                    name="zip"
-                    placeholder="ZIP Code"
-                    autocomplete="postal-code"
-                    required
-                  />
-
-                  <input
-                    class="checkout-input"
-                    type="tel"
-                    id="phone"
-                    name="phone"
-                    placeholder="Phone Number"
-                    autocomplete="tel"
                     required
                   />
 
                   <input
                     class="checkout-input checkout-span-2"
                     type="text"
-                    id="country"
-                    name="country"
-                    placeholder="Country"
-                    autocomplete="country-name"
-                    value="US"
+                    id="zip"
+                    name="zip"
+                    placeholder="ZIP / Postal Code"
+                    autocomplete="postal-code"
+                    required
                   />
                 </div>
+
+                <div class="checkout-help-text">
+                  Use a real shipping address. Shipping methods appear after valid address details are entered.
+                </div>
+                <div id="checkoutAddressError" class="checkout-validation-text"></div>
               </section>
 
               <section class="checkout-section">
@@ -253,13 +385,14 @@
                     id="getRates"
                     class="shipping-button"
                   >
-                    Get Live USPS Rates
+                    Get Shipping Rates
                   </button>
 
                   <p class="shipping-help-text">
-                    Enter your shipping address, then choose a shipping method.
+                    Enter your full shipping details, then choose a USPS or international shipping method based on your order weight.
                   </p>
 
+                  <div id="shippingAddressStatus" class="shipping-status-text" aria-live="polite"></div>
                   <div id="shippingRates" class="shipping-rates"></div>
                 </div>
               </section>
@@ -334,25 +467,22 @@
     });
   </script>
 
-  <!-- Tracking + Supabase -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="../admin-dashboard/dashboard-config.js" defer></script>
   <script src="../admin-dashboard/shared/tracking-config.js" defer></script>
   <script src="../admin-dashboard/shared/helpers.js" defer></script>
   <script src="../admin-dashboard/supabase-client.js" defer></script>
 
-  <!-- Checkout session + tracking -->
+  <script src="shipping-weights.js" defer></script>
+
   <script src="checkout-session.js" defer></script>
   <script src="../admin-dashboard/checkout-session/checkout-session.js" defer></script>
 
-  <!-- ADD THIS -->
   <script src="../cart/cart-checkout-sync.js" defer></script>
 
-  <!-- Checkout order creation -->
   <script src="../admin-dashboard/orders/order-submit.js" defer></script>
   <script src="../admin-dashboard/orders/checkout-order-submit.js" defer></script>
 
-  <!-- Checkout UI -->
   <script src="checkout.js" defer></script>
 </body>
 </html>
