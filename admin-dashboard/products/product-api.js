@@ -1,197 +1,261 @@
-window.AXIOM_PRODUCTS_API = (function () {
+window.AXIOM_PRODUCTS_API = window.AXIOM_PRODUCTS_API || {};
+
+(function () {
   function getSupabase() {
-    return (
-      window.supabaseClient ||
-      window.AXIOM_SUPABASE ||
-      window.axiomSupabase ||
-      null
-    );
+    if (!window.axiomSupabase) {
+      throw new Error("Supabase client is missing.");
+    }
+    return window.axiomSupabase;
   }
 
-  function toGalleryArray(value) {
-    if (Array.isArray(value)) return value.filter(Boolean);
-    if (typeof value !== "string") return [];
-    return value
-      .split("\n")
-      .map(function (item) {
-        return item.trim();
-      })
-      .filter(Boolean);
+  function safeArray(value) {
+    return Array.isArray(value) ? value : [];
   }
 
   async function listProducts() {
     const supabase = getSupabase();
-    if (!supabase) throw new Error("Supabase client not found.");
 
-    const { data, error } = await supabase
+    const { data: products, error: productsError } = await supabase
       .from("products")
-      .select(`
-        *,
-        product_variants (
-          id,
-          product_id,
-          variant_id,
-          label,
-          price,
-          compare_at_price,
-          weight_oz,
-          stock_quantity,
-          allow_backorder,
-          is_active,
-          sort_order,
-          created_at,
-          updated_at
-        )
-      `)
+      .select("*")
+      .order("sort_order", { ascending: true })
+      .order("created_at", { ascending: false });
+
+    if (productsError) {
+      throw new Error(productsError.message || "Failed to load products.");
+    }
+
+    const { data: variants, error: variantsError } = await supabase
+      .from("product_variants")
+      .select("*")
       .order("sort_order", { ascending: true })
       .order("created_at", { ascending: true });
 
-    if (error) throw error;
+    if (variantsError) {
+      throw new Error(variantsError.message || "Failed to load product variants.");
+    }
 
-    return (data || []).map(function (product) {
+    const variantsByProductId = safeArray(variants).reduce(function (map, variant) {
+      const key = variant.product_id;
+      if (!key) return map;
+      if (!map[key]) map[key] = [];
+      map[key].push(variant);
+      return map;
+    }, {});
+
+    return safeArray(products).map(function (product) {
       return {
         ...product,
-        gallery_images: Array.isArray(product.gallery_images) ? product.gallery_images : [],
-        product_variants: Array.isArray(product.product_variants)
-          ? product.product_variants.sort(function (a, b) {
-              return Number(a.sort_order || 0) - Number(b.sort_order || 0);
-            })
-          : []
+        variants: variantsByProductId[product.id] || []
       };
     });
   }
 
-  async function createProduct() {
-    const supabase = getSupabase();
-    if (!supabase) throw new Error("Supabase client not found.");
+  async function getProduct(productId) {
+    if (!productId) {
+      throw new Error("Product ID is required.");
+    }
 
-    const timestamp = Date.now();
+    const supabase = getSupabase();
+
+    const { data: product, error: productError } = await supabase
+      .from("products")
+      .select("*")
+      .eq("id", productId)
+      .single();
+
+    if (productError) {
+      throw new Error(productError.message || "Failed to load product.");
+    }
+
+    const { data: variants, error: variantsError } = await supabase
+      .from("product_variants")
+      .select("*")
+      .eq("product_id", productId)
+      .order("sort_order", { ascending: true })
+      .order("created_at", { ascending: true });
+
+    if (variantsError) {
+      throw new Error(variantsError.message || "Failed to load product variants.");
+    }
+
+    return {
+      ...product,
+      variants: safeArray(variants)
+    };
+  }
+
+  async function updateProduct(productId, updates) {
+    if (!productId) {
+      throw new Error("Product ID is required.");
+    }
+
+    const supabase = getSupabase();
+
+    const payload = {
+      ...updates,
+      updated_at: new Date().toISOString()
+    };
 
     const { data, error } = await supabase
       .from("products")
-      .insert({
-        slug: `new-product-${timestamp}`,
-        name: "New Product",
-        badge: "SALE",
-        category: "",
-        description: "",
-        long_description: "",
-        main_image: "",
-        gallery_images: [],
-        is_active: true,
-        sort_order: 0
-      })
-      .select("*")
+      .update(payload)
+      .eq("id", productId)
+      .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      throw new Error(error.message || "Failed to update product.");
+    }
 
     return data;
   }
 
-  async function saveProduct(product) {
+  async function createProduct(productData) {
     const supabase = getSupabase();
-    if (!supabase) throw new Error("Supabase client not found.");
 
-    const productPayload = {
-      id: product.id,
-      slug: String(product.slug || "").trim(),
-      name: String(product.name || "").trim(),
-      badge: String(product.badge || "").trim(),
-      category: String(product.category || "").trim(),
-      description: String(product.description || "").trim(),
-      long_description: String(product.long_description || "").trim(),
-      main_image: String(product.main_image || "").trim(),
-      gallery_images: toGalleryArray(product.gallery_images),
-      is_active: product.is_active !== false,
-      sort_order: Number(product.sort_order || 0)
+    const payload = {
+      slug: productData.slug || "",
+      name: productData.name || "New Product",
+      badge: productData.badge ?? "SALE",
+      category: productData.category ?? "",
+      description: productData.description ?? "",
+      long_description: productData.long_description ?? "",
+      main_image: productData.main_image ?? "",
+      gallery_images: Array.isArray(productData.gallery_images) ? productData.gallery_images : [],
+      is_active: productData.is_active !== false,
+      sort_order: Number(productData.sort_order || 0),
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
     };
 
-    const { data: savedProduct, error: productError } = await supabase
+    const { data, error } = await supabase
       .from("products")
-      .upsert(productPayload)
-      .select("*")
+      .insert(payload)
+      .select()
       .single();
 
-    if (productError) throw productError;
-
-    const existingVariantIds = Array.isArray(product.product_variants)
-      ? product.product_variants
-          .map(function (variant) {
-            return variant.id || null;
-          })
-          .filter(Boolean)
-      : [];
-
-    const { data: currentDbVariants, error: currentDbVariantsError } = await supabase
-      .from("product_variants")
-      .select("id")
-      .eq("product_id", savedProduct.id);
-
-    if (currentDbVariantsError) throw currentDbVariantsError;
-
-    const dbVariantIds = (currentDbVariants || []).map(function (variant) {
-      return variant.id;
-    });
-
-    const variantIdsToDelete = dbVariantIds.filter(function (id) {
-      return !existingVariantIds.includes(id);
-    });
-
-    if (variantIdsToDelete.length) {
-      const { error: deleteError } = await supabase
-        .from("product_variants")
-        .delete()
-        .in("id", variantIdsToDelete);
-
-      if (deleteError) throw deleteError;
+    if (error) {
+      throw new Error(error.message || "Failed to create product.");
     }
 
-    const variantsPayload = (product.product_variants || []).map(function (variant, index) {
-      return {
-        id: variant.id || undefined,
-        product_id: savedProduct.id,
-        variant_id: String(variant.variant_id || "").trim(),
-        label: String(variant.label || "").trim(),
-        price: Number(variant.price || 0),
-        compare_at_price: Number(variant.compare_at_price || 0),
-        weight_oz: Number(variant.weight_oz || 0),
-        stock_quantity: Math.max(0, Number(variant.stock_quantity || 0)),
-        allow_backorder: variant.allow_backorder === true,
-        is_active: variant.is_active !== false,
-        sort_order: Number.isFinite(Number(variant.sort_order))
-          ? Number(variant.sort_order)
-          : index
-      };
-    });
-
-    if (variantsPayload.length) {
-      const { error: variantsError } = await supabase
-        .from("product_variants")
-        .upsert(variantsPayload, { onConflict: "variant_id" });
-
-      if (variantsError) throw variantsError;
-    }
-
-    return savedProduct;
+    return data;
   }
 
   async function deleteProduct(productId) {
-    const supabase = getSupabase();
-    if (!supabase) throw new Error("Supabase client not found.");
+    if (!productId) {
+      throw new Error("Product ID is required.");
+    }
 
-    const { error } = await supabase
+    const supabase = getSupabase();
+
+    const { error: variantsError } = await supabase
+      .from("product_variants")
+      .delete()
+      .eq("product_id", productId);
+
+    if (variantsError) {
+      throw new Error(variantsError.message || "Failed to delete product variants.");
+    }
+
+    const { error: productError } = await supabase
       .from("products")
       .delete()
       .eq("id", productId);
 
-    if (error) throw error;
+    if (productError) {
+      throw new Error(productError.message || "Failed to delete product.");
+    }
+
+    return true;
   }
 
-  return {
-    listProducts,
-    createProduct,
-    saveProduct,
-    deleteProduct
-  };
+  async function createVariant(productId, variantData) {
+    if (!productId) {
+      throw new Error("Product ID is required.");
+    }
+
+    const supabase = getSupabase();
+
+    const payload = {
+      product_id: productId,
+      variant_id: variantData.variant_id || crypto.randomUUID(),
+      label: variantData.label || "Default",
+      price: Number(variantData.price || 0),
+      compare_at_price: Number(variantData.compare_at_price || 0),
+      weight_oz: Number(variantData.weight_oz || 0),
+      stock_quantity: Number(variantData.stock_quantity || 0),
+      allow_backorder: variantData.allow_backorder === true,
+      is_active: variantData.is_active !== false,
+      sort_order: Number(variantData.sort_order || 0),
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    };
+
+    const { data, error } = await supabase
+      .from("product_variants")
+      .insert(payload)
+      .select()
+      .single();
+
+    if (error) {
+      throw new Error(error.message || "Failed to create variant.");
+    }
+
+    return data;
+  }
+
+  async function updateVariant(variantRowId, updates) {
+    if (!variantRowId) {
+      throw new Error("Variant row ID is required.");
+    }
+
+    const supabase = getSupabase();
+
+    const payload = {
+      ...updates,
+      updated_at: new Date().toISOString()
+    };
+
+    const { data, error } = await supabase
+      .from("product_variants")
+      .update(payload)
+      .eq("id", variantRowId)
+      .select()
+      .single();
+
+    if (error) {
+      throw new Error(error.message || "Failed to update variant.");
+    }
+
+    return data;
+  }
+
+  async function deleteVariant(variantRowId) {
+    if (!variantRowId) {
+      throw new Error("Variant row ID is required.");
+    }
+
+    const supabase = getSupabase();
+
+    const { error } = await supabase
+      .from("product_variants")
+      .delete()
+      .eq("id", variantRowId);
+
+    if (error) {
+      throw new Error(error.message || "Failed to delete variant.");
+    }
+
+    return true;
+  }
+
+  window.AXIOM_PRODUCTS_API.listProducts = listProducts;
+  window.AXIOM_PRODUCTS_API.getProduct = getProduct;
+  window.AXIOM_PRODUCTS_API.updateProduct = updateProduct;
+  window.AXIOM_PRODUCTS_API.createProduct = createProduct;
+  window.AXIOM_PRODUCTS_API.deleteProduct = deleteProduct;
+  window.AXIOM_PRODUCTS_API.createVariant = createVariant;
+  window.AXIOM_PRODUCTS_API.updateVariant = updateVariant;
+  window.AXIOM_PRODUCTS_API.deleteVariant = deleteVariant;
 })();
