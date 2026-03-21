@@ -25,6 +25,11 @@ function formatMoney(value) {
   return `$${Number(value || 0).toFixed(2)}`;
 }
 
+function toNumber(value, fallback = 0) {
+  const num = Number(value);
+  return Number.isFinite(num) ? num : fallback;
+}
+
 function normalizeImagePath(path) {
   if (!path || typeof path !== "string") {
     return "../images/products/placeholder.PNG";
@@ -177,6 +182,44 @@ function hasLocalCheckoutSession() {
   );
 }
 
+function normalizeDiscountCode(value) {
+  return String(value || "").trim().toUpperCase();
+}
+
+function getAppliedDiscountState() {
+  if (
+    window.AXIOM_DISCOUNT_CODES_UI &&
+    typeof window.AXIOM_DISCOUNT_CODES_UI.getAppliedDiscount === "function"
+  ) {
+    const result = window.AXIOM_DISCOUNT_CODES_UI.getAppliedDiscount();
+    return {
+      code: normalizeDiscountCode(result?.code || ""),
+      discountAmount: toNumber(result?.discountAmount, 0),
+      discountType: String(result?.discountType || ""),
+      discountValue: toNumber(result?.discountValue, 0),
+      description: String(result?.description || ""),
+      isApplied: result?.isApplied === true
+    };
+  }
+
+  const sessionCode = normalizeDiscountCode(axiomCurrentCheckoutSession?.discount_code || "");
+  const sessionAmount = toNumber(axiomCurrentCheckoutSession?.discount_amount, 0);
+
+  return {
+    code: sessionCode,
+    discountAmount: sessionAmount,
+    discountType: "",
+    discountValue: 0,
+    description: "",
+    isApplied: Boolean(sessionCode && sessionAmount > 0)
+  };
+}
+
+function getEffectiveDiscountAmount(subtotal) {
+  const discountState = getAppliedDiscountState();
+  return Math.min(toNumber(discountState.discountAmount, 0), Math.max(toNumber(subtotal, 0), 0));
+}
+
 function normalizeSessionShape(session) {
   if (!session || typeof session !== "object") return null;
 
@@ -218,12 +261,18 @@ function normalizeSessionShape(session) {
         : 0
   );
 
+  const discountAmount = Number(
+    session.discount_amount !== undefined && session.discount_amount !== null
+      ? session.discount_amount
+      : 0
+  );
+
   const totalAmount = Number(
     session.total_amount !== undefined && session.total_amount !== null
       ? session.total_amount
       : session.total !== undefined && session.total !== null
         ? session.total
-        : subtotal + shippingAmount + taxAmount
+        : subtotal - discountAmount + shippingAmount + taxAmount
   );
 
   return {
@@ -232,6 +281,8 @@ function normalizeSessionShape(session) {
     subtotal: subtotal,
     shipping_amount: shippingAmount,
     tax_amount: taxAmount,
+    discount_amount: discountAmount,
+    discount_code: normalizeDiscountCode(session.discount_code || ""),
     total_amount: totalAmount,
     shipping_selection: shippingSelection,
     shipping_address: shippingAddress,
@@ -556,7 +607,9 @@ async function syncLocalCartIntoSession(forceUseLocal = false) {
 
   const existingShippingAmount = Number(axiomCurrentCheckoutSession?.shipping_amount || 0);
   const existingTaxAmount = Number(axiomCurrentCheckoutSession?.tax_amount || 0);
-  const totalAmount = subtotal + existingShippingAmount + existingTaxAmount;
+  const existingDiscountAmount = Number(axiomCurrentCheckoutSession?.discount_amount || 0);
+  const existingDiscountCode = normalizeDiscountCode(axiomCurrentCheckoutSession?.discount_code || "");
+  const totalAmount = subtotal - existingDiscountAmount + existingShippingAmount + existingTaxAmount;
 
   if (window.AXIOM_CART_CHECKOUT_SYNC && typeof window.AXIOM_CART_CHECKOUT_SYNC.syncToSession === "function") {
     await window.AXIOM_CART_CHECKOUT_SYNC.syncToSession({
@@ -564,6 +617,8 @@ async function syncLocalCartIntoSession(forceUseLocal = false) {
       subtotal: subtotal,
       shipping_amount: existingShippingAmount,
       tax_amount: existingTaxAmount,
+      discount_amount: existingDiscountAmount,
+      discount_code: existingDiscountCode || null,
       total_amount: totalAmount,
       session_status: "active"
     });
@@ -578,6 +633,8 @@ async function syncLocalCartIntoSession(forceUseLocal = false) {
       subtotal: subtotal,
       shipping_amount: existingShippingAmount,
       tax_amount: existingTaxAmount,
+      discount_amount: existingDiscountAmount,
+      discount_code: existingDiscountCode || null,
       total_amount: totalAmount,
       session_status: "active",
       last_activity_at: new Date().toISOString()
@@ -594,6 +651,8 @@ async function syncLocalCartIntoSession(forceUseLocal = false) {
     session.subtotal = subtotal;
     session.shipping_amount = existingShippingAmount;
     session.tax_amount = existingTaxAmount;
+    session.discount_amount = existingDiscountAmount;
+    session.discount_code = existingDiscountCode || null;
     session.total_amount = totalAmount;
 
     if (!session.shipping_selection || typeof session.shipping_selection !== "object") {
@@ -631,6 +690,7 @@ function hydrateCheckoutFormFromSession(session) {
   const zipEl = document.getElementById("zip");
   const phoneEl = document.getElementById("phone");
   const countryEl = document.getElementById("country");
+  const couponInputEl = document.getElementById("couponCodeInput");
 
   if (emailEl && !emailEl.value) emailEl.value = session.customer_email || "";
   if (firstNameEl && !firstNameEl.value) {
@@ -653,6 +713,9 @@ function hydrateCheckoutFormFromSession(session) {
       countryEl.value = nextCountry;
     }
   }
+  if (couponInputEl && !couponInputEl.value && session.discount_code) {
+    couponInputEl.value = session.discount_code;
+  }
 }
 
 async function syncCheckoutSessionFromForm() {
@@ -661,7 +724,10 @@ async function syncCheckoutSessionFromForm() {
 
   const shippingAmount = getSelectedShippingValue();
   const taxAmount = 0;
-  const totalAmount = subtotal + shippingAmount + taxAmount;
+  const discountState = getAppliedDiscountState();
+  const discountAmount = Math.min(toNumber(discountState.discountAmount, 0), Math.max(subtotal, 0));
+  const discountCode = discountState.isApplied ? normalizeDiscountCode(discountState.code || "") : "";
+  const totalAmount = Math.max(0, subtotal - discountAmount + shippingAmount + taxAmount);
   const shippingAddress = getCheckoutShippingAddress();
   const billingAddress = getCheckoutBillingAddress();
   const paymentMethod = getSelectedPaymentMethod();
@@ -680,6 +746,8 @@ async function syncCheckoutSessionFromForm() {
       shipping_selection: shippingSelection,
       shipping_amount: shippingAmount,
       tax_amount: taxAmount,
+      discount_amount: discountAmount,
+      discount_code: discountCode || null,
       subtotal: subtotal,
       total_amount: totalAmount,
       cart_items: items,
@@ -708,6 +776,8 @@ async function syncCheckoutSessionFromForm() {
     session.shipping_amount = shippingAmount;
     session.tax_amount = taxAmount;
     session.tax = taxAmount;
+    session.discount_amount = discountAmount;
+    session.discount_code = discountCode || null;
     session.subtotal = subtotal;
     session.total_amount = totalAmount;
     session.total = totalAmount;
@@ -732,6 +802,8 @@ async function syncCheckoutSessionFromForm() {
     shipping_selection: shippingSelection,
     shipping_amount: shippingAmount,
     tax_amount: taxAmount,
+    discount_amount: discountAmount,
+    discount_code: discountCode || null,
     subtotal: subtotal,
     total_amount: totalAmount,
     cart_items: items,
@@ -850,6 +922,9 @@ function renderCheckoutSummary() {
   const taxEl = document.getElementById("tax");
   const totalEl = document.getElementById("total");
   const cartCountEl = document.getElementById("checkoutCartCount");
+  const discountRowEl = document.getElementById("discountAmountRow");
+  const discountAmountEl = document.getElementById("discountAmount");
+  const appliedCouponCodeEl = document.getElementById("appliedCouponCode");
 
   if (!itemsWrap || !subtotalEl || !shippingEl || !taxEl || !totalEl) return;
 
@@ -866,6 +941,11 @@ function renderCheckoutSummary() {
     shippingEl.textContent = "$0.00";
     taxEl.textContent = "$0.00";
     totalEl.textContent = "$0.00";
+
+    if (discountRowEl) discountRowEl.hidden = true;
+    if (discountAmountEl) discountAmountEl.textContent = "-$0.00";
+    if (appliedCouponCodeEl) appliedCouponCodeEl.textContent = "";
+
     return;
   }
 
@@ -906,12 +986,82 @@ function renderCheckoutSummary() {
     Number(axiomCurrentCheckoutSession?.shipping_amount || getSelectedShippingValue() || 0);
 
   const taxAmount = Number(axiomCurrentCheckoutSession?.tax_amount || 0);
-  const total = subtotal + shippingAmount + taxAmount;
+  const discountState = getAppliedDiscountState();
+  const discountAmount = Math.min(toNumber(discountState.discountAmount, 0), Math.max(subtotal, 0));
+  const total = Math.max(0, subtotal - discountAmount + shippingAmount + taxAmount);
 
   subtotalEl.textContent = formatMoney(subtotal);
   shippingEl.textContent = shippingAmount > 0 ? formatMoney(shippingAmount) : "$0.00";
   taxEl.textContent = formatMoney(taxAmount);
   totalEl.textContent = formatMoney(total);
+
+  if (discountRowEl && discountAmountEl && appliedCouponCodeEl) {
+    if (discountState.isApplied && discountAmount > 0) {
+      discountRowEl.hidden = false;
+      discountAmountEl.textContent = `-${formatMoney(discountAmount)}`;
+      appliedCouponCodeEl.textContent = discountState.code ? `(${discountState.code})` : "";
+    } else {
+      discountRowEl.hidden = true;
+      discountAmountEl.textContent = "-$0.00";
+      appliedCouponCodeEl.textContent = "";
+    }
+  }
+
+  const topTotalEl = document.getElementById("checkoutSummaryTopTotal");
+  if (topTotalEl) {
+    topTotalEl.textContent = formatMoney(total);
+  }
+
+  const topSummaryTotalEl = document.getElementById("topSummaryTotal");
+  if (topSummaryTotalEl) {
+    topSummaryTotalEl.textContent = formatMoney(total);
+  }
+
+  const summaryStaticTotalEl = document.getElementById("summaryStaticTotal");
+  if (summaryStaticTotalEl) {
+    summaryStaticTotalEl.textContent = formatMoney(total);
+  }
+
+  const topSubtotalEl = document.getElementById("topSubtotal");
+  if (topSubtotalEl) {
+    topSubtotalEl.textContent = formatMoney(subtotal);
+  }
+
+  const topShippingEl = document.getElementById("topShipping");
+  if (topShippingEl) {
+    topShippingEl.textContent = shippingAmount > 0 ? formatMoney(shippingAmount) : "$0.00";
+  }
+
+  const topTaxEl = document.getElementById("topTax");
+  if (topTaxEl) {
+    topTaxEl.textContent = formatMoney(taxAmount);
+  }
+
+  const topTotalMirrorEl = document.getElementById("topTotal");
+  if (topTotalMirrorEl) {
+    topTotalMirrorEl.textContent = formatMoney(total);
+  }
+
+  const topDiscountRowEl = document.getElementById("topDiscountAmountRow");
+  const topDiscountAmountEl = document.getElementById("topDiscountAmount");
+  const topAppliedCouponCodeEl = document.getElementById("topAppliedCouponCode");
+
+  if (topDiscountRowEl && topDiscountAmountEl && topAppliedCouponCodeEl) {
+    if (discountState.isApplied && discountAmount > 0) {
+      topDiscountRowEl.hidden = false;
+      topDiscountAmountEl.textContent = `-${formatMoney(discountAmount)}`;
+      topAppliedCouponCodeEl.textContent = discountState.code ? `(${discountState.code})` : "";
+    } else {
+      topDiscountRowEl.hidden = true;
+      topDiscountAmountEl.textContent = "-$0.00";
+      topAppliedCouponCodeEl.textContent = "";
+    }
+  }
+
+  const topCheckoutItemsWrap = document.getElementById("topCheckoutItems");
+  if (topCheckoutItemsWrap) {
+    topCheckoutItemsWrap.innerHTML = itemsWrap.innerHTML;
+  }
 }
 
 function setupRateButton() {
@@ -1030,6 +1180,19 @@ function bindLiveCheckoutTracking() {
   });
 }
 
+function bindDiscountHooks() {
+  window.AXIOM_CHECKOUT_DISCOUNT_HOOKS = {
+    getSubtotal: function () {
+      return calculateCartSubtotal(getCurrentSessionItems());
+    }
+  };
+
+  window.addEventListener("axiom-discount-updated", async function () {
+    await syncCheckoutSessionFromForm();
+    renderCheckoutSummary();
+  });
+}
+
 document.addEventListener("DOMContentLoaded", async () => {
   await Promise.all([
     loadSection("payment-methods", "checkout-payment.html"),
@@ -1048,6 +1211,13 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   hydrateCheckoutFormFromSession(axiomCurrentCheckoutSession);
+
+  bindDiscountHooks();
+
+  if (window.AXIOM_DISCOUNT_CODES_UI && typeof window.AXIOM_DISCOUNT_CODES_UI.init === "function") {
+    window.AXIOM_DISCOUNT_CODES_UI.init();
+  }
+
   validateAddressFields(false);
   renderCheckoutSummary();
   setupRateButton();
@@ -1057,6 +1227,21 @@ document.addEventListener("DOMContentLoaded", async () => {
     renderShippingRatesFromSession(false);
     await syncCheckoutSessionFromForm();
     renderCheckoutSummary();
+  }
+
+  if (axiomCurrentCheckoutSession?.discount_code) {
+    const couponInput = document.getElementById("couponCodeInput");
+    const applyCouponBtn = document.getElementById("applyCouponBtn");
+
+    if (couponInput) {
+      couponInput.value = axiomCurrentCheckoutSession.discount_code;
+    }
+
+    if (applyCouponBtn) {
+      setTimeout(function () {
+        applyCouponBtn.click();
+      }, 250);
+    }
   }
 
   window.addEventListener("axiom-cart-updated", async function () {
