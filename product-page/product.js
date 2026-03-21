@@ -285,7 +285,7 @@ document.addEventListener("DOMContentLoaded", async function () {
               (Number(variant.stock_quantity || 0) > 0 || variant.allow_backorder === true),
             allow_backorder: variant.allow_backorder === true,
             is_active: variant.is_active !== false,
-            image: row.main_image || galleryImages[0] || ""
+            image: variant.image || ""
           };
         })
     };
@@ -311,7 +311,8 @@ document.addEventListener("DOMContentLoaded", async function () {
             stock_quantity,
             allow_backorder,
             is_active,
-            sort_order
+            sort_order,
+            image
           )
         `)
         .eq("slug", productSlug)
@@ -345,24 +346,46 @@ document.addEventListener("DOMContentLoaded", async function () {
     return Array.isArray(productObj?.variants) ? productObj.variants : [];
   }
 
-  function getImageForVariant(productObj, variantIndex) {
-    const variants = Array.isArray(productObj?.variants) ? productObj.variants : [];
-    const selectedVariant = variants[variantIndex] || variants[0] || null;
+  function getGalleryImages(productObj) {
+    return Array.isArray(productObj?.images) ? productObj.images : [];
+  }
 
-    if (selectedVariant?.image) {
-      return normalizeImagePath(selectedVariant.image);
-    }
-
-    const images = Array.isArray(productObj?.images) ? productObj.images : [];
-    if (images.length) {
-      return normalizeImagePath(images[variantIndex] || images[0]);
-    }
-
+  function getNormalizedMainProductImage(productObj) {
     if (productObj?.image) {
       return normalizeImagePath(productObj.image);
     }
 
+    const images = getGalleryImages(productObj);
+    if (images.length) {
+      return normalizeImagePath(images[0]);
+    }
+
     return "../images/products/placeholder.PNG";
+  }
+
+  function getImageForVariant(productObj, variantIndex) {
+    const variants = Array.isArray(productObj?.variants) ? productObj.variants : [];
+    const selectedVariant = variants[variantIndex] || variants[0] || null;
+    const images = getGalleryImages(productObj);
+    const normalizedMainImage = getNormalizedMainProductImage(productObj);
+
+    if (selectedVariant?.image && String(selectedVariant.image).trim()) {
+      return normalizeImagePath(selectedVariant.image);
+    }
+
+    if (images.length <= 1) {
+      return normalizedMainImage;
+    }
+
+    if (images[variantIndex]) {
+      return normalizeImagePath(images[variantIndex]);
+    }
+
+    if (images[0]) {
+      return normalizeImagePath(images[0]);
+    }
+
+    return normalizedMainImage;
   }
 
   const product =
