@@ -25,7 +25,6 @@
   />
 
   <link rel="stylesheet" href="../css/style.css" />
-  <link rel="stylesheet" href="../footer/footer.css" />
   <link rel="stylesheet" href="checkout.css" />
   <link rel="stylesheet" href="checkout-shipping.css" />
   <link rel="stylesheet" href="checkout-payment.css" />
@@ -360,25 +359,6 @@
       display: none !important;
     }
 
-    .checkout-terms-link-note {
-      margin-top: 8px;
-      margin-bottom: 18px;
-      font-size: 13px;
-      line-height: 1.6;
-      color: #51627c;
-    }
-
-    .checkout-terms-link-note a {
-      color: #1e7fe6;
-      font-weight: 800;
-      text-decoration: none;
-      white-space: nowrap;
-    }
-
-    .checkout-terms-link-note a:hover {
-      text-decoration: underline;
-    }
-
     @media (max-width: 640px) {
       .checkout-cart-link.cart-btn {
         width: 54px !important;
@@ -458,7 +438,6 @@
   <main class="checkout-main">
     <div class="checkout-container">
 
-      <!-- TOP DROPDOWN SUMMARY -->
       <section class="checkout-order-summary-top">
         <div class="checkout-summary-accordion" id="checkoutSummaryAccordion">
           <button
@@ -728,7 +707,6 @@
 
               <div id="payment-methods"></div>
 
-              <!-- STATIC SUMMARY ABOVE TERMS / PLACE ORDER -->
               <section class="checkout-section">
                 <div class="checkout-summary-static">
                   <div class="checkout-summary-static-header">
@@ -808,6 +786,8 @@
                 </div>
               </section>
 
+              <div id="termsSection"></div>
+
               <section class="checkout-section checkout-submit-section">
                 <button type="submit" class="checkout-button">
                   Place Order
@@ -821,26 +801,8 @@
     </div>
   </main>
 
-
   <script>
     document.addEventListener("DOMContentLoaded", function () {
-      const footerTarget = document.getElementById("site-footer");
-      if (!footerTarget) return;
-
-      fetch("../footer/footer.html")
-        .then(function (response) {
-          if (!response.ok) {
-            throw new Error("Could not load ../footer/footer.html");
-          }
-          return response.text();
-        })
-        .then(function (html) {
-          footerTarget.innerHTML = html;
-        })
-        .catch(function (error) {
-          console.error("Footer load failed:", error);
-        });
-
       const summaryAccordion = document.getElementById("checkoutSummaryAccordion");
       const summaryToggle = document.getElementById("checkoutSummaryToggle");
       const summaryPanel = document.getElementById("checkoutSummaryPanel");
@@ -955,6 +917,8 @@
 
   <script src="shipping-weights.js" defer></script>
   <script src="shipping-rates.js" defer></script>
+  <script src="discount-codes/discount-codes-api.js" defer></script>
+  <script src="discount-codes/discount-codes-ui.js" defer></script>
 
   <script src="checkout-session.js" defer></script>
   <script src="../admin-dashboard/checkout-session/checkout-session.js" defer></script>
