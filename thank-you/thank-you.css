@@ -328,3 +328,13 @@ body.thank-you-page {
     text-align: left;
   }
 }
+
+.thank-you-header .checkout-logo img,
+.thank-you-logo img,
+header .checkout-logo img {
+  width: 120px;
+  max-width: 120px;
+  height: auto;
+  object-fit: contain;
+  display: block;
+}
