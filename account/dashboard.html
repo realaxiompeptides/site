@@ -80,28 +80,6 @@
       border: 2px solid #ffffff !important;
     }
 
-    @media (max-width: 640px) {
-      .cart-btn {
-        width: 54px !important;
-        height: 54px !important;
-      }
-
-      .cart-btn svg {
-        width: 26px !important;
-        height: 26px !important;
-      }
-
-      .cart-count {
-        min-width: 24px !important;
-        height: 24px !important;
-        font-size: 12px !important;
-        top: -4px !important;
-        right: -4px !important;
-        padding: 0 6px !important;
-        border-width: 2px !important;
-      }
-    }
-
     .header-inner {
       display: flex !important;
       align-items: center !important;
@@ -126,6 +104,41 @@
     .cart-btn {
       z-index: 10 !important;
       margin-right: 0 !important;
+    }
+
+    .support-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 14px;
+    }
+
+    .support-grid .account-btn {
+      width: 100%;
+      text-align: center;
+      justify-content: center;
+    }
+
+    @media (max-width: 640px) {
+      .cart-btn {
+        width: 54px !important;
+        height: 54px !important;
+      }
+
+      .cart-btn svg {
+        width: 26px !important;
+        height: 26px !important;
+      }
+
+      .cart-count {
+        min-width: 24px !important;
+        height: 24px !important;
+        font-size: 12px !important;
+        top: -4px !important;
+        right: -4px !important;
+        padding: 0 6px !important;
+        border-width: 2px !important;
+      }
     }
   </style>
 </head>
@@ -298,9 +311,12 @@
           <h3>Need Help?</h3>
           <p>Contact us anytime and include your order number for faster support.</p>
 
-          <div class="order-links">
-            <a href="mailto:realaxiompeptides@gmail.com" class="account-btn account-btn-secondary">
-              Email Support
+          <div class="support-grid">
+            <a
+              href="mailto:realaxiompeptides@gmail.com"
+              class="account-btn account-btn-secondary"
+            >
+              Email Us
             </a>
 
             <a
@@ -309,7 +325,7 @@
               rel="noopener noreferrer"
               class="account-btn account-btn-secondary"
             >
-              WhatsApp Support
+              WhatsApp
             </a>
 
             <a
@@ -318,7 +334,7 @@
               rel="noopener noreferrer"
               class="account-btn account-btn-secondary"
             >
-              Telegram Support
+              Telegram
             </a>
 
             <a
@@ -327,7 +343,7 @@
               rel="noopener noreferrer"
               class="account-btn account-btn-secondary"
             >
-              Discord Support
+              Discord
             </a>
           </div>
         </div>
