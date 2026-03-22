@@ -404,7 +404,7 @@ function renderThankYouPaymentMethods(order) {
 
   mount.innerHTML = `
     <section class="thank-you-payment-section-card">
-      <h2 class="thank-you-payment-section-title">Complete Your Payment<h2>
+      <h2 class="thank-you-payment-section-title">Complete Your Payment</h2>
       ${
         selectedMethod
           ? thankYouBuildPrimaryMethodCard(selectedMethod, orderNumber)
@@ -420,7 +420,7 @@ function renderThankYouPaymentMethods(order) {
     </section>
 
     <section class="thank-you-payment-section-card">
-      <h2 class="thank-you-payment-section-title">Other Payment Methods</h2>
+      <h2 class="thank-you-payment-section-title">Other Payment Options</h2>
       <p class="thank-you-payment-section-subtext">
         You can also use any of the payment methods below if you do not want to use the selected one anymore.
         Please include your order number in the note.
