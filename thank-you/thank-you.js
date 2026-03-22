@@ -31,53 +31,6 @@ function escapeHtml(value) {
     .replace(/'/g, "&#039;");
 }
 
-/*
-  Update these whenever you want.
-  Venmo QR image should be saved as:
-  ../images/venmo-qr.PNG
-*/
-const PAYMENT_DETAILS = {
-  cashapp: {
-    label: "Cash App",
-    handle: "$REPLACE_WITH_YOUR_CASHAPP",
-    instructions:
-      "Send the payment through Cash App and include only your order number in the note."
-  },
-  applepay: {
-    label: "Apple Pay",
-    destination: "916-233-5312",
-    instructions:
-      "Send the payment through Apple Pay and include only your order number with the payment."
-  },
-  zelle: {
-    label: "Zelle",
-    phone: "916-233-5312",
-    email: "testzelle@axiomtest.com",
-    instructions:
-      "Send the payment through Zelle and include only your order number with the payment."
-  },
-  venmo: {
-    label: "Venmo",
-    handle: "@jax-ferone-839",
-    url: "https://venmo.com/u/jax-ferone-839",
-    qrImage: "../images/venmo-qr.PNG",
-    instructions:
-      "Send the payment through Venmo and include only your order number in the payment note."
-  },
-  crypto: {
-    label: "Crypto",
-    instructions:
-      "Send the exact total using your selected crypto method. Double-check the network before sending.",
-    wallets: {
-      bitcoin: "bc1qexamplebtcaddress1234567890test",
-      solana: "So1anaExampleWalletAddress123456789ABCDEFG",
-      ethereum: "0xExampleEthereumAddress1234567890ABCDEF",
-      usdc: "0xExampleUSDCAddress1234567890ABCDEF",
-      usdt: "TExampleUSDTWalletAddress123456789ABCDEFG"
-    }
-  }
-};
-
 function getBusinessDayShipEstimate(date) {
   const shipDate = new Date(date);
   shipDate.setHours(0, 0, 0, 0);
@@ -159,25 +112,6 @@ async function loadOrderFromSupabase() {
   return data || null;
 }
 
-function getPaymentMethodKey(rawValue) {
-  const value = String(rawValue || "").trim().toLowerCase();
-
-  if (!value) return "";
-
-  if (value.includes("cash")) return "cashapp";
-  if (value.includes("apple")) return "applepay";
-  if (value.includes("zelle")) return "zelle";
-  if (value.includes("venmo")) return "venmo";
-  if (value.includes("crypto")) return "crypto";
-  if (value.includes("bitcoin")) return "crypto";
-  if (value.includes("solana")) return "crypto";
-  if (value.includes("ethereum")) return "crypto";
-  if (value.includes("usdc")) return "crypto";
-  if (value.includes("usdt")) return "crypto";
-
-  return value.replace(/\s+/g, "");
-}
-
 function getItemLineTotal(item) {
   if (item.line_total !== undefined && item.line_total !== null && !Number.isNaN(Number(item.line_total))) {
     return Number(item.line_total);
@@ -242,179 +176,6 @@ function makeTopLogoBigger() {
   });
 }
 
-function createCopyRow(label, value) {
-  const safeLabel = escapeHtml(label);
-  const safeValue = escapeHtml(value);
-
-  return `
-    <div class="thank-you-payment-detail-row thank-you-payment-copy-row">
-      <span>${safeLabel}</span>
-      <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap; justify-content:flex-end; max-width:100%;">
-        <input
-          type="text"
-          value="${safeValue}"
-          readonly
-          class="thank-you-copy-input"
-          style="min-width:180px; max-width:100%; padding:10px 12px; border:1px solid #dbe4ef; border-radius:12px; background:#ffffff; color:#12203f; font-size:13px;"
-        />
-        <button
-          type="button"
-          class="thank-you-copy-btn"
-          data-copy="${safeValue}"
-          style="padding:10px 14px; border:1px solid #dbe4ef; border-radius:12px; background:#2f84bf; color:#ffffff; font-weight:800; cursor:pointer;"
-        >
-          Copy
-        </button>
-      </div>
-    </div>
-  `;
-}
-
-function bindCopyButtons() {
-  const buttons = document.querySelectorAll(".thank-you-copy-btn");
-
-  buttons.forEach(function (button) {
-    if (button.dataset.bound === "true") return;
-    button.dataset.bound = "true";
-
-    button.addEventListener("click", async function () {
-      const value = button.getAttribute("data-copy") || "";
-      const originalText = button.textContent;
-
-      try {
-        await navigator.clipboard.writeText(value);
-        button.textContent = "Copied";
-      } catch (error) {
-        console.error("Failed to copy value:", error);
-
-        const input = button.parentElement?.querySelector(".thank-you-copy-input");
-        if (input) {
-          input.focus();
-          input.select();
-          try {
-            document.execCommand("copy");
-            button.textContent = "Copied";
-          } catch (execError) {
-            console.error("Fallback copy failed:", execError);
-            button.textContent = "Copy Failed";
-          }
-        } else {
-          button.textContent = "Copy Failed";
-        }
-      }
-
-      setTimeout(function () {
-        button.textContent = originalText;
-      }, 1200);
-    });
-  });
-}
-
-function renderPaymentInstructions(order) {
-  const paymentMethod = order?.payment_method || "";
-  const paymentKey = getPaymentMethodKey(paymentMethod);
-
-  const instructionsMount =
-    document.getElementById("thankYouPaymentInstructions") ||
-    document.getElementById("paymentInstructions") ||
-    document.getElementById("thankYouPaymentDetails") ||
-    document.getElementById("thankYouPayNowBox");
-
-  if (!instructionsMount) return;
-
-  if (paymentKey === "cashapp") {
-    instructionsMount.innerHTML = `
-      <div class="thank-you-payment-card">
-        <h3>Cash App Instructions</h3>
-        <p>${escapeHtml(PAYMENT_DETAILS.cashapp.instructions)}</p>
-        ${createCopyRow("Cash App", PAYMENT_DETAILS.cashapp.handle)}
-        ${createCopyRow("Order Number", `#${order.order_number}`)}
-      </div>
-    `;
-    bindCopyButtons();
-    return;
-  }
-
-  if (paymentKey === "applepay") {
-    instructionsMount.innerHTML = `
-      <div class="thank-you-payment-card">
-        <h3>Apple Pay Instructions</h3>
-        <p>${escapeHtml(PAYMENT_DETAILS.applepay.instructions)}</p>
-        ${createCopyRow("Apple Pay", PAYMENT_DETAILS.applepay.destination)}
-        ${createCopyRow("Order Number", `#${order.order_number}`)}
-      </div>
-    `;
-    bindCopyButtons();
-    return;
-  }
-
-  if (paymentKey === "zelle") {
-    instructionsMount.innerHTML = `
-      <div class="thank-you-payment-card">
-        <h3>Zelle Instructions</h3>
-        <p>${escapeHtml(PAYMENT_DETAILS.zelle.instructions)}</p>
-        ${createCopyRow("Zelle Phone", PAYMENT_DETAILS.zelle.phone)}
-        ${createCopyRow("Zelle Email", PAYMENT_DETAILS.zelle.email)}
-        ${createCopyRow("Order Number", `#${order.order_number}`)}
-      </div>
-    `;
-    bindCopyButtons();
-    return;
-  }
-
-  if (paymentKey === "venmo") {
-    instructionsMount.innerHTML = `
-      <div class="thank-you-payment-card">
-        <h3>Venmo Instructions</h3>
-        <p>${escapeHtml(PAYMENT_DETAILS.venmo.instructions)}</p>
-
-        <div style="margin:16px 0 18px;">
-          <img
-            src="${escapeHtml(PAYMENT_DETAILS.venmo.qrImage)}"
-            alt="Venmo QR Code"
-            style="width:220px; max-width:100%; height:auto; border:1px solid #dbe4ef; border-radius:16px; background:#ffffff; display:block;"
-            onerror="this.style.display='none';"
-          />
-        </div>
-
-        ${createCopyRow("Venmo Handle", PAYMENT_DETAILS.venmo.handle)}
-        ${createCopyRow("Venmo Link", PAYMENT_DETAILS.venmo.url)}
-        ${createCopyRow("Order Number", `#${order.order_number}`)}
-      </div>
-    `;
-    bindCopyButtons();
-    return;
-  }
-
-  if (paymentKey === "crypto") {
-    instructionsMount.innerHTML = `
-      <div class="thank-you-payment-card">
-        <h3>Crypto Instructions</h3>
-        <p>${escapeHtml(PAYMENT_DETAILS.crypto.instructions)}</p>
-
-        ${createCopyRow("Order Number", `#${order.order_number}`)}
-        ${createCopyRow("Bitcoin (BTC)", PAYMENT_DETAILS.crypto.wallets.bitcoin)}
-        ${createCopyRow("Solana (SOL)", PAYMENT_DETAILS.crypto.wallets.solana)}
-        ${createCopyRow("Ethereum (ETH)", PAYMENT_DETAILS.crypto.wallets.ethereum)}
-        ${createCopyRow("USDC", PAYMENT_DETAILS.crypto.wallets.usdc)}
-        ${createCopyRow("USDT", PAYMENT_DETAILS.crypto.wallets.usdt)}
-      </div>
-    `;
-    bindCopyButtons();
-    return;
-  }
-
-  instructionsMount.innerHTML = `
-    <div class="thank-you-payment-card">
-      <h3>Payment Instructions</h3>
-      <p>Please use the selected payment method and include your order number when required.</p>
-      ${createCopyRow("Payment Method", paymentMethod || "Not selected")}
-      ${createCopyRow("Order Number", `#${order.order_number}`)}
-    </div>
-  `;
-  bindCopyButtons();
-}
-
 function renderOrder(order) {
   if (!order) return;
 
@@ -465,7 +226,9 @@ function renderOrder(order) {
       "Delivery estimate depends on the shipping method selected.";
   }
 
-  renderPaymentInstructions(order);
+  if (typeof renderThankYouPaymentMethods === "function") {
+    renderThankYouPaymentMethods(order);
+  }
 
   const items = getOrderItems(order);
 
@@ -515,17 +278,20 @@ function renderMissingOrderState() {
   setText("thankYouTotal", "$0.00");
   setHtml("thankYouItems", "<p>We could not find this order.</p>");
 
-  const instructionsMount =
+  const paymentMount =
     document.getElementById("thankYouPaymentInstructions") ||
     document.getElementById("paymentInstructions") ||
     document.getElementById("thankYouPaymentDetails") ||
-    document.getElementById("thankYouPayNowBox");
+    document.getElementById("thankYouPayNowBox") ||
+    document.getElementById("paymentMethodsSection");
 
-  if (instructionsMount) {
-    instructionsMount.innerHTML = `
-      <div class="thank-you-payment-card">
-        <h3>Order Not Found</h3>
-        <p>Please go back to your checkout confirmation link or contact support if this keeps happening.</p>
+  if (paymentMount) {
+    paymentMount.innerHTML = `
+      <div class="thank-you-payment-section-card">
+        <h2 class="thank-you-payment-section-title">Order Not Found</h2>
+        <p class="thank-you-payment-empty-text">
+          Please go back to your confirmation link or contact support if this keeps happening.
+        </p>
       </div>
     `;
   }
