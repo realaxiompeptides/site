@@ -27,6 +27,96 @@
   <link rel="stylesheet" href="../css/style.css" />
   <link rel="stylesheet" href="../footer/footer.css" />
   <link rel="stylesheet" href="thank-you.css" />
+
+  <style>
+    .thank-you-header .thank-you-logo img {
+      width: 132px;
+      max-width: 132px;
+      height: auto;
+      object-fit: contain;
+      display: block;
+    }
+
+    .thank-you-payment-card {
+      display: grid;
+      gap: 14px;
+    }
+
+    .thank-you-payment-copy-row {
+      align-items: flex-start !important;
+      gap: 12px !important;
+      flex-direction: column !important;
+    }
+
+    .thank-you-payment-copy-row > span {
+      font-size: 13px;
+      font-weight: 800;
+      color: #64748b;
+      line-height: 1.3;
+    }
+
+    .thank-you-copy-input {
+      width: 100%;
+      min-height: 48px;
+      padding: 0 14px;
+      border: 1px solid #dbe4ef;
+      border-radius: 14px;
+      background: #ffffff;
+      color: #12203f;
+      font-family: "Inter", sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      outline: none;
+      box-sizing: border-box;
+    }
+
+    .thank-you-copy-btn {
+      min-height: 48px;
+      padding: 0 16px;
+      border: 0;
+      border-radius: 14px;
+      background: #2f84bf;
+      color: #ffffff;
+      font-family: "Inter", sans-serif;
+      font-size: 14px;
+      font-weight: 800;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .thank-you-payment-qr-wrap {
+      margin-top: 4px;
+      margin-bottom: 4px;
+    }
+
+    .thank-you-payment-qr-wrap img,
+    .thank-you-payment-qr {
+      width: 220px;
+      max-width: 100%;
+      height: auto;
+      display: block;
+      border-radius: 18px;
+      border: 1px solid #dbe4ef;
+      background: #ffffff;
+    }
+
+    .thank-you-wallet-list {
+      display: grid;
+      gap: 14px;
+      margin-top: 4px;
+    }
+
+    @media (max-width: 640px) {
+      .thank-you-header .thank-you-logo img {
+        width: 124px;
+        max-width: 124px;
+      }
+
+      .thank-you-copy-btn {
+        width: 100%;
+      }
+    }
+  </style>
 </head>
 <body class="thank-you-page">
 
@@ -107,35 +197,10 @@
           <div class="thank-you-card">
             <h3>Payment Instructions</h3>
             <p class="thank-you-muted">
-              Send payment using one of the methods below. Include your order number in the payment note when possible.
+              Use the payment method shown below and include your order number whenever required.
             </p>
 
-            <div class="thank-you-payment-list">
-              <div class="thank-you-payment-item">
-                <div class="thank-you-payment-top">
-                  <i class="fa-solid fa-dollar-sign"></i>
-                  <strong>Cash App</strong>
-                </div>
-                <p>$axiompeptides</p>
-              </div>
-
-              <div class="thank-you-payment-item">
-                <div class="thank-you-payment-top">
-                  <i class="fa-brands fa-apple-pay"></i>
-                  <strong>Apple Pay</strong>
-                </div>
-                <p>530-701-9349</p>
-              </div>
-
-              <div class="thank-you-payment-item">
-                <div class="thank-you-payment-top">
-                  <i class="fa-brands fa-bitcoin"></i>
-                  <strong>Crypto</strong>
-                </div>
-                <p>BTC Address: bc1qexampleplaceholderaddress1234567890</p>
-                <p>ETH Address: 0xExamplePlaceholderAddress1234567890</p>
-              </div>
-            </div>
+            <div id="thankYouPaymentInstructions"></div>
           </div>
 
           <div class="thank-you-card">
@@ -166,7 +231,7 @@
           <div class="thank-you-card">
             <h3>What Happens Next</h3>
             <ul class="thank-you-steps">
-              <li>Submit payment using one of the payment methods above.</li>
+              <li>Submit payment using the payment instructions shown above.</li>
               <li>Your order will remain marked as pending until payment is confirmed.</li>
               <li>After payment is confirmed, your order will move into processing.</li>
               <li>Tracking will be added after your label is created.</li>
