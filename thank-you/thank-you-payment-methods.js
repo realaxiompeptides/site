@@ -404,7 +404,7 @@ function renderThankYouPaymentMethods(order) {
 
   mount.innerHTML = `
     <section class="thank-you-payment-section-card">
-      <h2 class="thank-you-payment-section-title">Your Payment Method</h2>
+      <h2 class="thank-you-payment-section-title">Complete Your Payment<h2>
       ${
         selectedMethod
           ? thankYouBuildPrimaryMethodCard(selectedMethod, orderNumber)
