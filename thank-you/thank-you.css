@@ -397,3 +397,140 @@ header .checkout-logo img {
   border: 1px solid #dbe4ef;
   background: #ffffff;
 }
+
+.thankyou-payment-method-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.thankyou-payment-method-card {
+  border: 1px solid #dce4ef;
+  border-radius: 18px;
+  background: #ffffff;
+  padding: 18px;
+}
+
+.thankyou-payment-method-card.is-primary {
+  background: #f8fbff;
+  border-color: #cddbeb;
+}
+
+.thankyou-payment-method-top {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.thankyou-payment-method-name {
+  margin: 0 0 6px;
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1.2;
+  text-transform: capitalize;
+}
+
+.thankyou-payment-method-note,
+.thankyou-payment-method-order-note,
+.thankyou-payment-method-extra,
+.thankyou-card-subtext,
+.thankyou-empty-payment-text {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.7;
+  color: #66758c;
+}
+
+.thankyou-payment-method-order-note strong {
+  color: #12203f;
+}
+
+.thankyou-payment-method-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.thankyou-payment-detail-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 14px;
+  background: #fbfdff;
+}
+
+.thankyou-payment-detail-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: #7a889d;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.thankyou-payment-detail-value {
+  font-size: 15px;
+  font-weight: 600;
+  color: #12203f;
+  word-break: break-word;
+}
+
+.thankyou-payment-link {
+  text-decoration: underline;
+}
+
+.thankyou-copy-btn {
+  width: fit-content;
+  min-height: 42px;
+  padding: 10px 14px;
+  border: 1px solid #d4deea;
+  border-radius: 12px;
+  background: #ffffff;
+  color: #12203f;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.thankyou-copy-btn:hover {
+  border-color: #387eb6;
+  background: #f4f9ff;
+}
+
+.payment-accent-venmo {
+  color: #2563eb;
+}
+
+.payment-accent-zelle {
+  color: #6d28d9;
+}
+
+.payment-accent-cashapp {
+  color: #059669;
+}
+
+.payment-accent-applepay {
+  color: #111827;
+}
+
+.payment-accent-crypto {
+  color: #d97706;
+}
+
+@media (max-width: 640px) {
+  .thankyou-payment-method-name {
+    font-size: 18px;
+  }
+
+  .thankyou-payment-detail-value {
+    font-size: 14px;
+  }
+
+  .thankyou-copy-btn {
+    width: 100%;
+  }
+}
