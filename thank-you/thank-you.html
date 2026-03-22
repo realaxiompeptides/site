@@ -106,6 +106,13 @@
       margin-top: 4px;
     }
 
+    #thankYouSelectedPaymentInstructions,
+    #thankYouOtherPaymentOptions {
+      display: grid;
+      gap: 16px;
+      margin-top: 16px;
+    }
+
     @media (max-width: 640px) {
       .thank-you-header .thank-you-logo img {
         width: 124px;
@@ -195,17 +202,17 @@
 
         <div class="thank-you-side-stack">
           <div class="thank-you-card">
-            <h3>Payment Instructions</h3>
-            <p class="thank-you-muted">
-              Use the payment method shown below and include your order number whenever required.
-            </p>
-
-            <div id="thankYouPaymentInstructions"></div>
+            <h3>Your Selected Payment Method</h3>
+            <p class="thank-you-selected-method" id="thankYouPaymentMethod">Not selected</p>
+            <div id="thankYouSelectedPaymentInstructions"></div>
           </div>
 
           <div class="thank-you-card">
-            <h3>Your Selected Payment Method</h3>
-            <p class="thank-you-selected-method" id="thankYouPaymentMethod">Not selected</p>
+            <h3>Other Payment Options</h3>
+            <p class="thank-you-muted">
+              If needed, you can also complete payment using one of the options below.
+            </p>
+            <div id="thankYouOtherPaymentOptions"></div>
           </div>
 
           <div class="thank-you-card">
@@ -231,7 +238,7 @@
           <div class="thank-you-card">
             <h3>What Happens Next</h3>
             <ul class="thank-you-steps">
-              <li>Submit payment using the payment instructions shown above.</li>
+              <li>Submit payment using your selected payment method above or one of the other payment options.</li>
               <li>Your order will remain marked as pending until payment is confirmed.</li>
               <li>After payment is confirmed, your order will move into processing.</li>
               <li>Tracking will be added after your label is created.</li>
