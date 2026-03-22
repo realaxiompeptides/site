@@ -27,6 +27,20 @@ function thankYouEscapeHtml(value) {
     .replace(/'/g, "&#039;");
 }
 
+function thankYouGetOrderFollowupText(paymentKey, orderNumber) {
+  const safeOrder = thankYouEscapeHtml(orderNumber);
+
+  if (paymentKey === "applepay" || paymentKey === "zelle") {
+    return `Message your order #<strong>${safeOrder}</strong> after sending payment.`;
+  }
+
+  if (paymentKey === "crypto") {
+    return `Send your transaction ID and order #<strong>${safeOrder}</strong> using one of the contact options below.`;
+  }
+
+  return `Include order #<strong>${safeOrder}</strong> in the note.`;
+}
+
 const THANK_YOU_PAYMENT_METHODS = {
   venmo: {
     key: "venmo",
@@ -293,7 +307,7 @@ function thankYouBuildPrimaryMethodCard(methodConfig, orderNumber) {
             <p class="thank-you-payment-method-instructions">${safeInstructions}</p>
             ${
               orderNumber
-                ? `<p class="thank-you-payment-order-note">Include order #<strong>${thankYouEscapeHtml(orderNumber)}</strong> in the note.</p>`
+                ? `<p class="thank-you-payment-order-note">${thankYouGetOrderFollowupText(methodConfig.key, orderNumber)}</p>`
                 : ""
             }
           </div>
@@ -353,7 +367,7 @@ function thankYouBuildAccordionItem(methodConfig, orderNumber, index) {
           <p class="thank-you-payment-method-instructions">${safeInstructions}</p>
           ${
             orderNumber
-              ? `<p class="thank-you-payment-order-note">Include order #<strong>${thankYouEscapeHtml(orderNumber)}</strong> in the note.</p>`
+              ? `<p class="thank-you-payment-order-note">${thankYouGetOrderFollowupText(methodConfig.key, orderNumber)}</p>`
               : ""
           }
 
@@ -486,7 +500,7 @@ function renderThankYouPaymentMethods(order) {
       <h2 class="thank-you-payment-section-title">Other Payment Options</h2>
       <p class="thank-you-payment-section-subtext">
         You can also use any of the payment methods below if you do not want to use the selected one anymore.
-        Please include your order number in the note.
+        Please include your order number in the note or message it after payment when required.
       </p>
 
       <div class="thank-you-payment-accordion">
