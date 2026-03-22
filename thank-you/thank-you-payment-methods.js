@@ -82,49 +82,35 @@ const THANK_YOU_PAYMENT_METHODS = {
     wallets: [
       {
         label: "Bitcoin (BTC)",
-        value: "bc1qexamplebtcaddress1234567890test",
-        logo: "../images/payment-icons/bitcoin.PNG"
+        value: "bc1qexamplebtcaddress1234567890test"
       },
       {
         label: "Ethereum (ETH)",
-        value: "0xExampleEthereumAddress1234567890ABCDEF",
-        logo: "../images/payment-icons/ethereum.PNG"
+        value: "0xExampleEthereumAddress1234567890ABCDEF"
       },
       {
         label: "USDT",
-        value: "TExampleUSDTWalletAddress123456789ABCDEFG",
-        logo: "../images/payment-icons/usdt.PNG"
+        value: "TExampleUSDTWalletAddress123456789ABCDEFG"
       },
       {
         label: "Solana (SOL)",
-        value: "So1anaExampleWalletAddress123456789ABCDEFG",
-        logo: "../images/payment-icons/solana.PNG"
+        value: "So1anaExampleWalletAddress123456789ABCDEFG"
       },
       {
         label: "USDC",
-        value: "0xExampleUSDCAddress1234567890ABCDEF",
-        logo: "../images/payment-icons/usdc.PNG"
+        value: "0xExampleUSDCAddress1234567890ABCDEF"
       }
     ]
   }
 };
 
-function thankYouCreateCopyButton(label, value, logoPath = "") {
+function thankYouCreateCopyButton(label, value) {
   const safeLabel = thankYouEscapeHtml(label);
   const safeValue = thankYouEscapeHtml(value);
-  const safeLogo = thankYouEscapeHtml(logoPath);
 
   return `
     <div class="thank-you-payment-copy-block">
-      <div class="thank-you-payment-copy-header-wrap">
-        ${
-          safeLogo
-            ? `<img class="thank-you-payment-mini-logo" src="${safeLogo}" alt="${safeLabel}" onerror="this.style.display='none';" />`
-            : ""
-        }
-        <div class="thank-you-payment-copy-header">${safeLabel}</div>
-      </div>
-
+      <div class="thank-you-payment-copy-header">${safeLabel}</div>
       <div class="thank-you-payment-copy-row">
         <input
           type="text"
@@ -144,22 +130,13 @@ function thankYouCreateCopyButton(label, value, logoPath = "") {
   `;
 }
 
-function thankYouCreateLinkBlock(label, url, logoPath = "") {
+function thankYouCreateLinkBlock(label, url) {
   const safeLabel = thankYouEscapeHtml(label);
   const safeUrl = thankYouEscapeHtml(url);
-  const safeLogo = thankYouEscapeHtml(logoPath);
 
   return `
     <div class="thank-you-payment-copy-block">
-      <div class="thank-you-payment-copy-header-wrap">
-        ${
-          safeLogo
-            ? `<img class="thank-you-payment-mini-logo" src="${safeLogo}" alt="${safeLabel}" onerror="this.style.display='none';" />`
-            : ""
-        }
-        <div class="thank-you-payment-copy-header">${safeLabel}</div>
-      </div>
-
+      <div class="thank-you-payment-copy-header">${safeLabel}</div>
       <div class="thank-you-payment-link-row">
         <a
           href="${safeUrl}"
@@ -189,24 +166,21 @@ function thankYouBuildMethodDetails(methodConfig, orderNumber) {
   if (methodConfig.link) {
     detailsHtml += thankYouCreateLinkBlock(
       methodConfig.linkLabel || "Payment Link",
-      methodConfig.link,
-      methodConfig.logo || ""
+      methodConfig.link
     );
   }
 
   if (methodConfig.handle) {
     detailsHtml += thankYouCreateCopyButton(
       methodConfig.handleLabel || "Payment Info",
-      methodConfig.handle,
-      methodConfig.logo || ""
+      methodConfig.handle
     );
   }
 
   if (methodConfig.secondaryValue) {
     detailsHtml += thankYouCreateCopyButton(
       methodConfig.secondaryLabel || "Additional Info",
-      methodConfig.secondaryValue,
-      methodConfig.logo || ""
+      methodConfig.secondaryValue
     );
   }
 
@@ -216,7 +190,7 @@ function thankYouBuildMethodDetails(methodConfig, orderNumber) {
         ${methodConfig.wallets.map((wallet) => {
           return `
             <div class="thank-you-payment-crypto-card">
-              ${thankYouCreateCopyButton(wallet.label, wallet.value, wallet.logo || "")}
+              ${thankYouCreateCopyButton(wallet.label, wallet.value)}
             </div>
           `;
         }).join("")}
@@ -241,12 +215,12 @@ function thankYouBuildPrimaryMethodCard(methodConfig, orderNumber) {
   return `
     <div class="thank-you-payment-method-card is-primary">
       <div class="thank-you-payment-method-top">
-        <div class="thank-you-payment-method-heading-row">
-          <div class="thank-you-payment-method-logo-wrap primary-logo">
+        <div class="thank-you-payment-method-heading-row inline-header">
+          <div class="thank-you-payment-method-logo-wrap">
             <img
               src="${safeLogo}"
               alt="${safeLabel} logo"
-              class="thank-you-payment-method-logo long-logo"
+              class="thank-you-payment-method-logo"
               onerror="this.style.display='none';"
             />
           </div>
@@ -287,11 +261,11 @@ function thankYouBuildAccordionItem(methodConfig, orderNumber, index) {
         aria-controls="${panelId}"
       >
         <span class="thank-you-payment-accordion-left">
-          <span class="thank-you-payment-method-logo-wrap accordion-logo">
+          <span class="thank-you-payment-method-logo-wrap">
             <img
               src="${safeLogo}"
               alt="${safeLabel} logo"
-              class="thank-you-payment-method-logo long-logo"
+              class="thank-you-payment-method-logo"
               onerror="this.style.display='none';"
             />
           </span>
@@ -398,7 +372,6 @@ function thankYouBindPaymentAccordion() {
 
         if (otherPanel) {
           otherPanel.hidden = true;
-          otherPanel.style.display = "none";
         }
       });
 
@@ -406,7 +379,6 @@ function thankYouBindPaymentAccordion() {
         item.classList.add("is-open");
         toggle.setAttribute("aria-expanded", "true");
         panel.hidden = false;
-        panel.style.display = "block";
       }
     });
   });
