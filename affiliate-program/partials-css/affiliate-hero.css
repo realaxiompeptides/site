@@ -1,0 +1,85 @@
+.affiliate-hero-card {
+  overflow: hidden;
+}
+
+.affiliate-hero-content {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(280px, 0.8fr);
+  gap: 22px;
+  align-items: center;
+}
+
+.affiliate-hero-kicker {
+  margin: 0 0 10px;
+  color: #4fa2dc;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.affiliate-hero-copy h1 {
+  margin: 0 0 12px;
+  font-size: clamp(2.1rem, 5vw, 3.4rem);
+  line-height: 1.02;
+  letter-spacing: -0.03em;
+  font-weight: 900;
+  color: #12203f;
+}
+
+.affiliate-hero-subtext {
+  margin: 0;
+  max-width: 720px;
+  color: #64748b;
+  font-size: 17px;
+  line-height: 1.75;
+}
+
+.affiliate-hero-points {
+  display: grid;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.affiliate-hero-point {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #12203f;
+  font-weight: 700;
+}
+
+.affiliate-hero-point i {
+  color: #2f84bf;
+}
+
+.affiliate-hero-side {
+  display: grid;
+  gap: 14px;
+}
+
+.affiliate-hero-stat-box {
+  background: #f8fbff;
+  border: 1px solid #dbe5f0;
+  border-radius: 20px;
+  padding: 20px;
+}
+
+.affiliate-hero-stat-box p {
+  margin: 0 0 8px;
+  color: #64748b;
+  font-weight: 700;
+}
+
+.affiliate-hero-stat-box strong {
+  font-size: 34px;
+  line-height: 1;
+  color: #12203f;
+  font-weight: 900;
+}
+
+@media (max-width: 980px) {
+  .affiliate-hero-content {
+    grid-template-columns: 1fr;
+  }
+}
