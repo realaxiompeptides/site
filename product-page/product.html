@@ -32,7 +32,6 @@
   <link rel="stylesheet" href="why-choose-us.css" />
 
   <style>
-    /* Cart drawer icon styles - leave these as-is */
     .cart-btn {
       position: relative !important;
       width: 58px !important;
@@ -82,7 +81,6 @@
       border: 2px solid #ffffff !important;
     }
 
-    /* Header layout - FIXED: Added padding to match homepage */
     .header-inner {
       display: flex !important;
       align-items: center !important;
@@ -93,7 +91,6 @@
       padding-right: 16px !important;
     }
 
-    /* FIXED HAMBURGER - match other pages */
     .hamburger-btn {
       width: 58px !important;
       height: 58px !important;
@@ -123,7 +120,6 @@
       margin: 0 !important;
     }
 
-    /* FIXED LOGO - bigger like other pages */
     .site-logo {
       position: absolute !important;
       left: 50% !important;
@@ -142,12 +138,11 @@
     }
 
     @media (max-width: 640px) {
-      /* FIXED: Mobile padding */
       .header-inner {
         padding-left: 12px !important;
         padding-right: 12px !important;
       }
-      
+
       .cart-btn {
         width: 54px !important;
         height: 54px !important;
@@ -334,6 +329,10 @@
             <p class="product-short-description" id="productShortDescription"></p>
 
             <div id="productIconBenefitsMount"></div>
+
+            <!-- Stock goes here for best conversion, right above the purchase controls -->
+            <p id="productStock" class="product-stock-text" aria-live="polite"></p>
+
             <div id="productPurchaseBoxMount"></div>
           </div>
         </div>
