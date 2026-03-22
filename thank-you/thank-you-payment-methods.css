@@ -48,55 +48,60 @@
   gap: 10px;
 }
 
-.thank-you-payment-method-heading-row {
+/* inline header row */
+.thank-you-payment-method-heading-row,
+.thank-you-payment-method-heading-row.inline-header,
+.thank-you-payment-accordion-left {
   display: flex;
-  align-items: flex-start;
-  gap: 16px;
-}
-
-.thank-you-payment-method-heading-copy {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+  align-items: center;
+  gap: 10px;
   min-width: 0;
   flex: 1;
 }
 
-.thank-you-payment-method-name {
-  margin: 0;
-  font-size: 24px;
-  line-height: 1.15;
-  font-weight: 900;
-  color: #12203f;
+.thank-you-payment-method-heading-copy,
+.thank-you-payment-accordion-title-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  flex: 1;
 }
 
-.thank-you-payment-method-logo-wrap {
+.thank-you-payment-method-name,
+.thank-you-payment-accordion-title {
+  margin: 0;
+  font-size: 20px;
+  line-height: 1.2;
+  font-weight: 900;
+  color: #1273ea;
+  text-transform: none;
+}
+
+/* small inline logos only */
+.thank-you-payment-method-logo-wrap,
+.thank-you-payment-method-logo-wrap.primary-logo,
+.thank-you-payment-method-logo-wrap.accordion-logo {
+  width: 26px;
+  height: 26px;
+  min-width: 26px;
+  min-height: 26px;
   display: flex;
   align-items: center;
-  justify-content: flex-start;
+  justify-content: center;
   flex-shrink: 0;
   overflow: hidden;
   background: transparent;
 }
 
-.thank-you-payment-method-logo-wrap.primary-logo {
-  width: 148px;
-  min-width: 148px;
-  min-height: 52px;
-}
-
-.thank-you-payment-method-logo-wrap.accordion-logo {
-  width: 120px;
-  min-width: 120px;
-  min-height: 40px;
-}
-
+.thank-you-payment-method-logo,
 .thank-you-payment-method-logo.long-logo {
-  width: 100%;
-  height: auto;
-  max-height: 42px;
+  width: 26px;
+  height: 26px;
+  max-width: 26px;
+  max-height: 26px;
   object-fit: contain;
-  object-position: left center;
+  object-position: center;
   display: block;
 }
 
@@ -113,26 +118,12 @@
   gap: 8px;
 }
 
-.thank-you-payment-copy-header-wrap {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
 .thank-you-payment-copy-header {
   font-size: 13px;
   font-weight: 800;
   color: #6c7a90;
   letter-spacing: 0.03em;
   text-transform: uppercase;
-}
-
-.thank-you-payment-mini-logo {
-  width: 22px;
-  height: 22px;
-  object-fit: contain;
-  display: block;
-  flex-shrink: 0;
 }
 
 .thank-you-payment-copy-row,
@@ -235,29 +226,6 @@
   font-family: "Inter", sans-serif;
 }
 
-.thank-you-payment-accordion-left {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  min-width: 0;
-  flex: 1;
-}
-
-.thank-you-payment-accordion-title-wrap {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  min-width: 0;
-}
-
-.thank-you-payment-accordion-title {
-  font-size: 20px;
-  line-height: 1.2;
-  font-weight: 900;
-  color: #12203f;
-  text-transform: capitalize;
-}
-
 .thank-you-payment-accordion-subtitle {
   color: #6e7d93;
   font-size: 14px;
@@ -277,15 +245,10 @@
 
 .thank-you-payment-accordion-panel {
   border-top: 1px solid #e8eef5;
-  display: none;
 }
 
 .thank-you-payment-accordion-panel[hidden] {
   display: none !important;
-}
-
-.thank-you-payment-accordion-item.is-open .thank-you-payment-accordion-panel {
-  display: block;
 }
 
 .thank-you-payment-accordion-panel-inner {
@@ -303,34 +266,26 @@
     font-size: 24px;
   }
 
-  .thank-you-payment-method-name {
-    font-size: 21px;
-  }
-
-  .thank-you-payment-method-heading-row,
-  .thank-you-payment-accordion-left {
-    align-items: flex-start;
-    gap: 12px;
-  }
-
-  .thank-you-payment-method-logo-wrap.primary-logo {
-    width: 118px;
-    min-width: 118px;
-    min-height: 40px;
-  }
-
-  .thank-you-payment-method-logo-wrap.accordion-logo {
-    width: 96px;
-    min-width: 96px;
-    min-height: 34px;
-  }
-
-  .thank-you-payment-method-logo.long-logo {
-    max-height: 34px;
-  }
-
+  .thank-you-payment-method-name,
   .thank-you-payment-accordion-title {
     font-size: 18px;
+  }
+
+  .thank-you-payment-method-logo-wrap,
+  .thank-you-payment-method-logo-wrap.primary-logo,
+  .thank-you-payment-method-logo-wrap.accordion-logo {
+    width: 24px;
+    height: 24px;
+    min-width: 24px;
+    min-height: 24px;
+  }
+
+  .thank-you-payment-method-logo,
+  .thank-you-payment-method-logo.long-logo {
+    width: 24px;
+    height: 24px;
+    max-width: 24px;
+    max-height: 24px;
   }
 
   .thank-you-payment-copy-btn {
@@ -348,43 +303,4 @@
     flex: 1 1 auto;
     width: 100%;
   }
-}
-
-/* 🔥 FIXED SMALL INLINE LOGOS */
-.thank-you-payment-method-logo-wrap {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-/* 🔥 PRIMARY + ACCORDION SAME SIZE */
-.thank-you-payment-method-logo-wrap.primary-logo,
-.thank-you-payment-method-logo-wrap.accordion-logo {
-  width: auto;
-  min-width: auto;
-  min-height: auto;
-}
-
-/* 🔥 ACTUAL LOGO SIZE */
-.thank-you-payment-method-logo {
-  width: 26px;       /* 🔥 adjust if needed (24–32 sweet spot) */
-  height: 26px;
-  object-fit: contain;
-  display: block;
-}
-
-/* 🔥 ALIGN TEXT + ICON PERFECTLY */
-.thank-you-payment-method-heading-row,
-.thank-you-payment-accordion-left {
-  display: flex;
-  align-items: center;   /* 🔥 THIS FIXES ALIGNMENT */
-  gap: 10px;
-}
-
-/* 🔥 REMOVE BIG IMAGE BEHAVIOR */
-.thank-you-payment-method-logo.long-logo {
-  width: 26px;
-  height: 26px;
-  max-height: none;
 }
