@@ -349,3 +349,42 @@
     width: 100%;
   }
 }
+
+/* 🔥 FIXED SMALL INLINE LOGOS */
+.thank-you-payment-method-logo-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* 🔥 PRIMARY + ACCORDION SAME SIZE */
+.thank-you-payment-method-logo-wrap.primary-logo,
+.thank-you-payment-method-logo-wrap.accordion-logo {
+  width: auto;
+  min-width: auto;
+  min-height: auto;
+}
+
+/* 🔥 ACTUAL LOGO SIZE */
+.thank-you-payment-method-logo {
+  width: 26px;       /* 🔥 adjust if needed (24–32 sweet spot) */
+  height: 26px;
+  object-fit: contain;
+  display: block;
+}
+
+/* 🔥 ALIGN TEXT + ICON PERFECTLY */
+.thank-you-payment-method-heading-row,
+.thank-you-payment-accordion-left {
+  display: flex;
+  align-items: center;   /* 🔥 THIS FIXES ALIGNMENT */
+  gap: 10px;
+}
+
+/* 🔥 REMOVE BIG IMAGE BEHAVIOR */
+.thank-you-payment-method-logo.long-logo {
+  width: 26px;
+  height: 26px;
+  max-height: none;
+}
