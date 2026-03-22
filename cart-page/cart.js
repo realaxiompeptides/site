@@ -1,16 +1,21 @@
 window.AXIOM_CART_PAGE = {
   storageKey: "axiom_cart",
+  discountStorageKey: "axiom_cart_discount",
 
   async init() {
     this.bindEvents();
     this.render();
     this.syncHeaderCartCount();
     this.syncCartDrawer();
+    this.initCouponBox();
+    await this.syncDiscountToCheckoutSession();
   },
 
   bindEvents() {
     const clearBtn = document.getElementById("clearCartBtn");
     const checkoutBtn = document.getElementById("cartCheckoutBtn");
+    const applyCouponBtn = document.getElementById("cartPageApplyCouponBtn");
+    const couponInput = document.getElementById("cartPageCouponCode");
 
     if (clearBtn && !clearBtn.dataset.bound) {
       clearBtn.dataset.bound = "true";
@@ -18,6 +23,7 @@ window.AXIOM_CART_PAGE = {
         const confirmed = window.confirm("Clear all items from your cart?");
         if (!confirmed) return;
         this.saveCart([]);
+        this.saveDiscount(null);
         this.render();
       });
     }
@@ -26,6 +32,23 @@ window.AXIOM_CART_PAGE = {
       checkoutBtn.dataset.bound = "true";
       checkoutBtn.addEventListener("click", () => {
         this.goToCheckout();
+      });
+    }
+
+    if (applyCouponBtn && !applyCouponBtn.dataset.bound) {
+      applyCouponBtn.dataset.bound = "true";
+      applyCouponBtn.addEventListener("click", async () => {
+        await this.applyCoupon();
+      });
+    }
+
+    if (couponInput && !couponInput.dataset.bound) {
+      couponInput.dataset.bound = "true";
+      couponInput.addEventListener("keydown", async (event) => {
+        if (event.key === "Enter") {
+          event.preventDefault();
+          await this.applyCoupon();
+        }
       });
     }
 
@@ -53,6 +76,29 @@ window.AXIOM_CART_PAGE = {
           const index = Number(removeBtn.getAttribute("data-cart-remove"));
           this.removeItem(index);
         }
+      });
+    }
+
+    if (!window.__axiomCartPageStorageBound) {
+      window.__axiomCartPageStorageBound = true;
+
+      window.addEventListener("storage", async (event) => {
+        if (
+          event.key === this.storageKey ||
+          event.key === this.discountStorageKey
+        ) {
+          this.render();
+          await this.syncDiscountToCheckoutSession();
+        }
+      });
+    }
+
+    if (!window.__axiomCartPageUpdatedBound) {
+      window.__axiomCartPageUpdatedBound = true;
+
+      window.addEventListener("axiom-cart-updated", async () => {
+        this.render();
+        await this.syncDiscountToCheckoutSession();
       });
     }
   },
@@ -90,6 +136,54 @@ window.AXIOM_CART_PAGE = {
 
     this.syncHeaderCartCount();
     this.syncCartDrawer();
+  },
+
+  getStoredDiscount() {
+    try {
+      const raw = localStorage.getItem(this.discountStorageKey);
+      const parsed = JSON.parse(raw || "null");
+
+      if (!parsed || typeof parsed !== "object") {
+        return null;
+      }
+
+      return {
+        code: this.normalizeDiscountCode(parsed.code || ""),
+        discountAmount: this.toNumber(parsed.discountAmount, 0),
+        discountType: String(parsed.discountType || ""),
+        discountValue: this.toNumber(parsed.discountValue, 0),
+        description: String(parsed.description || ""),
+        minSubtotal: this.toNumber(parsed.minSubtotal, 0),
+        isApplied: parsed.isApplied === true
+      };
+    } catch (error) {
+      console.error("Failed to read stored discount:", error);
+      return null;
+    }
+  },
+
+  saveDiscount(discount) {
+    try {
+      if (!discount) {
+        localStorage.removeItem(this.discountStorageKey);
+        return;
+      }
+
+      localStorage.setItem(
+        this.discountStorageKey,
+        JSON.stringify({
+          code: this.normalizeDiscountCode(discount.code || ""),
+          discountAmount: this.toNumber(discount.discountAmount, 0),
+          discountType: String(discount.discountType || ""),
+          discountValue: this.toNumber(discount.discountValue, 0),
+          description: String(discount.description || ""),
+          minSubtotal: this.toNumber(discount.minSubtotal, 0),
+          isApplied: discount.isApplied === true
+        })
+      );
+    } catch (error) {
+      console.error("Failed to save discount:", error);
+    }
   },
 
   syncHeaderCartCount() {
@@ -174,6 +268,280 @@ window.AXIOM_CART_PAGE = {
     return `$${Number(value || 0).toFixed(2)}`;
   },
 
+  toNumber(value, fallback = 0) {
+    const num = Number(value);
+    return Number.isFinite(num) ? num : fallback;
+  },
+
+  normalizeDiscountCode(value) {
+    return String(value || "").trim().toUpperCase();
+  },
+
+  getSubtotal(cart = this.getCart()) {
+    return cart.reduce((sum, item) => {
+      return sum + this.getItemLineTotal(item);
+    }, 0);
+  },
+
+  getTotalItems(cart = this.getCart()) {
+    return cart.reduce((sum, item) => {
+      return sum + this.getItemQuantity(item);
+    }, 0);
+  },
+
+  getEffectiveDiscount(subtotal) {
+    const stored = this.getStoredDiscount();
+
+    if (!stored || stored.isApplied !== true) {
+      return {
+        code: "",
+        amount: 0,
+        isApplied: false
+      };
+    }
+
+    if (subtotal < this.toNumber(stored.minSubtotal, 0)) {
+      this.saveDiscount(null);
+      this.setCouponMessage(
+        "Coupon removed because your cart no longer meets the minimum subtotal.",
+        "error"
+      );
+
+      return {
+        code: "",
+        amount: 0,
+        isApplied: false
+      };
+    }
+
+    return {
+      code: this.normalizeDiscountCode(stored.code || ""),
+      amount: Math.min(this.toNumber(stored.discountAmount, 0), subtotal),
+      isApplied: true
+    };
+  },
+
+  setCouponMessage(message, type = "") {
+    const el = document.getElementById("cartPageCouponMessage");
+    if (!el) return;
+
+    el.textContent = message || "";
+    el.classList.remove("success", "error", "muted");
+
+    if (type) {
+      el.classList.add(type);
+    }
+  },
+
+  calculateDiscountAmount(discountRow, subtotal) {
+    const discountType = String(discountRow?.discount_type || "").toLowerCase();
+    const discountValue = this.toNumber(discountRow?.discount_value, 0);
+
+    let amount = 0;
+
+    if (discountType === "percent") {
+      amount = subtotal * (discountValue / 100);
+    } else if (discountType === "fixed") {
+      amount = discountValue;
+    }
+
+    return Math.max(0, Math.min(amount, subtotal));
+  },
+
+  async applyCoupon() {
+    const inputEl = document.getElementById("cartPageCouponCode");
+    const btnEl = document.getElementById("cartPageApplyCouponBtn");
+    const subtotal = this.getSubtotal();
+    const code = this.normalizeDiscountCode(inputEl?.value || "");
+
+    if (!inputEl || !btnEl) return;
+
+    if (!code) {
+      this.saveDiscount(null);
+      this.render();
+      this.setCouponMessage("Enter a coupon code.", "error");
+      await this.syncDiscountToCheckoutSession();
+      return;
+    }
+
+    if (!window.axiomSupabase) {
+      this.setCouponMessage("Coupon validation is temporarily unavailable.", "error");
+      return;
+    }
+
+    btnEl.disabled = true;
+    btnEl.textContent = "Applying...";
+
+    try {
+      const { data, error } = await window.axiomSupabase
+        .from("discount_codes")
+        .select("*")
+        .eq("code", code)
+        .eq("is_active", true)
+        .maybeSingle();
+
+      if (error) {
+        console.error("Failed to validate coupon:", error);
+        this.setCouponMessage("We could not validate that coupon right now.", "error");
+        return;
+      }
+
+      if (!data) {
+        this.saveDiscount(null);
+        this.render();
+        this.setCouponMessage("That coupon code is invalid.", "error");
+        await this.syncDiscountToCheckoutSession();
+        return;
+      }
+
+      const now = new Date();
+      const startsAt = data.starts_at ? new Date(data.starts_at) : null;
+      const endsAt = data.ends_at ? new Date(data.ends_at) : null;
+      const minSubtotal = this.toNumber(data.min_subtotal, 0);
+      const maxUses = data.max_uses !== null && data.max_uses !== undefined
+        ? Number(data.max_uses)
+        : null;
+      const timesUsed = this.toNumber(data.times_used, 0);
+
+      if (startsAt && now < startsAt) {
+        this.setCouponMessage("That coupon is not active yet.", "error");
+        return;
+      }
+
+      if (endsAt && now > endsAt) {
+        this.setCouponMessage("That coupon has expired.", "error");
+        return;
+      }
+
+      if (maxUses !== null && timesUsed >= maxUses) {
+        this.setCouponMessage("That coupon has reached its usage limit.", "error");
+        return;
+      }
+
+      if (subtotal < minSubtotal) {
+        this.setCouponMessage(
+          `This coupon requires a subtotal of ${this.formatMoney(minSubtotal)} or more.`,
+          "error"
+        );
+        return;
+      }
+
+      const discountAmount = this.calculateDiscountAmount(data, subtotal);
+
+      if (discountAmount <= 0) {
+        this.setCouponMessage("That coupon does not apply to this cart.", "error");
+        return;
+      }
+
+      this.saveDiscount({
+        code: code,
+        discountAmount: discountAmount,
+        discountType: String(data.discount_type || ""),
+        discountValue: this.toNumber(data.discount_value, 0),
+        description: String(data.description || ""),
+        minSubtotal: minSubtotal,
+        isApplied: true
+      });
+
+      this.render();
+      this.setCouponMessage(`Coupon ${code} applied successfully.`, "success");
+      await this.syncDiscountToCheckoutSession();
+
+      window.dispatchEvent(new CustomEvent("axiom-discount-updated", {
+        detail: {
+          code: code,
+          discountAmount: discountAmount
+        }
+      }));
+    } catch (error) {
+      console.error("Coupon apply failed:", error);
+      this.setCouponMessage("We could not apply that coupon right now.", "error");
+    } finally {
+      btnEl.disabled = false;
+      btnEl.textContent = "Apply Coupon";
+    }
+  },
+
+  initCouponBox() {
+    const inputEl = document.getElementById("cartPageCouponCode");
+    const stored = this.getStoredDiscount();
+
+    if (inputEl && stored?.isApplied && stored.code && !inputEl.value) {
+      inputEl.value = stored.code;
+    }
+
+    this.render();
+  },
+
+  async syncDiscountToCheckoutSession() {
+    try {
+      const cart = this.getCart();
+      const subtotal = this.getSubtotal(cart);
+      const effectiveDiscount = this.getEffectiveDiscount(subtotal);
+      const discountAmount = effectiveDiscount.amount;
+      const discountCode = effectiveDiscount.isApplied ? effectiveDiscount.code : "";
+      const totalAmount = Math.max(0, subtotal - discountAmount);
+
+      if (
+        window.AXIOM_CHECKOUT_SESSION &&
+        typeof window.AXIOM_CHECKOUT_SESSION.ensureSession === "function" &&
+        typeof window.AXIOM_CHECKOUT_SESSION.patchSession === "function"
+      ) {
+        const sessionId = await window.AXIOM_CHECKOUT_SESSION.ensureSession();
+        if (!sessionId) return;
+
+        const cartItemsForSession = cart.map((item) => {
+          const quantity = this.getItemQuantity(item);
+          const price = this.getItemUnitPrice(item);
+          const weightOz = Number(item.weightOz || item.weight_oz || 0);
+
+          return {
+            id: item.id || "",
+            slug: item.slug || "",
+            name: this.getItemName(item),
+            product_name: this.getItemName(item),
+            variantLabel: this.getItemVariant(item),
+            variant_label: this.getItemVariant(item),
+            variant: this.getItemVariant(item),
+            price: price,
+            unit_price: price,
+            compareAtPrice:
+              item.compareAtPrice !== undefined && item.compareAtPrice !== null
+                ? Number(item.compareAtPrice) || null
+                : item.compare_at_price !== undefined && item.compare_at_price !== null
+                  ? Number(item.compare_at_price) || null
+                  : null,
+            compare_at_price:
+              item.compare_at_price !== undefined && item.compare_at_price !== null
+                ? Number(item.compare_at_price) || null
+                : item.compareAtPrice !== undefined && item.compareAtPrice !== null
+                  ? Number(item.compareAtPrice) || null
+                  : null,
+            quantity: quantity,
+            qty: quantity,
+            line_total: price * quantity,
+            image: item.image || "",
+            weightOz: weightOz,
+            weight_oz: weightOz,
+            inStock: item.inStock !== false && item.in_stock !== false,
+            in_stock: item.inStock !== false && item.in_stock !== false
+          };
+        });
+
+        await window.AXIOM_CHECKOUT_SESSION.patchSession({
+          cart_items: cartItemsForSession,
+          subtotal: subtotal,
+          discount_amount: discountAmount,
+          discount_code: discountCode || null,
+          total_amount: totalAmount,
+          session_status: "active"
+        });
+      }
+    } catch (error) {
+      console.error("Failed to sync discount to checkout session:", error);
+    }
+  },
+
   changeQuantity(index, delta) {
     const cart = this.getCart();
     if (!cart[index]) return;
@@ -191,6 +559,7 @@ window.AXIOM_CART_PAGE = {
 
     this.saveCart(cart);
     this.render();
+    this.syncDiscountToCheckoutSession();
   },
 
   removeItem(index) {
@@ -200,24 +569,39 @@ window.AXIOM_CART_PAGE = {
     cart.splice(index, 1);
     this.saveCart(cart);
     this.render();
+    this.syncDiscountToCheckoutSession();
   },
 
   renderSummary(cart) {
-    const totalItems = cart.reduce((sum, item) => {
-      return sum + this.getItemQuantity(item);
-    }, 0);
-
-    const subtotal = cart.reduce((sum, item) => {
-      return sum + this.getItemLineTotal(item);
-    }, 0);
+    const totalItems = this.getTotalItems(cart);
+    const subtotal = this.getSubtotal(cart);
+    const effectiveDiscount = this.getEffectiveDiscount(subtotal);
+    const total = Math.max(0, subtotal - effectiveDiscount.amount);
 
     const itemsEl = document.getElementById("cartSummaryItemsCount");
     const subtotalEl = document.getElementById("cartSummarySubtotal");
     const totalEl = document.getElementById("cartSummaryTotal");
+    const discountRowEl = document.getElementById("cartPageDiscountRow");
+    const discountAmountEl = document.getElementById("cartPageDiscountAmount");
+    const couponInputEl = document.getElementById("cartPageCouponCode");
 
     if (itemsEl) itemsEl.textContent = String(totalItems);
     if (subtotalEl) subtotalEl.textContent = this.formatMoney(subtotal);
-    if (totalEl) totalEl.textContent = this.formatMoney(subtotal);
+    if (totalEl) totalEl.textContent = this.formatMoney(total);
+
+    if (discountRowEl && discountAmountEl) {
+      if (effectiveDiscount.isApplied && effectiveDiscount.amount > 0) {
+        discountRowEl.hidden = false;
+        discountAmountEl.textContent = `-${this.formatMoney(effectiveDiscount.amount)}`;
+      } else {
+        discountRowEl.hidden = true;
+        discountAmountEl.textContent = "-$0.00";
+      }
+    }
+
+    if (couponInputEl && effectiveDiscount.isApplied && effectiveDiscount.code && !couponInputEl.value) {
+      couponInputEl.value = effectiveDiscount.code;
+    }
   },
 
   renderItems(cart) {
