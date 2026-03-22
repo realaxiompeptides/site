@@ -31,7 +31,7 @@ const THANK_YOU_PAYMENT_METHODS = {
   venmo: {
     key: "venmo",
     label: "Venmo",
-    logo: "../images/payment-icons/venmo.JPG",
+    logo: "../images/payment-icons/venmo.jpg",
     handleLabel: "Venmo Username",
     handle: "@jax-ferone-839",
     linkLabel: "Venmo Link",
@@ -42,7 +42,7 @@ const THANK_YOU_PAYMENT_METHODS = {
   zelle: {
     key: "zelle",
     label: "Zelle",
-    logo: "../images/payment-icons/zelle.JPG",
+    logo: "../images/payment-icons/zelle.jpg",
     handleLabel: "Zelle Phone",
     handle: "916-233-5312",
     secondaryLabel: "Zelle Email",
@@ -66,7 +66,7 @@ const THANK_YOU_PAYMENT_METHODS = {
   applepay: {
     key: "applepay",
     label: "Apple Pay",
-    logo: "../images/payment-icons/applepay.JPG",
+    logo: "../images/payment-icons/applepay.jpg",
     handleLabel: "Apple Pay Contact",
     handle: "530-701-9349",
     linkLabel: "",
