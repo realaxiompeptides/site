@@ -245,9 +245,6 @@ document.addEventListener("DOMContentLoaded", async function () {
         : variant.stock_quantity || 0
     );
 
-    const allowBackorder = variant.allow_backorder === true;
-    const canPurchase = stockQty > 0 || allowBackorder;
-
     productStockEl.classList.remove(
       "stock-high",
       "stock-low",
@@ -264,12 +261,6 @@ document.addEventListener("DOMContentLoaded", async function () {
     if (stockQty > 0 && stockQty <= 5) {
       productStockEl.textContent = `${stockQty} available`;
       productStockEl.classList.add("stock-low");
-      return;
-    }
-
-    if (stockQty <= 0 && canPurchase) {
-      productStockEl.textContent = "Available on backorder";
-      productStockEl.classList.add("stock-backorder");
       return;
     }
 
@@ -313,7 +304,10 @@ document.addEventListener("DOMContentLoaded", async function () {
     if (qtyInput) qtyInput.value = "1";
     if (qtyMinus) qtyMinus.disabled = true;
     if (qtyPlus) qtyPlus.disabled = true;
-    if (addToCartBtn) addToCartBtn.disabled = true;
+    if (addToCartBtn) {
+      addToCartBtn.disabled = true;
+      addToCartBtn.textContent = "Unavailable";
+    }
   }
 
   function convertSupabaseProductToStoreShape(row) {
@@ -337,7 +331,6 @@ document.addEventListener("DOMContentLoaded", async function () {
         })
         .map(function (variant) {
           const stockQuantity = Number(variant.stock_quantity || 0);
-          const allowBackorder = variant.allow_backorder === true;
 
           return {
             id: variant.variant_id || variant.id,
@@ -357,7 +350,8 @@ document.addEventListener("DOMContentLoaded", async function () {
             stockQuantity: stockQuantity,
             stock_quantity: stockQuantity,
             inStock: stockQuantity > 0,
-            allow_backorder: allowBackorder,
+            in_stock: stockQuantity > 0,
+            allow_backorder: true,
             is_active: variant.is_active !== false,
             image: variant.image || ""
           };
@@ -494,18 +488,22 @@ document.addEventListener("DOMContentLoaded", async function () {
     }
 
     if (variantSelect) {
-      variantSelect.innerHTML = `<option value="">Unavailable</option>`;
+      variantSelect.innerHTML = `<option value="">Available on backorder</option>`;
       variantSelect.disabled = true;
     }
 
     if (qtyInput) {
       qtyInput.value = "1";
-      qtyInput.disabled = true;
+      qtyInput.disabled = false;
     }
 
-    if (qtyMinus) qtyMinus.disabled = true;
-    if (qtyPlus) qtyPlus.disabled = true;
-    if (addToCartBtn) addToCartBtn.disabled = true;
+    if (qtyMinus) qtyMinus.disabled = false;
+    if (qtyPlus) qtyPlus.disabled = false;
+
+    if (addToCartBtn) {
+      addToCartBtn.disabled = false;
+      addToCartBtn.textContent = "Add To Cart";
+    }
 
     updateCartCountDisplay();
     return;
@@ -556,15 +554,8 @@ document.addEventListener("DOMContentLoaded", async function () {
     setMainImage(imageSrc, `${product.name} ${variant.label}`);
 
     if (addToCartBtn) {
-      const stockQty = Number(
-        variant.stockQuantity !== undefined && variant.stockQuantity !== null
-          ? variant.stockQuantity
-          : variant.stock_quantity || 0
-      );
-      const canPurchase = stockQty > 0 || variant.allow_backorder === true;
-
-      addToCartBtn.disabled = !canPurchase;
-      addToCartBtn.textContent = canPurchase ? "Add To Cart" : "Unavailable";
+      addToCartBtn.disabled = false;
+      addToCartBtn.textContent = "Add To Cart";
     }
   }
 
@@ -603,14 +594,6 @@ document.addEventListener("DOMContentLoaded", async function () {
       const variant = getSelectedVariant();
       if (!variant) return;
 
-      const stockQty = Number(
-        variant.stockQuantity !== undefined && variant.stockQuantity !== null
-          ? variant.stockQuantity
-          : variant.stock_quantity || 0
-      );
-      const canPurchase = stockQty > 0 || variant.allow_backorder === true;
-      if (!canPurchase) return;
-
       const quantity = Math.max(1, Number(qtyInput ? qtyInput.value : 1) || 1);
       const selectedIndex = getSelectedVariantIndex();
       const image = getImageForVariant(product, selectedIndex);
@@ -644,7 +627,7 @@ document.addEventListener("DOMContentLoaded", async function () {
         weight_oz: Number(variant.weightOz || variant.weight_oz || 0),
         stockQuantity: Number(variant.stockQuantity || variant.stock_quantity || 0),
         stock_quantity: Number(variant.stockQuantity || variant.stock_quantity || 0),
-        allow_backorder: variant.allow_backorder === true,
+        allow_backorder: true,
         inStock: Number(variant.stockQuantity || variant.stock_quantity || 0) > 0,
         in_stock: Number(variant.stockQuantity || variant.stock_quantity || 0) > 0
       };
@@ -682,15 +665,6 @@ document.addEventListener("DOMContentLoaded", async function () {
         setTimeout(function () {
           const currentVariant = getSelectedVariant();
           if (!currentVariant) return;
-
-          const currentStockQty = Number(
-            currentVariant.stockQuantity !== undefined && currentVariant.stockQuantity !== null
-              ? currentVariant.stockQuantity
-              : currentVariant.stock_quantity || 0
-          );
-          const currentCanPurchase = currentStockQty > 0 || currentVariant.allow_backorder === true;
-          if (!currentCanPurchase) return;
-
           addToCartBtn.textContent = "Add To Cart";
         }, 1200);
       }
