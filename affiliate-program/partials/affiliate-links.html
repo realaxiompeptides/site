@@ -1,0 +1,45 @@
+<section class="affiliate-card">
+  <div class="affiliate-links-header">
+    <h2 class="affiliate-section-title">Generate Tracking Links</h2>
+    <p class="affiliate-muted">
+      Create a referral link for any page on the site. The referral will track across the whole site after the customer lands.
+    </p>
+  </div>
+
+  <form id="affiliateLinkGeneratorForm" class="affiliate-links-form">
+    <div class="affiliate-grid-2">
+      <div class="affiliate-field">
+        <label for="affiliateTargetPath">Target Path</label>
+        <input
+          id="affiliateTargetPath"
+          class="affiliate-input"
+          type="text"
+          placeholder="/catalog.html or /product-page/product.html?slug=tb500"
+        />
+      </div>
+
+      <div class="affiliate-field affiliate-links-button-wrap">
+        <label>&nbsp;</label>
+        <button type="button" class="affiliate-btn affiliate-btn-primary" id="generateAffiliateLinkBtn">
+          Generate Link
+        </button>
+      </div>
+    </div>
+
+    <div class="affiliate-field">
+      <label for="affiliateGeneratedLink">Generated Tracking Link</label>
+      <div class="affiliate-link-output-row">
+        <input id="affiliateGeneratedLink" class="affiliate-input" type="text" readonly />
+        <button
+          type="button"
+          class="affiliate-btn affiliate-btn-secondary"
+          data-affiliate-copy=""
+          id="affiliateCopyGeneratedLinkBtn"
+          onclick="this.setAttribute('data-affiliate-copy', document.getElementById('affiliateGeneratedLink').value)"
+        >
+          Copy Link
+        </button>
+      </div>
+    </div>
+  </form>
+</section>
