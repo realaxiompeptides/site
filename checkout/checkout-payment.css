@@ -1,32 +1,107 @@
-.payment-box {
-  border: 1px solid #dbe3ee;
+/* Container */
+.checkout-payment-options {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Each payment card */
+.checkout-payment-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  border: 1px solid #dce4ef;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: #ffffff;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+/* Hover */
+.checkout-payment-option:hover {
+  border-color: #387eb6;
+  background: #f7fbff;
+}
+
+/* Active (selected) */
+.checkout-payment-option.active {
+  border-color: #387eb6;
+  background: #eef6ff;
+  box-shadow: 0 0 0 1px #387eb6;
+}
+
+/* Hide default radio */
+.checkout-payment-radio {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Custom radio */
+.checkout-payment-custom-radio {
+  width: 18px;
+  height: 18px;
+  border: 2px solid #cbd5e1;
+  border-radius: 50%;
+  margin-top: 3px;
+  flex-shrink: 0;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+/* Checked state */
+.checkout-payment-radio:checked + .checkout-payment-custom-radio {
+  border-color: #387eb6;
+}
+
+.checkout-payment-radio:checked + .checkout-payment-custom-radio::after {
+  content: "";
+  width: 8px;
+  height: 8px;
+  background: #387eb6;
+  border-radius: 50%;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* Text content */
+.checkout-payment-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* Title */
+.checkout-payment-title {
+  font-weight: 600;
+  font-size: 15px;
+  color: #12203f;
+  line-height: 1.3;
+}
+
+/* Description */
+.checkout-payment-description {
+  font-size: 13px;
+  color: #6b7a90;
+  line-height: 1.4;
+}
+
+/* Section wrapper (optional if you want it boxed) */
+.checkout-payment-section {
+  border: 1px solid #dce4ef;
   border-radius: 18px;
   padding: 18px;
   background: #f9fbff;
 }
 
-.payment-method {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  border: 1px solid #dbe3ee;
-  padding: 12px 14px;
-  border-radius: 12px;
-  background: white;
-  margin-bottom: 10px;
-  cursor: pointer;
-}
-
-.payment-method:hover {
-  border-color: #3a8dde;
-}
-
-.payment-method input {
-  accent-color: #3a8dde;
-}
-
-.payment-note {
-  font-size: 14px;
-  color: #64748b;
-  margin-top: 10px;
+/* Section title */
+.checkout-section-title {
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  color: #12203f;
 }
