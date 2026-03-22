@@ -51,7 +51,7 @@
 .thank-you-payment-method-heading-row {
   display: flex;
   align-items: flex-start;
-  gap: 14px;
+  gap: 16px;
 }
 
 .thank-you-payment-method-heading-copy {
@@ -59,6 +59,7 @@
   flex-direction: column;
   gap: 8px;
   min-width: 0;
+  flex: 1;
 }
 
 .thank-you-payment-method-name {
@@ -69,30 +70,33 @@
   color: #12203f;
 }
 
-.thank-you-payment-method-logo-badge {
-  width: 58px;
-  height: 58px;
-  min-width: 58px;
-  border-radius: 16px;
-  border: 1px solid #dbe4ef;
-  background: #ffffff;
+.thank-you-payment-method-logo-wrap {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
+  flex-shrink: 0;
   overflow: hidden;
+  background: transparent;
 }
 
-.thank-you-payment-method-logo-badge.small {
-  width: 48px;
-  height: 48px;
-  min-width: 48px;
-  border-radius: 14px;
+.thank-you-payment-method-logo-wrap.primary-logo {
+  width: 148px;
+  min-width: 148px;
+  min-height: 52px;
 }
 
-.thank-you-payment-method-logo {
-  max-width: 70%;
-  max-height: 70%;
+.thank-you-payment-method-logo-wrap.accordion-logo {
+  width: 120px;
+  min-width: 120px;
+  min-height: 40px;
+}
+
+.thank-you-payment-method-logo.long-logo {
+  width: 100%;
+  height: auto;
+  max-height: 42px;
   object-fit: contain;
+  object-position: left center;
   display: block;
 }
 
@@ -124,8 +128,8 @@
 }
 
 .thank-you-payment-mini-logo {
-  width: 18px;
-  height: 18px;
+  width: 22px;
+  height: 22px;
   object-fit: contain;
   display: block;
   flex-shrink: 0;
@@ -236,6 +240,7 @@
   align-items: center;
   gap: 14px;
   min-width: 0;
+  flex: 1;
 }
 
 .thank-you-payment-accordion-title-wrap {
@@ -272,10 +277,15 @@
 
 .thank-you-payment-accordion-panel {
   border-top: 1px solid #e8eef5;
+  display: none;
 }
 
 .thank-you-payment-accordion-panel[hidden] {
   display: none !important;
+}
+
+.thank-you-payment-accordion-item.is-open .thank-you-payment-accordion-panel {
+  display: block;
 }
 
 .thank-you-payment-accordion-panel-inner {
@@ -300,18 +310,23 @@
   .thank-you-payment-method-heading-row,
   .thank-you-payment-accordion-left {
     align-items: flex-start;
+    gap: 12px;
   }
 
-  .thank-you-payment-method-logo-badge {
-    width: 50px;
-    height: 50px;
-    min-width: 50px;
+  .thank-you-payment-method-logo-wrap.primary-logo {
+    width: 118px;
+    min-width: 118px;
+    min-height: 40px;
   }
 
-  .thank-you-payment-method-logo-badge.small {
-    width: 44px;
-    height: 44px;
-    min-width: 44px;
+  .thank-you-payment-method-logo-wrap.accordion-logo {
+    width: 96px;
+    min-width: 96px;
+    min-height: 34px;
+  }
+
+  .thank-you-payment-method-logo.long-logo {
+    max-height: 34px;
   }
 
   .thank-you-payment-accordion-title {
