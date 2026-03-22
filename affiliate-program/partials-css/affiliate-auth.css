@@ -1,0 +1,64 @@
+.affiliate-auth-card {
+  display: grid;
+  gap: 18px;
+}
+
+.affiliate-auth-header {
+  display: grid;
+  gap: 8px;
+}
+
+.affiliate-auth-tabs {
+  display: inline-grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  background: #f1f5f9;
+  border-radius: 18px;
+  padding: 6px;
+  width: min(100%, 420px);
+}
+
+.affiliate-auth-tab {
+  min-height: 48px;
+  border: 0;
+  border-radius: 14px;
+  background: transparent;
+  color: #64748b;
+  font-family: "Inter", sans-serif;
+  font-size: 15px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.affiliate-auth-tab.is-active {
+  background: #ffffff;
+  color: #12203f;
+  box-shadow: 0 10px 18px rgba(15, 23, 42, 0.06);
+}
+
+.affiliate-auth-form {
+  display: grid;
+  gap: 16px;
+}
+
+.affiliate-auth-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.affiliate-auth-submit {
+  width: 100%;
+  min-height: 58px;
+  font-size: 16px;
+}
+
+@media (max-width: 800px) {
+  .affiliate-auth-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .affiliate-auth-tabs {
+    width: 100%;
+  }
+}
