@@ -34,8 +34,11 @@ const THANK_YOU_PAYMENT_METHODS = {
     key: "venmo",
     label: "Venmo",
     accentClass: "thank-you-payment-accent-venmo",
+    iconClass: "fa-brands fa-vimeo-v",
     handleLabel: "Venmo Username",
     handle: "@jax-ferone-839",
+    secondaryLabel: "",
+    secondaryValue: "",
     linkLabel: "Venmo Link",
     link: "https://venmo.com/u/jax-ferone-839",
     instructions: "Send payment through Venmo and include only your order number in the note."
@@ -45,7 +48,8 @@ const THANK_YOU_PAYMENT_METHODS = {
     key: "zelle",
     label: "Zelle",
     accentClass: "thank-you-payment-accent-zelle",
-    handleLabel: "Zelle Contact",
+    iconClass: "fa-solid fa-z",
+    handleLabel: "Zelle Phone",
     handle: "916-233-5312",
     secondaryLabel: "Zelle Email",
     secondaryValue: "testzelle@axiomtest.com",
@@ -58,8 +62,11 @@ const THANK_YOU_PAYMENT_METHODS = {
     key: "cashapp",
     label: "Cash App",
     accentClass: "thank-you-payment-accent-cashapp",
+    iconClass: "fa-solid fa-dollar-sign",
     handleLabel: "Cash App Username",
     handle: "$REPLACE_WITH_YOUR_CASHAPP",
+    secondaryLabel: "",
+    secondaryValue: "",
     linkLabel: "Cash App Link",
     link: "https://cash.app/$REPLACE_WITH_YOUR_CASHAPP",
     instructions: "Send payment through Cash App and include only your order number in the note."
@@ -69,8 +76,11 @@ const THANK_YOU_PAYMENT_METHODS = {
     key: "applepay",
     label: "Apple Pay",
     accentClass: "thank-you-payment-accent-applepay",
+    iconClass: "fa-brands fa-apple",
     handleLabel: "Apple Pay Contact",
     handle: "916-233-5312",
+    secondaryLabel: "",
+    secondaryValue: "",
     linkLabel: "",
     link: "",
     instructions: "Send payment through Apple Pay and include only your order number in the note if prompted."
@@ -80,8 +90,11 @@ const THANK_YOU_PAYMENT_METHODS = {
     key: "crypto",
     label: "Crypto",
     accentClass: "thank-you-payment-accent-crypto",
+    iconClass: "fa-brands fa-bitcoin",
     handleLabel: "Wallet / Payment Details",
     handle: "Contact for wallet",
+    secondaryLabel: "",
+    secondaryValue: "",
     linkLabel: "",
     link: "",
     instructions: "Send the exact amount using the correct crypto and network. Include your order number in the memo if available.",
@@ -149,12 +162,8 @@ function thankYouCreateLinkBlock(label, url) {
   `;
 }
 
-function thankYouBuildSingleMethodCard(methodConfig, orderNumber, isPrimary) {
+function thankYouBuildMethodDetails(methodConfig, orderNumber) {
   if (!methodConfig) return "";
-
-  const safeLabel = thankYouEscapeHtml(methodConfig.label);
-  const safeInstructions = thankYouEscapeHtml(methodConfig.instructions || "");
-  const safeAccentClass = thankYouEscapeHtml(methodConfig.accentClass || "");
 
   let detailsHtml = "";
 
@@ -201,24 +210,101 @@ function thankYouBuildSingleMethodCard(methodConfig, orderNumber, isPrimary) {
     detailsHtml += thankYouCreateCopyButton("Order Number", `#${orderNumber}`);
   }
 
+  return detailsHtml;
+}
+
+function thankYouBuildPrimaryMethodCard(methodConfig, orderNumber) {
+  if (!methodConfig) return "";
+
+  const safeLabel = thankYouEscapeHtml(methodConfig.label);
+  const safeInstructions = thankYouEscapeHtml(methodConfig.instructions || "");
+  const safeAccentClass = thankYouEscapeHtml(methodConfig.accentClass || "");
+  const safeIconClass = thankYouEscapeHtml(methodConfig.iconClass || "fa-solid fa-credit-card");
+
   return `
-    <div class="thank-you-payment-method-card ${isPrimary ? "is-primary" : ""}">
+    <div class="thank-you-payment-method-card is-primary">
       <div class="thank-you-payment-method-top">
-        <h3 class="thank-you-payment-method-name ${safeAccentClass}">
-          ${safeLabel}
-        </h3>
-        <p class="thank-you-payment-method-instructions">
-          ${safeInstructions}
-        </p>
-        ${
-          orderNumber
-            ? `<p class="thank-you-payment-order-note">Include order #<strong>${thankYouEscapeHtml(orderNumber)}</strong> in the note.</p>`
-            : ""
-        }
+        <div class="thank-you-payment-method-heading-row">
+          <div class="thank-you-payment-method-icon-badge ${safeAccentClass}">
+            <i class="${safeIconClass}"></i>
+          </div>
+
+          <div class="thank-you-payment-method-heading-copy">
+            <h3 class="thank-you-payment-method-name ${safeAccentClass}">
+              ${safeLabel}
+            </h3>
+            <p class="thank-you-payment-method-instructions">
+              ${safeInstructions}
+            </p>
+            ${
+              orderNumber
+                ? `<p class="thank-you-payment-order-note">Include order #<strong>${thankYouEscapeHtml(orderNumber)}</strong> in the note.</p>`
+                : ""
+            }
+          </div>
+        </div>
       </div>
 
       <div class="thank-you-payment-method-details">
-        ${detailsHtml}
+        ${thankYouBuildMethodDetails(methodConfig, orderNumber)}
+      </div>
+    </div>
+  `;
+}
+
+function thankYouBuildAccordionItem(methodConfig, orderNumber, index) {
+  if (!methodConfig) return "";
+
+  const safeLabel = thankYouEscapeHtml(methodConfig.label);
+  const safeInstructions = thankYouEscapeHtml(methodConfig.instructions || "");
+  const safeAccentClass = thankYouEscapeHtml(methodConfig.accentClass || "");
+  const safeIconClass = thankYouEscapeHtml(methodConfig.iconClass || "fa-solid fa-credit-card");
+  const panelId = `thankYouPaymentAccordionPanel${index}`;
+
+  return `
+    <div class="thank-you-payment-accordion-item" data-payment-key="${thankYouEscapeHtml(methodConfig.key)}">
+      <button
+        type="button"
+        class="thank-you-payment-accordion-toggle"
+        aria-expanded="false"
+        aria-controls="${panelId}"
+      >
+        <span class="thank-you-payment-accordion-left">
+          <span class="thank-you-payment-method-icon-badge ${safeAccentClass}">
+            <i class="${safeIconClass}"></i>
+          </span>
+
+          <span class="thank-you-payment-accordion-title-wrap">
+            <span class="thank-you-payment-accordion-title ${safeAccentClass}">${safeLabel}</span>
+            <span class="thank-you-payment-accordion-subtitle">Tap to view payment details</span>
+          </span>
+        </span>
+
+        <span class="thank-you-payment-accordion-chevron" aria-hidden="true">
+          <i class="fa-solid fa-chevron-down"></i>
+        </span>
+      </button>
+
+      <div
+        id="${panelId}"
+        class="thank-you-payment-accordion-panel"
+        hidden
+      >
+        <div class="thank-you-payment-accordion-panel-inner">
+          <p class="thank-you-payment-method-instructions">
+            ${safeInstructions}
+          </p>
+
+          ${
+            orderNumber
+              ? `<p class="thank-you-payment-order-note">Include order #<strong>${thankYouEscapeHtml(orderNumber)}</strong> in the note.</p>`
+              : ""
+          }
+
+          <div class="thank-you-payment-method-details">
+            ${thankYouBuildMethodDetails(methodConfig, orderNumber)}
+          </div>
+        </div>
       </div>
     </div>
   `;
@@ -267,13 +353,51 @@ function thankYouBindPaymentCopyButtons() {
   });
 }
 
+function thankYouBindPaymentAccordion() {
+  const items = document.querySelectorAll(".thank-you-payment-accordion-item");
+
+  items.forEach((item) => {
+    const toggle = item.querySelector(".thank-you-payment-accordion-toggle");
+    const panel = item.querySelector(".thank-you-payment-accordion-panel");
+
+    if (!toggle || !panel) return;
+    if (toggle.dataset.bound === "true") return;
+    toggle.dataset.bound = "true";
+
+    toggle.addEventListener("click", function () {
+      const isOpen = item.classList.contains("is-open");
+
+      items.forEach((otherItem) => {
+        otherItem.classList.remove("is-open");
+
+        const otherToggle = otherItem.querySelector(".thank-you-payment-accordion-toggle");
+        const otherPanel = otherItem.querySelector(".thank-you-payment-accordion-panel");
+
+        if (otherToggle) {
+          otherToggle.setAttribute("aria-expanded", "false");
+        }
+
+        if (otherPanel) {
+          otherPanel.hidden = true;
+        }
+      });
+
+      if (!isOpen) {
+        item.classList.add("is-open");
+        toggle.setAttribute("aria-expanded", "true");
+        panel.hidden = false;
+      }
+    });
+  });
+}
+
 function renderThankYouPaymentMethods(order) {
   const mount =
+    document.getElementById("paymentMethodsSection") ||
     document.getElementById("thankYouPaymentInstructions") ||
     document.getElementById("paymentInstructions") ||
     document.getElementById("thankYouPaymentDetails") ||
-    document.getElementById("thankYouPayNowBox") ||
-    document.getElementById("paymentMethodsSection");
+    document.getElementById("thankYouPayNowBox");
 
   if (!mount) return;
 
@@ -290,7 +414,7 @@ function renderThankYouPaymentMethods(order) {
       <h2 class="thank-you-payment-section-title">Your Payment Method</h2>
       ${
         selectedMethod
-          ? thankYouBuildSingleMethodCard(selectedMethod, orderNumber, true)
+          ? thankYouBuildPrimaryMethodCard(selectedMethod, orderNumber)
           : `
             <div class="thank-you-payment-method-card is-primary">
               <p class="thank-you-payment-empty-text">
@@ -313,11 +437,12 @@ function renderThankYouPaymentMethods(order) {
         Please include your order number in the note.
       </p>
 
-      <div class="thank-you-payment-method-list">
-        ${otherMethods.map((method) => thankYouBuildSingleMethodCard(method, orderNumber, false)).join("")}
+      <div class="thank-you-payment-accordion">
+        ${otherMethods.map((method, index) => thankYouBuildAccordionItem(method, orderNumber, index)).join("")}
       </div>
     </section>
   `;
 
   thankYouBindPaymentCopyButtons();
+  thankYouBindPaymentAccordion();
 }
