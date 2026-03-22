@@ -242,11 +242,11 @@ function thankYouBuildPrimaryMethodCard(methodConfig, orderNumber) {
     <div class="thank-you-payment-method-card is-primary">
       <div class="thank-you-payment-method-top">
         <div class="thank-you-payment-method-heading-row">
-          <div class="thank-you-payment-method-logo-badge">
+          <div class="thank-you-payment-method-logo-wrap primary-logo">
             <img
               src="${safeLogo}"
               alt="${safeLabel} logo"
-              class="thank-you-payment-method-logo"
+              class="thank-you-payment-method-logo long-logo"
               onerror="this.style.display='none';"
             />
           </div>
@@ -287,11 +287,11 @@ function thankYouBuildAccordionItem(methodConfig, orderNumber, index) {
         aria-controls="${panelId}"
       >
         <span class="thank-you-payment-accordion-left">
-          <span class="thank-you-payment-method-logo-badge small">
+          <span class="thank-you-payment-method-logo-wrap accordion-logo">
             <img
               src="${safeLogo}"
               alt="${safeLabel} logo"
-              class="thank-you-payment-method-logo"
+              class="thank-you-payment-method-logo long-logo"
               onerror="this.style.display='none';"
             />
           </span>
@@ -373,7 +373,7 @@ function thankYouBindPaymentCopyButtons() {
 }
 
 function thankYouBindPaymentAccordion() {
-  const items = document.querySelectorAll(".thank-you-payment-accordion-item");
+  const items = Array.from(document.querySelectorAll(".thank-you-payment-accordion-item"));
 
   items.forEach((item) => {
     const toggle = item.querySelector(".thank-you-payment-accordion-toggle");
@@ -384,7 +384,7 @@ function thankYouBindPaymentAccordion() {
     toggle.dataset.bound = "true";
 
     toggle.addEventListener("click", function () {
-      const isOpen = item.classList.contains("is-open");
+      const willOpen = !item.classList.contains("is-open");
 
       items.forEach((otherItem) => {
         otherItem.classList.remove("is-open");
@@ -398,13 +398,15 @@ function thankYouBindPaymentAccordion() {
 
         if (otherPanel) {
           otherPanel.hidden = true;
+          otherPanel.style.display = "none";
         }
       });
 
-      if (!isOpen) {
+      if (willOpen) {
         item.classList.add("is-open");
         toggle.setAttribute("aria-expanded", "true");
         panel.hidden = false;
+        panel.style.display = "block";
       }
     });
   });
