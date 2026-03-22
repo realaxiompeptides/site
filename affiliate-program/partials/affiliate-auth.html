@@ -1,0 +1,61 @@
+<section class="affiliate-card affiliate-auth-card" id="affiliateAuthCard">
+  <div class="affiliate-auth-header">
+    <h2 class="affiliate-section-title">Affiliate Login / Sign Up</h2>
+    <p class="affiliate-muted">
+      Create your affiliate account, get approved, and then access your dashboard.
+    </p>
+  </div>
+
+  <div class="affiliate-message" id="affiliateAuthMessage"></div>
+
+  <div class="affiliate-auth-tabs">
+    <button type="button" class="affiliate-auth-tab is-active" id="affiliateLoginTab">Sign In</button>
+    <button type="button" class="affiliate-auth-tab" id="affiliateSignupTab">Create Account</button>
+  </div>
+
+  <form id="affiliateLoginForm" class="affiliate-auth-form">
+    <div class="affiliate-auth-grid">
+      <div class="affiliate-field">
+        <label for="affiliateLoginEmail">Email</label>
+        <input id="affiliateLoginEmail" class="affiliate-input" type="email" autocomplete="email" required />
+      </div>
+
+      <div class="affiliate-field">
+        <label for="affiliateLoginPassword">Password</label>
+        <input id="affiliateLoginPassword" class="affiliate-input" type="password" autocomplete="current-password" required />
+      </div>
+    </div>
+
+    <button type="submit" class="affiliate-btn affiliate-btn-primary affiliate-auth-submit">
+      Sign In To Affiliate Dashboard
+    </button>
+  </form>
+
+  <form id="affiliateSignupForm" class="affiliate-auth-form" hidden>
+    <div class="affiliate-auth-grid">
+      <div class="affiliate-field">
+        <label for="affiliateSignupName">Full Name</label>
+        <input id="affiliateSignupName" class="affiliate-input" type="text" autocomplete="name" required />
+      </div>
+
+      <div class="affiliate-field">
+        <label for="affiliateSignupEmail">Email</label>
+        <input id="affiliateSignupEmail" class="affiliate-input" type="email" autocomplete="email" required />
+      </div>
+
+      <div class="affiliate-field">
+        <label for="affiliateSignupPassword">Password</label>
+        <input id="affiliateSignupPassword" class="affiliate-input" type="password" minlength="6" required />
+      </div>
+
+      <div class="affiliate-field">
+        <label for="affiliateSignupDiscord">Discord Username</label>
+        <input id="affiliateSignupDiscord" class="affiliate-input" type="text" placeholder="optional" />
+      </div>
+    </div>
+
+    <button type="submit" class="affiliate-btn affiliate-btn-primary affiliate-auth-submit">
+      Apply To Become An Affiliate
+    </button>
+  </form>
+</section>
