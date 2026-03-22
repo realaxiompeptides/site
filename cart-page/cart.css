@@ -732,3 +732,14 @@ body.axiom-cart-page .cart-page-coupon-message.error {
     height: 54px;
   }
 }
+
+.cart-page-payment-icon-img {
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+  display: block;
+}
+
+.cart-page-payment-icon-google i {
+  font-size: 2rem;
+}
