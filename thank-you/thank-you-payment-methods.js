@@ -36,7 +36,8 @@ const THANK_YOU_PAYMENT_METHODS = {
     handle: "@jax-ferone-839",
     linkLabel: "Venmo Link",
     link: "https://venmo.com/u/jax-ferone-839",
-    instructions: "Send payment through Venmo and include only your order number in the note."
+    instructions:
+      "Send payment through Venmo and include only your order number in the note."
   },
 
   zelle: {
@@ -49,7 +50,8 @@ const THANK_YOU_PAYMENT_METHODS = {
     secondaryValue: "jaxferone@gmail.com",
     linkLabel: "",
     link: "",
-    instructions: "Send payment through Zelle and include only your order number in the note."
+    instructions:
+      "Send payment through Zelle, then message the phone number with your order number so we can match your payment."
   },
 
   cashapp: {
@@ -60,7 +62,8 @@ const THANK_YOU_PAYMENT_METHODS = {
     handle: "$axiompeptides",
     linkLabel: "Cash App Link",
     link: "https://cash.app/$axiompeptides",
-    instructions: "Send payment through Cash App and include only your order number in the note."
+    instructions:
+      "Send payment through Cash App and include only your order number in the note."
   },
 
   applepay: {
@@ -71,14 +74,16 @@ const THANK_YOU_PAYMENT_METHODS = {
     handle: "530-701-9349",
     linkLabel: "",
     link: "",
-    instructions: "Send payment through Apple Pay and include only your order number in the note if prompted."
+    instructions:
+      "Send payment through Apple Pay, then message the phone number with your order number so we can match your payment."
   },
 
   crypto: {
     key: "crypto",
     label: "Crypto",
     logo: "../images/payment-icons/crypto-group.jpg",
-    instructions: "Send the exact amount using the correct crypto and network. Include your order number in the memo if available.",
+    instructions:
+      "Send the exact amount using the correct crypto and network. After sending, send your transaction ID and order number using one of the contact options below so we can confirm your payment.",
     wallets: [
       {
         label: "Bitcoin (BTC)",
@@ -99,6 +104,28 @@ const THANK_YOU_PAYMENT_METHODS = {
       {
         label: "USDC",
         value: "0xExampleUSDCAddress1234567890ABCDEF"
+      }
+    ],
+    cryptoContacts: [
+      {
+        label: "Email Us",
+        href: "mailto:realaxiompeptides@gmail.com?subject=Crypto%20Payment%20Confirmation",
+        external: false
+      },
+      {
+        label: "WhatsApp",
+        href: "https://wa.me/15307019349",
+        external: true
+      },
+      {
+        label: "Telegram",
+        href: "https://t.me/REPLACE_WITH_YOUR_TELEGRAM",
+        external: true
+      },
+      {
+        label: "Discord",
+        href: "https://discord.gg/REPLACE_WITH_YOUR_DISCORD",
+        external: true
       }
     ]
   }
@@ -158,6 +185,38 @@ function thankYouCreateLinkBlock(label, url) {
   `;
 }
 
+function thankYouCreateActionButtons(buttons, orderNumber) {
+  if (!Array.isArray(buttons) || !buttons.length) return "";
+
+  const safeOrder = thankYouEscapeHtml(orderNumber ? `#${orderNumber}` : "");
+
+  return `
+    <div class="thank-you-payment-contact-section">
+      <div class="thank-you-payment-copy-header">
+        Send your transaction ID and ${safeOrder ? `order number ${safeOrder}` : "order number"}
+      </div>
+      <div class="thank-you-payment-action-grid">
+        ${buttons
+          .map((button) => {
+            const safeLabel = thankYouEscapeHtml(button.label || "");
+            const safeHref = thankYouEscapeHtml(button.href || "#");
+            const rel = button.external ? `target="_blank" rel="noopener noreferrer"` : "";
+            return `
+              <a
+                class="thank-you-payment-action-btn"
+                href="${safeHref}"
+                ${rel}
+              >
+                ${safeLabel}
+              </a>
+            `;
+          })
+          .join("")}
+      </div>
+    </div>
+  `;
+}
+
 function thankYouBuildMethodDetails(methodConfig, orderNumber) {
   if (!methodConfig) return "";
 
@@ -196,6 +255,10 @@ function thankYouBuildMethodDetails(methodConfig, orderNumber) {
         }).join("")}
       </div>
     `;
+  }
+
+  if (Array.isArray(methodConfig.cryptoContacts) && methodConfig.cryptoContacts.length) {
+    detailsHtml += thankYouCreateActionButtons(methodConfig.cryptoContacts, orderNumber);
   }
 
   if (orderNumber) {
