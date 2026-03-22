@@ -1,0 +1,26 @@
+.affiliate-links-header {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.affiliate-links-form {
+  display: grid;
+  gap: 16px;
+}
+
+.affiliate-links-button-wrap .affiliate-btn {
+  width: 100%;
+}
+
+.affiliate-link-output-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+}
+
+@media (max-width: 700px) {
+  .affiliate-link-output-row {
+    grid-template-columns: 1fr;
+  }
+}
