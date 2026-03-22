@@ -50,6 +50,20 @@ function normalizeImagePath(path) {
   return `../${cleanPath}`;
 }
 
+function normalizePaymentMethodValue(value) {
+  const normalized = String(value || "").trim().toLowerCase();
+
+  if (!normalized) return "";
+
+  if (normalized === "cash_app" || normalized === "cash app") return "cashapp";
+  if (normalized === "apple_pay" || normalized === "apple pay") return "applepay";
+  if (normalized === "venmo") return "venmo";
+  if (normalized === "zelle") return "zelle";
+  if (normalized === "crypto") return "crypto";
+
+  return normalized;
+}
+
 function getItemQuantity(item) {
   return Number(item.quantity || item.qty || 1);
 }
@@ -291,7 +305,7 @@ function normalizeSessionShape(session) {
     customer_phone: session.customer_phone || session.contact?.phone || "",
     customer_first_name: session.customer_first_name || shippingAddress.first_name || "",
     customer_last_name: session.customer_last_name || shippingAddress.last_name || "",
-    payment_method: session.payment_method || ""
+    payment_method: normalizePaymentMethodValue(session.payment_method || "")
   };
 }
 
@@ -424,7 +438,45 @@ function isAddressReadyForRates() {
 
 function getSelectedPaymentMethod() {
   const checked = document.querySelector('input[name="paymentMethod"]:checked');
-  return checked ? checked.value : null;
+  return checked ? normalizePaymentMethodValue(checked.value) : null;
+}
+
+function applySelectedPaymentMethodToUI(paymentMethod) {
+  const normalized = normalizePaymentMethodValue(paymentMethod);
+  if (!normalized) return;
+
+  const radios = document.querySelectorAll('input[name="paymentMethod"]');
+  if (!radios.length) return;
+
+  radios.forEach((radio) => {
+    radio.checked = normalizePaymentMethodValue(radio.value) === normalized;
+
+    const option = radio.closest(".checkout-payment-option");
+    if (option) {
+      option.classList.toggle("active", radio.checked);
+    }
+  });
+}
+
+function bindPaymentMethodInputs() {
+  const radios = document.querySelectorAll('input[name="paymentMethod"]');
+  if (!radios.length) return;
+
+  const savedPaymentMethod = normalizePaymentMethodValue(axiomCurrentCheckoutSession?.payment_method || "");
+  if (savedPaymentMethod) {
+    applySelectedPaymentMethodToUI(savedPaymentMethod);
+  }
+
+  radios.forEach((radio) => {
+    if (radio.dataset.bound === "true") return;
+    radio.dataset.bound = "true";
+
+    radio.addEventListener("change", async function () {
+      applySelectedPaymentMethodToUI(this.value);
+      await syncCheckoutSessionFromForm();
+      renderCheckoutSummary();
+    });
+  });
 }
 
 function getSelectedShippingSelectionObject() {
@@ -715,6 +767,10 @@ function hydrateCheckoutFormFromSession(session) {
   }
   if (couponInputEl && !couponInputEl.value && session.discount_code) {
     couponInputEl.value = session.discount_code;
+  }
+
+  if (session.payment_method) {
+    applySelectedPaymentMethodToUI(session.payment_method);
   }
 }
 
@@ -1211,6 +1267,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   hydrateCheckoutFormFromSession(axiomCurrentCheckoutSession);
+  bindPaymentMethodInputs();
 
   bindDiscountHooks();
 
@@ -1254,6 +1311,9 @@ document.addEventListener("DOMContentLoaded", async () => {
       await syncLocalCartIntoSession(true);
     }
 
+    hydrateCheckoutFormFromSession(axiomCurrentCheckoutSession);
+    bindPaymentMethodInputs();
+
     if (isAddressReadyForRates()) {
       renderShippingRatesFromSession(true);
       await syncCheckoutSessionFromForm();
@@ -1272,6 +1332,9 @@ document.addEventListener("DOMContentLoaded", async () => {
       } else {
         await syncLocalCartIntoSession(true);
       }
+
+      hydrateCheckoutFormFromSession(axiomCurrentCheckoutSession);
+      bindPaymentMethodInputs();
 
       if (isAddressReadyForRates()) {
         renderShippingRatesFromSession(true);
@@ -1329,6 +1392,13 @@ document.addEventListener("submit", async function (e) {
     return;
   }
 
+  const selectedPaymentMethod = getSelectedPaymentMethod();
+  if (!selectedPaymentMethod) {
+    e.preventDefault();
+    alert("Please choose a payment method.");
+    return;
+  }
+
   const selectedShipping = document.querySelector('input[name="shippingMethod"]:checked');
   if (!selectedShipping) {
     e.preventDefault();
@@ -1342,12 +1412,14 @@ document.addEventListener("submit", async function (e) {
     await window.AXIOM_CHECKOUT_SESSION.patchSession({
       session_status: "pending_payment",
       payment_status: "unpaid",
+      payment_method: selectedPaymentMethod,
       last_activity_at: new Date().toISOString()
     });
   } else if (hasLocalCheckoutSession()) {
     const session = window.AXIOM_CHECKOUT_SESSION.getSession();
     session.session_status = "pending_payment";
     session.payment_status = "unpaid";
+    session.payment_method = selectedPaymentMethod;
     window.AXIOM_CHECKOUT_SESSION.saveSession(session);
   }
 });
