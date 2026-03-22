@@ -1,0 +1,10 @@
+.affiliate-claims-header {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.affiliate-claims-form {
+  display: grid;
+  gap: 16px;
+}
