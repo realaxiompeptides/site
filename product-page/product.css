@@ -542,3 +542,13 @@
 .product-description-card p.product-description-text {
   margin: 0;
 }
+
+/* Product description formatting */
+.product-description-text,
+#productDescription,
+.product-description-body,
+.product-description-content,
+.product-description-card p {
+  white-space: pre-line;
+  line-height: 1.75;
+}
