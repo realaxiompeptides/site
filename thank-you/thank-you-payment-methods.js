@@ -77,7 +77,7 @@ const THANK_YOU_PAYMENT_METHODS = {
   crypto: {
     key: "crypto",
     label: "Crypto",
-    logo: "../images/payment-icons/crypto-group.PNG",
+    logo: "../images/payment-icons/crypto-group.jpg",
     instructions: "Send the exact amount using the correct crypto and network. Include your order number in the memo if available.",
     wallets: [
       {
