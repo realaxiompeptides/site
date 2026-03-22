@@ -9,10 +9,11 @@ function thankYouNormalizePaymentMethod(method) {
   if (value.includes("venmo")) return "venmo";
   if (value.includes("crypto")) return "crypto";
   if (value.includes("bitcoin")) return "crypto";
-  if (value.includes("solana")) return "crypto";
   if (value.includes("ethereum")) return "crypto";
-  if (value.includes("usdc")) return "crypto";
   if (value.includes("usdt")) return "crypto";
+  if (value.includes("usdc")) return "crypto";
+  if (value.includes("sol")) return "crypto";
+  if (value.includes("solana")) return "crypto";
 
   return value.replace(/\s+/g, "");
 }
@@ -26,19 +27,13 @@ function thankYouEscapeHtml(value) {
     .replace(/'/g, "&#039;");
 }
 
-/*
-  Replace these with your real payment details.
-*/
 const THANK_YOU_PAYMENT_METHODS = {
   venmo: {
     key: "venmo",
     label: "Venmo",
-    accentClass: "thank-you-payment-accent-venmo",
-    iconClass: "fa-brands fa-vimeo-v",
+    logo: "../images/payment-icons/venmo.PNG",
     handleLabel: "Venmo Username",
     handle: "@jax-ferone-839",
-    secondaryLabel: "",
-    secondaryValue: "",
     linkLabel: "Venmo Link",
     link: "https://venmo.com/u/jax-ferone-839",
     instructions: "Send payment through Venmo and include only your order number in the note."
@@ -47,8 +42,7 @@ const THANK_YOU_PAYMENT_METHODS = {
   zelle: {
     key: "zelle",
     label: "Zelle",
-    accentClass: "thank-you-payment-accent-zelle",
-    iconClass: "fa-solid fa-z",
+    logo: "../images/payment-icons/zelle.PNG",
     handleLabel: "Zelle Phone",
     handle: "916-233-5312",
     secondaryLabel: "Zelle Email",
@@ -61,12 +55,9 @@ const THANK_YOU_PAYMENT_METHODS = {
   cashapp: {
     key: "cashapp",
     label: "Cash App",
-    accentClass: "thank-you-payment-accent-cashapp",
-    iconClass: "fa-solid fa-dollar-sign",
+    logo: "../images/payment-icons/cashapp.PNG",
     handleLabel: "Cash App Username",
     handle: "$REPLACE_WITH_YOUR_CASHAPP",
-    secondaryLabel: "",
-    secondaryValue: "",
     linkLabel: "Cash App Link",
     link: "https://cash.app/$REPLACE_WITH_YOUR_CASHAPP",
     instructions: "Send payment through Cash App and include only your order number in the note."
@@ -75,12 +66,9 @@ const THANK_YOU_PAYMENT_METHODS = {
   applepay: {
     key: "applepay",
     label: "Apple Pay",
-    accentClass: "thank-you-payment-accent-applepay",
-    iconClass: "fa-brands fa-apple",
+    logo: "../images/payment-icons/applepay.PNG",
     handleLabel: "Apple Pay Contact",
     handle: "916-233-5312",
-    secondaryLabel: "",
-    secondaryValue: "",
     linkLabel: "",
     link: "",
     instructions: "Send payment through Apple Pay and include only your order number in the note if prompted."
@@ -89,32 +77,54 @@ const THANK_YOU_PAYMENT_METHODS = {
   crypto: {
     key: "crypto",
     label: "Crypto",
-    accentClass: "thank-you-payment-accent-crypto",
-    iconClass: "fa-brands fa-bitcoin",
-    handleLabel: "Wallet / Payment Details",
-    handle: "Contact for wallet",
-    secondaryLabel: "",
-    secondaryValue: "",
-    linkLabel: "",
-    link: "",
+    logo: "../images/payment-icons/crypto-group.PNG",
     instructions: "Send the exact amount using the correct crypto and network. Include your order number in the memo if available.",
-    wallets: {
-      bitcoin: "bc1qexamplebtcaddress1234567890test",
-      solana: "So1anaExampleWalletAddress123456789ABCDEFG",
-      ethereum: "0xExampleEthereumAddress1234567890ABCDEF",
-      usdc: "0xExampleUSDCAddress1234567890ABCDEF",
-      usdt: "TExampleUSDTWalletAddress123456789ABCDEFG"
-    }
+    wallets: [
+      {
+        label: "Bitcoin (BTC)",
+        value: "bc1qexamplebtcaddress1234567890test",
+        logo: "../images/payment-icons/bitcoin.PNG"
+      },
+      {
+        label: "Ethereum (ETH)",
+        value: "0xExampleEthereumAddress1234567890ABCDEF",
+        logo: "../images/payment-icons/ethereum.PNG"
+      },
+      {
+        label: "USDT",
+        value: "TExampleUSDTWalletAddress123456789ABCDEFG",
+        logo: "../images/payment-icons/usdt.PNG"
+      },
+      {
+        label: "Solana (SOL)",
+        value: "So1anaExampleWalletAddress123456789ABCDEFG",
+        logo: "../images/payment-icons/solana.PNG"
+      },
+      {
+        label: "USDC",
+        value: "0xExampleUSDCAddress1234567890ABCDEF",
+        logo: "../images/payment-icons/usdc.PNG"
+      }
+    ]
   }
 };
 
-function thankYouCreateCopyButton(label, value) {
+function thankYouCreateCopyButton(label, value, logoPath = "") {
   const safeLabel = thankYouEscapeHtml(label);
   const safeValue = thankYouEscapeHtml(value);
+  const safeLogo = thankYouEscapeHtml(logoPath);
 
   return `
     <div class="thank-you-payment-copy-block">
-      <div class="thank-you-payment-copy-header">${safeLabel}</div>
+      <div class="thank-you-payment-copy-header-wrap">
+        ${
+          safeLogo
+            ? `<img class="thank-you-payment-mini-logo" src="${safeLogo}" alt="${safeLabel}" onerror="this.style.display='none';" />`
+            : ""
+        }
+        <div class="thank-you-payment-copy-header">${safeLabel}</div>
+      </div>
+
       <div class="thank-you-payment-copy-row">
         <input
           type="text"
@@ -134,13 +144,22 @@ function thankYouCreateCopyButton(label, value) {
   `;
 }
 
-function thankYouCreateLinkBlock(label, url) {
+function thankYouCreateLinkBlock(label, url, logoPath = "") {
   const safeLabel = thankYouEscapeHtml(label);
   const safeUrl = thankYouEscapeHtml(url);
+  const safeLogo = thankYouEscapeHtml(logoPath);
 
   return `
     <div class="thank-you-payment-copy-block">
-      <div class="thank-you-payment-copy-header">${safeLabel}</div>
+      <div class="thank-you-payment-copy-header-wrap">
+        ${
+          safeLogo
+            ? `<img class="thank-you-payment-mini-logo" src="${safeLogo}" alt="${safeLabel}" onerror="this.style.display='none';" />`
+            : ""
+        }
+        <div class="thank-you-payment-copy-header">${safeLabel}</div>
+      </div>
+
       <div class="thank-you-payment-link-row">
         <a
           href="${safeUrl}"
@@ -170,40 +189,39 @@ function thankYouBuildMethodDetails(methodConfig, orderNumber) {
   if (methodConfig.link) {
     detailsHtml += thankYouCreateLinkBlock(
       methodConfig.linkLabel || "Payment Link",
-      methodConfig.link
+      methodConfig.link,
+      methodConfig.logo || ""
     );
   }
 
   if (methodConfig.handle) {
     detailsHtml += thankYouCreateCopyButton(
       methodConfig.handleLabel || "Payment Info",
-      methodConfig.handle
+      methodConfig.handle,
+      methodConfig.logo || ""
     );
   }
 
   if (methodConfig.secondaryValue) {
     detailsHtml += thankYouCreateCopyButton(
       methodConfig.secondaryLabel || "Additional Info",
-      methodConfig.secondaryValue
+      methodConfig.secondaryValue,
+      methodConfig.logo || ""
     );
   }
 
-  if (methodConfig.wallets) {
-    if (methodConfig.wallets.bitcoin) {
-      detailsHtml += thankYouCreateCopyButton("Bitcoin (BTC)", methodConfig.wallets.bitcoin);
-    }
-    if (methodConfig.wallets.solana) {
-      detailsHtml += thankYouCreateCopyButton("Solana (SOL)", methodConfig.wallets.solana);
-    }
-    if (methodConfig.wallets.ethereum) {
-      detailsHtml += thankYouCreateCopyButton("Ethereum (ETH)", methodConfig.wallets.ethereum);
-    }
-    if (methodConfig.wallets.usdc) {
-      detailsHtml += thankYouCreateCopyButton("USDC", methodConfig.wallets.usdc);
-    }
-    if (methodConfig.wallets.usdt) {
-      detailsHtml += thankYouCreateCopyButton("USDT", methodConfig.wallets.usdt);
-    }
+  if (Array.isArray(methodConfig.wallets) && methodConfig.wallets.length) {
+    detailsHtml += `
+      <div class="thank-you-payment-crypto-grid">
+        ${methodConfig.wallets.map((wallet) => {
+          return `
+            <div class="thank-you-payment-crypto-card">
+              ${thankYouCreateCopyButton(wallet.label, wallet.value, wallet.logo || "")}
+            </div>
+          `;
+        }).join("")}
+      </div>
+    `;
   }
 
   if (orderNumber) {
@@ -218,24 +236,24 @@ function thankYouBuildPrimaryMethodCard(methodConfig, orderNumber) {
 
   const safeLabel = thankYouEscapeHtml(methodConfig.label);
   const safeInstructions = thankYouEscapeHtml(methodConfig.instructions || "");
-  const safeAccentClass = thankYouEscapeHtml(methodConfig.accentClass || "");
-  const safeIconClass = thankYouEscapeHtml(methodConfig.iconClass || "fa-solid fa-credit-card");
+  const safeLogo = thankYouEscapeHtml(methodConfig.logo || "");
 
   return `
     <div class="thank-you-payment-method-card is-primary">
       <div class="thank-you-payment-method-top">
         <div class="thank-you-payment-method-heading-row">
-          <div class="thank-you-payment-method-icon-badge ${safeAccentClass}">
-            <i class="${safeIconClass}"></i>
+          <div class="thank-you-payment-method-logo-badge">
+            <img
+              src="${safeLogo}"
+              alt="${safeLabel} logo"
+              class="thank-you-payment-method-logo"
+              onerror="this.style.display='none';"
+            />
           </div>
 
           <div class="thank-you-payment-method-heading-copy">
-            <h3 class="thank-you-payment-method-name ${safeAccentClass}">
-              ${safeLabel}
-            </h3>
-            <p class="thank-you-payment-method-instructions">
-              ${safeInstructions}
-            </p>
+            <h3 class="thank-you-payment-method-name">${safeLabel}</h3>
+            <p class="thank-you-payment-method-instructions">${safeInstructions}</p>
             ${
               orderNumber
                 ? `<p class="thank-you-payment-order-note">Include order #<strong>${thankYouEscapeHtml(orderNumber)}</strong> in the note.</p>`
@@ -257,8 +275,7 @@ function thankYouBuildAccordionItem(methodConfig, orderNumber, index) {
 
   const safeLabel = thankYouEscapeHtml(methodConfig.label);
   const safeInstructions = thankYouEscapeHtml(methodConfig.instructions || "");
-  const safeAccentClass = thankYouEscapeHtml(methodConfig.accentClass || "");
-  const safeIconClass = thankYouEscapeHtml(methodConfig.iconClass || "fa-solid fa-credit-card");
+  const safeLogo = thankYouEscapeHtml(methodConfig.logo || "");
   const panelId = `thankYouPaymentAccordionPanel${index}`;
 
   return `
@@ -270,12 +287,17 @@ function thankYouBuildAccordionItem(methodConfig, orderNumber, index) {
         aria-controls="${panelId}"
       >
         <span class="thank-you-payment-accordion-left">
-          <span class="thank-you-payment-method-icon-badge ${safeAccentClass}">
-            <i class="${safeIconClass}"></i>
+          <span class="thank-you-payment-method-logo-badge small">
+            <img
+              src="${safeLogo}"
+              alt="${safeLabel} logo"
+              class="thank-you-payment-method-logo"
+              onerror="this.style.display='none';"
+            />
           </span>
 
           <span class="thank-you-payment-accordion-title-wrap">
-            <span class="thank-you-payment-accordion-title ${safeAccentClass}">${safeLabel}</span>
+            <span class="thank-you-payment-accordion-title">${safeLabel}</span>
             <span class="thank-you-payment-accordion-subtitle">Tap to view payment details</span>
           </span>
         </span>
@@ -291,10 +313,7 @@ function thankYouBuildAccordionItem(methodConfig, orderNumber, index) {
         hidden
       >
         <div class="thank-you-payment-accordion-panel-inner">
-          <p class="thank-you-payment-method-instructions">
-            ${safeInstructions}
-          </p>
-
+          <p class="thank-you-payment-method-instructions">${safeInstructions}</p>
           ${
             orderNumber
               ? `<p class="thank-you-payment-order-note">Include order #<strong>${thankYouEscapeHtml(orderNumber)}</strong> in the note.</p>`
@@ -420,11 +439,7 @@ function renderThankYouPaymentMethods(order) {
               <p class="thank-you-payment-empty-text">
                 No payment method was selected for this order.
               </p>
-              ${
-                orderNumber
-                  ? thankYouCreateCopyButton("Order Number", `#${orderNumber}`)
-                  : ""
-              }
+              ${orderNumber ? thankYouCreateCopyButton("Order Number", `#${orderNumber}`) : ""}
             </div>
           `
       }
