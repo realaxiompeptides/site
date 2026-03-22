@@ -31,7 +31,7 @@ const THANK_YOU_PAYMENT_METHODS = {
   venmo: {
     key: "venmo",
     label: "Venmo",
-    logo: "../images/payment-icons/venmo.PNG",
+    logo: "../images/payment-icons/venmo.JPG",
     handleLabel: "Venmo Username",
     handle: "@jax-ferone-839",
     linkLabel: "Venmo Link",
@@ -42,11 +42,11 @@ const THANK_YOU_PAYMENT_METHODS = {
   zelle: {
     key: "zelle",
     label: "Zelle",
-    logo: "../images/payment-icons/zelle.PNG",
+    logo: "../images/payment-icons/zelle.JPG",
     handleLabel: "Zelle Phone",
     handle: "916-233-5312",
     secondaryLabel: "Zelle Email",
-    secondaryValue: "testzelle@axiomtest.com",
+    secondaryValue: "jaxferone@gmail.com",
     linkLabel: "",
     link: "",
     instructions: "Send payment through Zelle and include only your order number in the note."
@@ -57,18 +57,18 @@ const THANK_YOU_PAYMENT_METHODS = {
     label: "Cash App",
     logo: "../images/payment-icons/cashapp.PNG",
     handleLabel: "Cash App Username",
-    handle: "$REPLACE_WITH_YOUR_CASHAPP",
+    handle: "$axiompeptides",
     linkLabel: "Cash App Link",
-    link: "https://cash.app/$REPLACE_WITH_YOUR_CASHAPP",
+    link: "https://cash.app/$axiompeptides",
     instructions: "Send payment through Cash App and include only your order number in the note."
   },
 
   applepay: {
     key: "applepay",
     label: "Apple Pay",
-    logo: "../images/payment-icons/applepay.PNG",
+    logo: "../images/payment-icons/applepay.JPG",
     handleLabel: "Apple Pay Contact",
-    handle: "916-233-5312",
+    handle: "530-701-9349",
     linkLabel: "",
     link: "",
     instructions: "Send payment through Apple Pay and include only your order number in the note if prompted."
