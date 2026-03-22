@@ -27,7 +27,7 @@
   <link rel="stylesheet" href="../css/style.css" />
   <link rel="stylesheet" href="../footer/footer.css" />
   <link rel="stylesheet" href="thank-you.css" />
-  <link rel="stylesheet" href="thank-you-payment-methods.css" />
+  <link rel="stylesheet" href="thank-you-payment-methods.css?v=4" />
 
   <style>
     .thank-you-header .thank-you-logo img {
@@ -36,6 +36,20 @@
       height: auto;
       object-fit: contain;
       display: block;
+    }
+
+    .thank-you-bottom-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 22px;
+      align-items: start;
+      margin-top: 22px;
+    }
+
+    @media (max-width: 980px) {
+      .thank-you-bottom-grid {
+        grid-template-columns: 1fr;
+      }
     }
 
     @media (max-width: 640px) {
@@ -60,9 +74,10 @@
     <div class="thank-you-container">
       <section class="thank-you-hero">
         <p class="thank-you-kicker">Order Submitted</p>
-        <h1>Thank You For Your Order</h1>
+        <h1>Complete Your Payment</h1>
         <p class="thank-you-subtext">
-          Your order has been created successfully. Please use the payment instructions below and include your order number with your payment.
+          Your order has been created successfully, but it is not complete until payment is sent and confirmed.
+          Please use the payment section below and include your order number with your payment.
         </p>
       </section>
 
@@ -121,44 +136,46 @@
               </div>
             </div>
           </div>
-
-          <section class="thank-you-card thank-you-items-card">
-            <h3>Order Items</h3>
-            <div id="thankYouItems" class="thank-you-items"></div>
-          </section>
         </div>
 
         <div class="thank-you-side-stack">
           <div id="paymentMethodsSection"></div>
 
           <div class="thank-you-card">
-            <h3>Shipping Details</h3>
-            <div class="thank-you-shipping-info">
-              <div class="thank-you-summary-row">
-                <span>Shipping Method</span>
-                <strong id="thankYouShippingMethod">Not selected</strong>
-              </div>
-
-              <div class="thank-you-summary-row">
-                <span>Email</span>
-                <strong id="thankYouEmail">—</strong>
-              </div>
-
-              <div class="thank-you-summary-row">
-                <span>Phone</span>
-                <strong id="thankYouPhone">—</strong>
-              </div>
-            </div>
-          </div>
-
-          <div class="thank-you-card">
             <h3>What Happens Next</h3>
             <ul class="thank-you-steps">
-              <li>Submit payment using your selected payment method above or one of the other payment options.</li>
+              <li>Send payment using the selected payment method above or one of the other payment options.</li>
               <li>Your order will remain marked as pending until payment is confirmed.</li>
               <li>After payment is confirmed, your order will move into processing.</li>
               <li>Tracking will be added after your label is created.</li>
             </ul>
+          </div>
+        </div>
+      </section>
+
+      <section class="thank-you-bottom-grid">
+        <section class="thank-you-card thank-you-items-card">
+          <h3>Order Items</h3>
+          <div id="thankYouItems" class="thank-you-items"></div>
+        </section>
+
+        <div class="thank-you-card">
+          <h3>Shipping Details</h3>
+          <div class="thank-you-shipping-info">
+            <div class="thank-you-summary-row">
+              <span>Shipping Method</span>
+              <strong id="thankYouShippingMethod">Not selected</strong>
+            </div>
+
+            <div class="thank-you-summary-row">
+              <span>Email</span>
+              <strong id="thankYouEmail">—</strong>
+            </div>
+
+            <div class="thank-you-summary-row">
+              <span>Phone</span>
+              <strong id="thankYouPhone">—</strong>
+            </div>
           </div>
         </div>
       </section>
