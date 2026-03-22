@@ -1,0 +1,26 @@
+<section class="affiliate-card">
+  <div class="affiliate-claims-header">
+    <h2 class="affiliate-section-title">Claim Commission</h2>
+    <p class="affiliate-muted">
+      Submit a claim, then message support on Discord with your affiliate email and payout request.
+    </p>
+  </div>
+
+  <form id="affiliateClaimForm" class="affiliate-claims-form">
+    <div class="affiliate-grid-2">
+      <div class="affiliate-field">
+        <label for="affiliateClaimAmount">Claim Amount</label>
+        <input id="affiliateClaimAmount" class="affiliate-input" type="number" min="0" step="0.01" placeholder="0.00" />
+      </div>
+
+      <div class="affiliate-field">
+        <label for="affiliateClaimNote">Claim Note</label>
+        <input id="affiliateClaimNote" class="affiliate-input" type="text" placeholder="Optional note" />
+      </div>
+    </div>
+
+    <button type="button" class="affiliate-btn affiliate-btn-primary" id="submitAffiliateClaimBtn">
+      Submit Claim Request
+    </button>
+  </form>
+</section>
