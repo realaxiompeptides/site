@@ -743,3 +743,76 @@ body.axiom-cart-page .cart-page-coupon-message.error {
 .cart-page-payment-icon-google i {
   font-size: 2rem;
 }
+
+.cart-page-coupon-box {
+  margin-top: 18px;
+}
+
+.cart-page-coupon-label {
+  display: block;
+  margin-bottom: 10px;
+  color: #12203f;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.cart-page-coupon-row {
+  display: grid;
+  gap: 12px;
+}
+
+.cart-page-coupon-input {
+  width: 100%;
+  min-height: 54px;
+  border: 1px solid #dbe4ef;
+  border-radius: 999px;
+  background: #ffffff;
+  padding: 0 18px;
+  box-sizing: border-box;
+  font-family: "Inter", sans-serif;
+  font-size: 16px;
+  color: #12203f;
+  outline: none;
+}
+
+.cart-page-coupon-input:focus {
+  border-color: #4f97dc;
+  box-shadow: 0 0 0 3px rgba(79, 151, 220, 0.12);
+}
+
+.cart-page-coupon-btn {
+  width: 100%;
+  min-height: 58px;
+  border: 0;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #5aa0e8, #3f7fe4);
+  color: #ffffff;
+  font-family: "Inter", sans-serif;
+  font-size: 18px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.cart-page-coupon-btn:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+.cart-page-coupon-message {
+  min-height: 22px;
+  margin: 10px 2px 0;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.cart-page-coupon-message.success {
+  color: #0f9f62;
+}
+
+.cart-page-coupon-message.error {
+  color: #c23d3d;
+}
+
+.cart-page-coupon-message.muted {
+  color: #70809d;
+}
