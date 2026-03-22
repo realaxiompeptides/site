@@ -1,31 +1,100 @@
-<section class="checkout-section">
-  <h2 class="checkout-section-title">Payment Method</h2>
+<section class="checkout-payment-section">
+  <h2 class="checkout-section-title">Payment options</h2>
 
-  <div class="payment-box">
+  <div class="checkout-payment-options" id="paymentOptionsGroup">
+    <label class="checkout-payment-option">
+      <input
+        type="radio"
+        name="paymentMethod"
+        value="venmo"
+        class="checkout-payment-radio"
+      />
+      <span class="checkout-payment-custom-radio" aria-hidden="true"></span>
 
-    <label class="payment-method">
-      <input type="radio" name="payment" checked>
-      <span>Card Payment</span>
+      <span class="checkout-payment-content">
+        <span class="checkout-payment-title">
+          Venmo (please include your order # in the note)
+        </span>
+        <span class="checkout-payment-description">
+          Place your order, then follow the instructions on the order confirmation page to complete payment with Venmo.
+        </span>
+      </span>
     </label>
 
-    <label class="payment-method">
-      <input type="radio" name="payment">
-      <span>Cash App</span>
+    <label class="checkout-payment-option">
+      <input
+        type="radio"
+        name="paymentMethod"
+        value="zelle"
+        class="checkout-payment-radio"
+      />
+      <span class="checkout-payment-custom-radio" aria-hidden="true"></span>
+
+      <span class="checkout-payment-content">
+        <span class="checkout-payment-title">
+          Zelle (please include your order # in the note)
+        </span>
+        <span class="checkout-payment-description">
+          Place your order, then follow the instructions on the order confirmation page to complete payment with Zelle.
+        </span>
+      </span>
     </label>
 
-    <label class="payment-method">
-      <input type="radio" name="payment">
-      <span>Zelle</span>
+    <label class="checkout-payment-option">
+      <input
+        type="radio"
+        name="paymentMethod"
+        value="cashapp"
+        class="checkout-payment-radio"
+      />
+      <span class="checkout-payment-custom-radio" aria-hidden="true"></span>
+
+      <span class="checkout-payment-content">
+        <span class="checkout-payment-title">
+          Cash App (please include your order # in the note)
+        </span>
+        <span class="checkout-payment-description">
+          Place your order, then follow the instructions on the order confirmation page to complete payment with Cash App.
+        </span>
+      </span>
     </label>
 
-    <label class="payment-method">
-      <input type="radio" name="payment">
-      <span>Crypto</span>
+    <label class="checkout-payment-option">
+      <input
+        type="radio"
+        name="paymentMethod"
+        value="applepay"
+        class="checkout-payment-radio"
+      />
+      <span class="checkout-payment-custom-radio" aria-hidden="true"></span>
+
+      <span class="checkout-payment-content">
+        <span class="checkout-payment-title">
+          Apple Pay (please include your order # in the note if prompted)
+        </span>
+        <span class="checkout-payment-description">
+          Place your order, then follow the instructions on the order confirmation page to complete payment with Apple Pay.
+        </span>
+      </span>
     </label>
 
-    <p class="payment-note">
-      Payment instructions will appear after order submission.
-    </p>
+    <label class="checkout-payment-option">
+      <input
+        type="radio"
+        name="paymentMethod"
+        value="crypto"
+        class="checkout-payment-radio"
+      />
+      <span class="checkout-payment-custom-radio" aria-hidden="true"></span>
 
+      <span class="checkout-payment-content">
+        <span class="checkout-payment-title">
+          Crypto (please include your order # in the note/memo if available)
+        </span>
+        <span class="checkout-payment-description">
+          Place your order, then follow the instructions on the order confirmation page to complete payment with crypto.
+        </span>
+      </span>
+    </label>
   </div>
 </section>
