@@ -1,0 +1,32 @@
+.affiliate-help-header {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.affiliate-help-action {
+  min-height: 120px;
+  border: 1px solid #dbe5f0;
+  border-radius: 22px;
+  background: #f8fbff;
+  text-decoration: none;
+  color: #12203f;
+  display: grid;
+  place-items: center;
+  gap: 10px;
+  text-align: center;
+  padding: 18px;
+  font-weight: 800;
+  transition: 0.2s ease;
+}
+
+.affiliate-help-action:hover {
+  transform: translateY(-2px);
+  border-color: #bcd6ea;
+  box-shadow: 0 14px 26px rgba(15, 23, 42, 0.06);
+}
+
+.affiliate-help-action i {
+  font-size: 28px;
+  color: #2f84bf;
+}
