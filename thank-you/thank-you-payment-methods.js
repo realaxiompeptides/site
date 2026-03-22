@@ -119,12 +119,12 @@ const THANK_YOU_PAYMENT_METHODS = {
       },
       {
         label: "Telegram",
-        href: "https://t.me/REPLACE_WITH_YOUR_TELEGRAM",
+        href: "https://t.me/+2hr9SQknvslkZDg5",
         external: true
       },
       {
         label: "Discord",
-        href: "https://discord.gg/REPLACE_WITH_YOUR_DISCORD",
+        href: "https://discord.gg/Wz9C39ERe",
         external: true
       }
     ]
