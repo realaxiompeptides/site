@@ -552,3 +552,44 @@
   white-space: pre-line;
   line-height: 1.75;
 }
+
+.product-stock-text,
+.product-stock,
+#productStock,
+#productStockText {
+  margin: 10px 0 0;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+/* 6+ in stock = brand blue */
+.product-stock-text.stock-high,
+.product-stock.stock-high,
+#productStock.stock-high,
+#productStockText.stock-high {
+  color: #2f84bf;
+}
+
+/* 1–5 in stock = red */
+.product-stock-text.stock-low,
+.product-stock.stock-low,
+#productStock.stock-low,
+#productStockText.stock-low {
+  color: #dc2626;
+}
+
+/* backorder = different color */
+.product-stock-text.stock-backorder,
+.product-stock.stock-backorder,
+#productStock.stock-backorder,
+#productStockText.stock-backorder {
+  color: #c2410c;
+}
+
+.product-stock-text.stock-unavailable,
+.product-stock.stock-unavailable,
+#productStock.stock-unavailable,
+#productStockText.stock-unavailable {
+  color: #64748b;
+}
