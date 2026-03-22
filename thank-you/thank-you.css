@@ -303,32 +303,7 @@ body.thank-you-page {
   text-align: right;
 }
 
-@media (max-width: 980px) {
-  .thank-you-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 640px) {
-  .thank-you-main {
-    padding: 20px 0 44px;
-  }
-
-  .thank-you-card {
-    padding: 18px;
-    border-radius: 20px;
-  }
-
-  .thank-you-item {
-    grid-template-columns: 60px 1fr;
-  }
-
-  .thank-you-item-price {
-    grid-column: 2;
-    text-align: left;
-  }
-}
-
+/* Header logo sizing */
 .thank-you-header .checkout-logo img,
 .thank-you-logo img,
 header .checkout-logo img {
@@ -339,6 +314,7 @@ header .checkout-logo img {
   display: block;
 }
 
+/* Legacy payment copy styles kept for compatibility */
 .thank-you-payment-copy-row {
   margin-top: 14px;
 }
@@ -398,139 +374,262 @@ header .checkout-logo img {
   background: #ffffff;
 }
 
-.thankyou-payment-method-list {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  margin-top: 16px;
-}
+/* =========================
+   NEW THANK YOU PAYMENT METHODS
+   ========================= */
 
-.thankyou-payment-method-card {
-  border: 1px solid #dce4ef;
-  border-radius: 18px;
+.thank-you-payment-section-card {
+  border: 1px solid #dbe4ef;
+  border-radius: 28px;
   background: #ffffff;
-  padding: 18px;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.05);
+  padding: 28px;
+  margin-bottom: 24px;
 }
 
-.thankyou-payment-method-card.is-primary {
-  background: #f8fbff;
-  border-color: #cddbeb;
+.thank-you-payment-section-title {
+  margin: 0 0 14px;
+  font-size: 28px;
+  line-height: 1.1;
+  font-weight: 900;
+  color: #12203f;
+  letter-spacing: -0.02em;
 }
 
-.thankyou-payment-method-top {
+.thank-you-payment-section-subtext {
+  margin: 0;
+  color: #6e7d93;
+  font-size: 16px;
+  line-height: 1.7;
+}
+
+.thank-you-payment-method-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 18px;
+  margin-top: 18px;
 }
 
-.thankyou-payment-method-name {
-  margin: 0 0 6px;
-  font-size: 20px;
-  font-weight: 800;
-  line-height: 1.2;
+.thank-you-payment-method-card {
+  border: 1px solid #dbe4ef;
+  border-radius: 22px;
+  background: #fbfdff;
+  padding: 20px;
+}
+
+.thank-you-payment-method-card.is-primary {
+  background: #f8fbff;
+  border-color: #cfdaea;
+}
+
+.thank-you-payment-method-top {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.thank-you-payment-method-name {
+  margin: 0;
+  font-size: 24px;
+  line-height: 1.15;
+  font-weight: 900;
   text-transform: capitalize;
 }
 
-.thankyou-payment-method-note,
-.thankyou-payment-method-order-note,
-.thankyou-payment-method-extra,
-.thankyou-card-subtext,
-.thankyou-empty-payment-text {
+.thank-you-payment-method-instructions,
+.thank-you-payment-order-note,
+.thank-you-payment-empty-text {
   margin: 0;
-  font-size: 15px;
+  color: #6e7d93;
+  font-size: 16px;
   line-height: 1.7;
-  color: #66758c;
 }
 
-.thankyou-payment-method-order-note strong {
+.thank-you-payment-order-note strong {
   color: #12203f;
 }
 
-.thankyou-payment-method-actions {
+.thank-you-payment-method-details {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  margin-top: 16px;
+  margin-top: 18px;
 }
 
-.thankyou-payment-detail-row {
+.thank-you-payment-copy-block {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  border: 1px solid #e2e8f0;
-  border-radius: 14px;
-  padding: 14px;
-  background: #fbfdff;
 }
 
-.thankyou-payment-detail-label {
+.thank-you-payment-copy-header {
   font-size: 13px;
-  font-weight: 700;
-  color: #7a889d;
+  font-weight: 800;
+  color: #6c7a90;
+  letter-spacing: 0.03em;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
 }
 
-.thankyou-payment-detail-value {
-  font-size: 15px;
-  font-weight: 600;
-  color: #12203f;
-  word-break: break-word;
+.thank-you-payment-copy-row,
+.thank-you-payment-link-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-top: 0;
 }
 
-.thankyou-payment-link {
-  text-decoration: underline;
-}
-
-.thankyou-copy-btn {
-  width: fit-content;
-  min-height: 42px;
-  padding: 10px 14px;
-  border: 1px solid #d4deea;
-  border-radius: 12px;
+.thank-you-payment-copy-input {
+  flex: 1 1 260px;
+  min-height: 46px;
+  padding: 12px 14px;
+  border: 1px solid #dbe4ef;
+  border-radius: 14px;
   background: #ffffff;
   color: #12203f;
+  font-family: "Inter", sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  outline: none;
+}
+
+.thank-you-payment-open-link {
+  flex: 1 1 260px;
+  min-height: 46px;
+  display: flex;
+  align-items: center;
+  padding: 12px 14px;
+  border: 1px solid #dbe4ef;
+  border-radius: 14px;
+  background: #ffffff;
+  color: #2b5fd9;
   font-size: 14px;
   font-weight: 700;
+  text-decoration: underline;
+  word-break: break-word;
+  box-sizing: border-box;
+}
+
+.thank-you-payment-copy-btn {
+  min-height: 46px;
+  padding: 12px 16px;
+  border: 1px solid #dbe4ef;
+  border-radius: 14px;
+  background: #2f84bf;
+  color: #ffffff;
+  font-family: "Inter", sans-serif;
+  font-size: 14px;
+  font-weight: 800;
   cursor: pointer;
   transition: 0.2s ease;
 }
 
-.thankyou-copy-btn:hover {
-  border-color: #387eb6;
-  background: #f4f9ff;
+.thank-you-payment-copy-btn:hover {
+  background: #246d9f;
+  border-color: #246d9f;
 }
 
-.payment-accent-venmo {
+.thank-you-payment-accent-venmo {
   color: #2563eb;
 }
 
-.payment-accent-zelle {
+.thank-you-payment-accent-zelle {
   color: #6d28d9;
 }
 
-.payment-accent-cashapp {
+.thank-you-payment-accent-cashapp {
   color: #059669;
 }
 
-.payment-accent-applepay {
+.thank-you-payment-accent-applepay {
   color: #111827;
 }
 
-.payment-accent-crypto {
+.thank-you-payment-accent-crypto {
   color: #d97706;
 }
 
+/* Removes older conflicting styles if they were used */
+.thankyou-payment-method-list,
+.thankyou-payment-method-card,
+.thankyou-payment-method-top,
+.thankyou-payment-method-name,
+.thankyou-payment-method-note,
+.thankyou-payment-method-order-note,
+.thankyou-payment-method-extra,
+.thankyou-card-subtext,
+.thankyou-empty-payment-text,
+.thankyou-payment-method-actions,
+.thankyou-payment-detail-row,
+.thankyou-payment-detail-label,
+.thankyou-payment-detail-value,
+.thankyou-payment-link,
+.thankyou-copy-btn,
+.payment-accent-venmo,
+.payment-accent-zelle,
+.payment-accent-cashapp,
+.payment-accent-applepay,
+.payment-accent-crypto {
+  all: unset;
+}
+
+/* =========================
+   RESPONSIVE
+   ========================= */
+
+@media (max-width: 980px) {
+  .thank-you-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 640px) {
-  .thankyou-payment-method-name {
-    font-size: 18px;
+  .thank-you-main {
+    padding: 20px 0 44px;
   }
 
-  .thankyou-payment-detail-value {
-    font-size: 14px;
+  .thank-you-card {
+    padding: 18px;
+    border-radius: 20px;
   }
 
-  .thankyou-copy-btn {
+  .thank-you-item {
+    grid-template-columns: 60px 1fr;
+  }
+
+  .thank-you-item-price {
+    grid-column: 2;
+    text-align: left;
+  }
+
+  .thank-you-payment-section-card {
+    padding: 22px 18px;
+    border-radius: 24px;
+  }
+
+  .thank-you-payment-section-title {
+    font-size: 24px;
+  }
+
+  .thank-you-payment-method-name {
+    font-size: 21px;
+  }
+
+  .thank-you-payment-copy-btn {
     width: 100%;
+  }
+
+  .thank-you-payment-copy-row,
+  .thank-you-payment-link-row,
+  .thank-you-payment-copy-box {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .thank-you-payment-copy-input,
+  .thank-you-payment-open-link {
+    flex: 1 1 auto;
+    width: 100%;
+    box-sizing: border-box;
   }
 }
