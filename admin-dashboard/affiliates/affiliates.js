@@ -89,19 +89,11 @@ window.AXIOM_ADMIN_AFFILIATES = {
         const rejectBtn = event.target.closest("[data-action='reject'][data-affiliate-id]");
         const suspendBtn = event.target.closest("[data-action='suspend'][data-affiliate-id]");
 
-        const closeBtn = event.target.closest("#closeAffiliateDetailModal");
-        const backdropClose = event.target.closest("[data-affiliate-modal-close]");
         const claimStatusBtn = event.target.closest("[data-claim-id][data-claim-status]");
 
         if (refreshBtn || refreshTopBtn || refreshSidebarBtn) {
           event.preventDefault();
           await this.loadAffiliates();
-          return;
-        }
-
-        if (closeBtn || backdropClose) {
-          event.preventDefault();
-          this.closeModal();
           return;
         }
 
@@ -156,6 +148,7 @@ window.AXIOM_ADMIN_AFFILIATES = {
           if (!claimId || !status) return;
 
           await this.updateClaimStatus(claimId, status);
+          return;
         }
       });
 
@@ -165,6 +158,39 @@ window.AXIOM_ADMIN_AFFILIATES = {
 
         event.preventDefault();
         await this.recordPayout();
+      });
+
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") {
+          this.closeModal();
+        }
+      });
+    }
+  },
+
+  bindModalCloseEvents() {
+    this.cacheDom();
+
+    if (!this.modal) return;
+
+    const closeBtn = this.modal.querySelector("#closeAffiliateDetailModal");
+    const backdrop = this.modal.querySelector("[data-affiliate-modal-close]");
+
+    if (closeBtn && closeBtn.dataset.bound !== "true") {
+      closeBtn.dataset.bound = "true";
+      closeBtn.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        this.closeModal();
+      });
+    }
+
+    if (backdrop && backdrop.dataset.bound !== "true") {
+      backdrop.dataset.bound = "true";
+      backdrop.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        this.closeModal();
       });
     }
   },
@@ -351,6 +377,7 @@ window.AXIOM_ADMIN_AFFILIATES = {
       });
 
       this.cacheDom();
+      this.bindModalCloseEvents();
 
       if (this.modal) {
         this.modal.hidden = false;
@@ -598,4 +625,4 @@ window.AXIOM_ADMIN_AFFILIATES = {
       .replace(/"/g, "&quot;")
       .replace(/'/g, "&#039;");
   }
-};
+};```
