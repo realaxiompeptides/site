@@ -4,12 +4,16 @@
       <p class="affiliates-admin-kicker">Affiliate Management</p>
       <h2 class="affiliates-admin-title">Affiliates</h2>
       <p class="affiliates-admin-subtext">
-        Approve, reject, suspend, review clicks, conversions, claims, and payouts.
+        Approve, reject, suspend, review clicks, conversions, claims, payouts, and track overall affiliate performance.
       </p>
     </div>
 
     <div class="affiliates-admin-header-actions">
-      <button type="button" class="affiliates-admin-btn affiliates-admin-btn-secondary" id="refreshAffiliatesBtn">
+      <button
+        type="button"
+        class="affiliates-admin-btn affiliates-admin-btn-secondary"
+        id="refreshAffiliatesBtn"
+      >
         Refresh
       </button>
     </div>
@@ -94,7 +98,12 @@
         <h3 class="affiliates-admin-modal-title" id="affiliateDetailName">Affiliate</h3>
       </div>
 
-      <button type="button" class="affiliates-admin-icon-btn" id="closeAffiliateDetailModal" aria-label="Close">
+      <button
+        type="button"
+        class="affiliates-admin-icon-btn"
+        id="closeAffiliateDetailModal"
+        aria-label="Close"
+      >
         &times;
       </button>
     </div>
@@ -103,57 +112,102 @@
       <div class="affiliates-admin-detail-grid">
         <div class="affiliates-admin-detail-card">
           <h4>Profile</h4>
+
           <div class="affiliates-admin-detail-list">
+            <div class="affiliates-admin-detail-row">
+              <span>Full Name</span>
+              <strong id="affiliateDetailNameInline">—</strong>
+            </div>
+
             <div class="affiliates-admin-detail-row">
               <span>Email</span>
               <strong id="affiliateDetailEmail">—</strong>
             </div>
+
             <div class="affiliates-admin-detail-row">
               <span>Discord</span>
               <strong id="affiliateDetailDiscord">—</strong>
             </div>
+
             <div class="affiliates-admin-detail-row">
               <span>Status</span>
               <strong id="affiliateDetailStatus">—</strong>
             </div>
+
             <div class="affiliates-admin-detail-row">
               <span>Referral Code</span>
               <strong id="affiliateDetailCode">—</strong>
             </div>
+
             <div class="affiliates-admin-detail-row">
               <span>Commission</span>
               <strong id="affiliateDetailCommission">—</strong>
             </div>
+
             <div class="affiliates-admin-detail-row">
               <span>Discount</span>
               <strong id="affiliateDetailDiscount">—</strong>
+            </div>
+
+            <div class="affiliates-admin-detail-row">
+              <span>Created</span>
+              <strong id="affiliateDetailCreatedAt">—</strong>
             </div>
           </div>
         </div>
 
         <div class="affiliates-admin-detail-card">
           <h4>Totals</h4>
+
           <div class="affiliates-admin-detail-list">
             <div class="affiliates-admin-detail-row">
               <span>Clicks</span>
               <strong id="affiliateDetailClicks">0</strong>
             </div>
+
             <div class="affiliates-admin-detail-row">
               <span>Conversions</span>
               <strong id="affiliateDetailConversions">0</strong>
             </div>
+
             <div class="affiliates-admin-detail-row">
               <span>Claimable</span>
               <strong id="affiliateDetailClaimable">$0.00</strong>
             </div>
+
             <div class="affiliates-admin-detail-row">
               <span>Paid Out</span>
               <strong id="affiliateDetailPaid">$0.00</strong>
             </div>
-            <div class="affiliates-admin-detail-row">
-              <span>Created</span>
-              <strong id="affiliateDetailCreatedAt">—</strong>
-            </div>
+          </div>
+
+          <div class="affiliates-admin-actions affiliates-admin-actions-stack" style="margin-top: 18px;">
+            <button
+              type="button"
+              class="affiliates-admin-action-btn affiliates-admin-action-btn-approve"
+              id="affiliateDetailApproveBtn"
+              data-affiliate-approve=""
+            >
+              Approve
+            </button>
+
+            <button
+              type="button"
+              class="affiliates-admin-action-btn affiliates-admin-action-btn-reject"
+              id="affiliateDetailRejectBtn"
+              data-affiliate-reject=""
+            >
+              Reject
+            </button>
+
+            <button
+              type="button"
+              class="affiliates-admin-action-btn affiliates-admin-action-btn-suspend"
+              id="affiliateDetailSuspendBtn"
+              data-affiliate-suspend=""
+            >
+              Suspend
+            </button>
           </div>
         </div>
       </div>
@@ -162,6 +216,7 @@
         <div class="affiliates-admin-section-header">
           <h4>Recent Conversions</h4>
         </div>
+
         <div id="affiliateDetailConversionsList" class="affiliates-admin-stack-list">
           <div class="affiliates-admin-empty">No conversions yet.</div>
         </div>
@@ -171,6 +226,7 @@
         <div class="affiliates-admin-section-header">
           <h4>Claim Requests</h4>
         </div>
+
         <div id="affiliateDetailClaimsList" class="affiliates-admin-stack-list">
           <div class="affiliates-admin-empty">No claim requests yet.</div>
         </div>
@@ -180,6 +236,7 @@
         <div class="affiliates-admin-section-header">
           <h4>Recent Payouts</h4>
         </div>
+
         <div id="affiliateDetailPayoutsList" class="affiliates-admin-stack-list">
           <div class="affiliates-admin-empty">No payouts yet.</div>
         </div>
@@ -195,26 +252,47 @@
 
           <div class="affiliates-admin-field">
             <label for="affiliatePayoutAmount">Amount</label>
-            <input type="number" id="affiliatePayoutAmount" min="0" step="0.01" placeholder="0.00" />
+            <input
+              type="number"
+              id="affiliatePayoutAmount"
+              min="0"
+              step="0.01"
+              placeholder="0.00"
+            />
           </div>
 
           <div class="affiliates-admin-field">
             <label for="affiliatePayoutMethod">Payout Method</label>
-            <input type="text" id="affiliatePayoutMethod" placeholder="PayPal / Cash App / Zelle / Crypto" />
+            <input
+              type="text"
+              id="affiliatePayoutMethod"
+              placeholder="PayPal / Cash App / Zelle / Crypto"
+            />
           </div>
 
           <div class="affiliates-admin-field">
             <label for="affiliatePayoutReference">Reference</label>
-            <input type="text" id="affiliatePayoutReference" placeholder="Transaction ID / note" />
+            <input
+              type="text"
+              id="affiliatePayoutReference"
+              placeholder="Transaction ID / note"
+            />
           </div>
 
           <div class="affiliates-admin-field affiliates-admin-field-full">
             <label for="affiliatePayoutNotes">Notes</label>
-            <textarea id="affiliatePayoutNotes" rows="3" placeholder="Optional notes"></textarea>
+            <textarea
+              id="affiliatePayoutNotes"
+              rows="3"
+              placeholder="Optional notes"
+            ></textarea>
           </div>
 
           <div class="affiliates-admin-form-actions">
-            <button type="submit" class="affiliates-admin-btn affiliates-admin-btn-primary">
+            <button
+              type="submit"
+              class="affiliates-admin-btn affiliates-admin-btn-primary"
+            >
               Record Paid Payout
             </button>
           </div>
@@ -223,3 +301,41 @@
     </div>
   </div>
 </div>
+
+<script>
+  (function () {
+    function syncAffiliateDetailActionButtons() {
+      const codeEl = document.getElementById("affiliateDetailCode");
+      const approveBtn = document.getElementById("affiliateDetailApproveBtn");
+      const rejectBtn = document.getElementById("affiliateDetailRejectBtn");
+      const suspendBtn = document.getElementById("affiliateDetailSuspendBtn");
+
+      if (!codeEl || !approveBtn || !rejectBtn || !suspendBtn) return;
+
+      const modal = document.getElementById("affiliateDetailModal");
+      if (!modal) return;
+
+      const selectedId = modal.getAttribute("data-selected-affiliate-id") || "";
+
+      approveBtn.setAttribute("data-affiliate-approve", selectedId);
+      rejectBtn.setAttribute("data-affiliate-reject", selectedId);
+      suspendBtn.setAttribute("data-affiliate-suspend", selectedId);
+    }
+
+    const observer = new MutationObserver(function () {
+      syncAffiliateDetailActionButtons();
+    });
+
+    document.addEventListener("DOMContentLoaded", function () {
+      const modal = document.getElementById("affiliateDetailModal");
+      if (!modal) return;
+
+      observer.observe(modal, {
+        attributes: true,
+        attributeFilter: ["data-selected-affiliate-id"]
+      });
+
+      syncAffiliateDetailActionButtons();
+    });
+  })();
+</script>
