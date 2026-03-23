@@ -9,6 +9,7 @@
     "dashboard/home.js",
     "dashboard/analytics.js",
     "dashboard/products.js",
+    "dashboard/affiliates.js",
     "dashboard/realtime.js",
     "dashboard/init.js"
   ];
@@ -46,14 +47,22 @@
           return;
         }
 
-        existing.addEventListener("load", function handleExistingLoad() {
-          existing.dataset.loaded = "true";
-          resolve();
-        }, { once: true });
+        existing.addEventListener(
+          "load",
+          function handleExistingLoad() {
+            existing.dataset.loaded = "true";
+            resolve();
+          },
+          { once: true }
+        );
 
-        existing.addEventListener("error", function handleExistingError() {
-          reject(new Error("Failed to load " + src));
-        }, { once: true });
+        existing.addEventListener(
+          "error",
+          function handleExistingError() {
+            reject(new Error("Failed to load " + src));
+          },
+          { once: true }
+        );
 
         return;
       }
@@ -63,14 +72,22 @@
       script.defer = false;
       script.async = false;
 
-      script.addEventListener("load", function () {
-        script.dataset.loaded = "true";
-        resolve();
-      }, { once: true });
+      script.addEventListener(
+        "load",
+        function () {
+          script.dataset.loaded = "true";
+          resolve();
+        },
+        { once: true }
+      );
 
-      script.addEventListener("error", function () {
-        reject(new Error("Failed to load " + src));
-      }, { once: true });
+      script.addEventListener(
+        "error",
+        function () {
+          reject(new Error("Failed to load " + src));
+        },
+        { once: true }
+      );
 
       document.head.appendChild(script);
     });
