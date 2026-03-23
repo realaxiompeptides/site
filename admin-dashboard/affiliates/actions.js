@@ -9,14 +9,16 @@
     dom: null,
 
     applyFilters: function applyFilters() {
-      const dom = this.dom || domApi.get();
+      const dom = this.dom || domApi.cache();
 
       state.setSearch(dom.searchInput ? dom.searchInput.value : "");
       state.setStatus(dom.statusFilter ? dom.statusFilter.value : "all");
 
       const filtered = utils.filterAffiliates(state.affiliates, state.filters);
       state.setFilteredAffiliates(filtered);
+
       renderApi.renderTable();
+      renderApi.renderStats();
     },
 
     loadAffiliates: async function loadAffiliates() {
@@ -30,21 +32,31 @@
       try {
         state.setLoading(true);
         state.setError(null);
+
         renderApi.renderLoading();
 
         const rawAffiliates = await dataApi.fetchAffiliates();
-        const affiliates = rawAffiliates.map(utils.normalizeAffiliate);
+        const affiliates = Array.isArray(rawAffiliates)
+          ? rawAffiliates.map(utils.normalizeAffiliate)
+          : [];
 
         state.setAffiliates(affiliates);
         state.setSummary(utils.calculateSummary(affiliates));
+
         this.applyFilters();
-        renderApi.renderStats();
       } catch (error) {
         console.error("Failed to load affiliates:", error);
+
         state.setAffiliates([]);
         state.setFilteredAffiliates([]);
-        state.setSummary({ total: 0, pending: 0, approved: 0, claimable: 0 });
+        state.setSummary({
+          total: 0,
+          pending: 0,
+          approved: 0,
+          claimable: 0
+        });
         state.setError(error);
+
         renderApi.renderStats();
         renderApi.renderError(error && error.message ? error.message : "Unknown error");
       } finally {
@@ -66,7 +78,7 @@
         alert("Affiliate " + status + " successfully.");
       } catch (error) {
         console.error("Failed to update affiliate status:", error);
-        alert(error.message || "Failed to update affiliate status.");
+        alert(error && error.message ? error.message : "Failed to update affiliate status.");
       }
     },
 
@@ -82,7 +94,7 @@
         state.selectedAffiliateId = affiliateId;
 
         const detailData = await dataApi.fetchAffiliateDetails(affiliateId);
-        renderApi.renderAffiliateDetail(summary, detailData);
+        renderApi.renderAffiliateDetail(summary, detailData || { conversions: [], claims: [], payouts: [] });
 
         this.dom = domApi.cache();
 
@@ -95,7 +107,7 @@
         }
       } catch (error) {
         console.error("Failed to load affiliate details:", error);
-        alert(error.message || "Failed to load affiliate details.");
+        alert(error && error.message ? error.message : "Failed to load affiliate details.");
       }
     },
 
@@ -126,16 +138,25 @@
         alert("Claim " + status + " successfully.");
       } catch (error) {
         console.error("Failed to update claim request:", error);
-        alert(error.message || "Failed to update claim request.");
+        alert(error && error.message ? error.message : "Failed to update claim request.");
       }
     },
 
     recordPayout: async function recordPayout() {
-      const affiliateId = document.getElementById("affiliatePayoutAffiliateId")?.value || "";
-      const amount = Number(document.getElementById("affiliatePayoutAmount")?.value || 0);
-      const method = document.getElementById("affiliatePayoutMethod")?.value.trim() || "";
-      const reference = document.getElementById("affiliatePayoutReference")?.value.trim() || "";
-      const notes = document.getElementById("affiliatePayoutNotes")?.value.trim() || "";
+      const affiliateId =
+        (document.getElementById("affiliatePayoutAffiliateId") || {}).value || "";
+
+      const amount = Number(
+        ((document.getElementById("affiliatePayoutAmount") || {}).value || 0)
+      );
+
+      const payoutMethodEl = document.getElementById("affiliatePayoutMethod");
+      const payoutReferenceEl = document.getElementById("affiliatePayoutReference");
+      const payoutNotesEl = document.getElementById("affiliatePayoutNotes");
+
+      const method = payoutMethodEl ? String(payoutMethodEl.value || "").trim() : "";
+      const reference = payoutReferenceEl ? String(payoutReferenceEl.value || "").trim() : "";
+      const notes = payoutNotesEl ? String(payoutNotesEl.value || "").trim() : "";
 
       if (!affiliateId) {
         alert("Missing affiliate.");
@@ -156,8 +177,13 @@
           notes: notes
         });
 
+        this.dom = domApi.cache();
+
         if (this.dom && this.dom.recordPayoutForm) {
           this.dom.recordPayoutForm.reset();
+        } else {
+          const form = document.getElementById("affiliateRecordPayoutForm");
+          if (form) form.reset();
         }
 
         const payoutAffiliateId = document.getElementById("affiliatePayoutAffiliateId");
@@ -174,7 +200,7 @@
         alert("Payout recorded successfully.");
       } catch (error) {
         console.error("Failed to record payout:", error);
-        alert(error.message || "Failed to record payout.");
+        alert(error && error.message ? error.message : "Failed to record payout.");
       }
     }
   };
