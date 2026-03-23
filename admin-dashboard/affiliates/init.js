@@ -5,12 +5,36 @@
   const actions = window.AXIOM_ADMIN_AFFILIATES_ACTIONS;
 
   async function boot() {
-    const dom = domApi.cache();
+    if (!state || !domApi || !renderApi || !actions) {
+      console.error("Affiliate admin failed to boot: missing required modules.");
+      return;
+    }
+
+    const dom = typeof domApi.cache === "function" ? domApi.cache() : {};
     actions.dom = dom;
+
+    if (!dom.tableBody) {
+      console.warn("Affiliate admin table body not found yet.");
+      return;
+    }
 
     if (dom.refreshBtn && !dom.refreshBtn.dataset.bound) {
       dom.refreshBtn.dataset.bound = "true";
       dom.refreshBtn.addEventListener("click", async function () {
+        await actions.loadAffiliates();
+      });
+    }
+
+    if (dom.refreshTopBtn && !dom.refreshTopBtn.dataset.bound) {
+      dom.refreshTopBtn.dataset.bound = "true";
+      dom.refreshTopBtn.addEventListener("click", async function () {
+        await actions.loadAffiliates();
+      });
+    }
+
+    if (dom.refreshSidebarBtn && !dom.refreshSidebarBtn.dataset.bound) {
+      dom.refreshSidebarBtn.dataset.bound = "true";
+      dom.refreshSidebarBtn.addEventListener("click", async function () {
         await actions.loadAffiliates();
       });
     }
@@ -33,7 +57,9 @@
 
     if (dom.closeModalBtn && !dom.closeModalBtn.dataset.bound) {
       dom.closeModalBtn.dataset.bound = "true";
-      dom.closeModalBtn.addEventListener("click", function () {
+      dom.closeModalBtn.addEventListener("click", function (event) {
+        event.preventDefault();
+        event.stopPropagation();
         actions.closeModal();
       });
     }
@@ -50,57 +76,132 @@
       document.body.dataset.affiliateAdminDelegated = "true";
 
       document.addEventListener("click", async function (event) {
-        const approveBtn = event.target.closest("[data-affiliate-approve]");
-        const rejectBtn = event.target.closest("[data-affiliate-reject]");
-        const suspendBtn = event.target.closest("[data-affiliate-suspend]");
-        const viewBtn = event.target.closest("[data-affiliate-view]");
+        const refreshBtn = event.target.closest("#refreshAffiliatesBtn");
+        const refreshTopBtn = event.target.closest("#refreshAffiliatesBtnTop");
+        const refreshSidebarBtn = event.target.closest("#refreshAffiliatesSidebarBtn");
+
+        const approveBtn =
+          event.target.closest("[data-affiliate-approve]") ||
+          event.target.closest("[data-action='approve'][data-affiliate-id]");
+
+        const rejectBtn =
+          event.target.closest("[data-affiliate-reject]") ||
+          event.target.closest("[data-action='reject'][data-affiliate-id]");
+
+        const suspendBtn =
+          event.target.closest("[data-affiliate-suspend]") ||
+          event.target.closest("[data-action='suspend'][data-affiliate-id]");
+
+        const viewBtn =
+          event.target.closest("[data-affiliate-view]") ||
+          event.target.closest("[data-action='view'][data-affiliate-id]");
+
         const claimStatusBtn = event.target.closest("[data-claim-status]");
-        const modalClose = event.target.closest("[data-affiliate-modal-close]");
+        const modalClose =
+          event.target.closest("[data-affiliate-modal-close]") ||
+          event.target.closest("#closeAffiliateDetailModal");
+
+        if (refreshBtn || refreshTopBtn || refreshSidebarBtn) {
+          event.preventDefault();
+          await actions.loadAffiliates();
+          return;
+        }
 
         if (approveBtn) {
-          await actions.updateStatus(approveBtn.getAttribute("data-affiliate-approve"), "approved");
+          event.preventDefault();
+
+          const affiliateId =
+            approveBtn.getAttribute("data-affiliate-approve") ||
+            approveBtn.getAttribute("data-affiliate-id");
+
+          if (!affiliateId) return;
+
+          await actions.updateStatus(affiliateId, "approved");
           return;
         }
 
         if (rejectBtn) {
-          await actions.updateStatus(rejectBtn.getAttribute("data-affiliate-reject"), "rejected");
+          event.preventDefault();
+
+          const affiliateId =
+            rejectBtn.getAttribute("data-affiliate-reject") ||
+            rejectBtn.getAttribute("data-affiliate-id");
+
+          if (!affiliateId) return;
+
+          await actions.updateStatus(affiliateId, "rejected");
           return;
         }
 
         if (suspendBtn) {
-          await actions.updateStatus(suspendBtn.getAttribute("data-affiliate-suspend"), "suspended");
+          event.preventDefault();
+
+          const affiliateId =
+            suspendBtn.getAttribute("data-affiliate-suspend") ||
+            suspendBtn.getAttribute("data-affiliate-id");
+
+          if (!affiliateId) return;
+
+          await actions.updateStatus(affiliateId, "suspended");
           return;
         }
 
         if (viewBtn) {
-          await actions.openAffiliateDetails(viewBtn.getAttribute("data-affiliate-view"));
+          event.preventDefault();
+
+          const affiliateId =
+            viewBtn.getAttribute("data-affiliate-view") ||
+            viewBtn.getAttribute("data-affiliate-id");
+
+          if (!affiliateId) return;
+
+          await actions.openAffiliateDetails(affiliateId);
           return;
         }
 
         if (claimStatusBtn) {
-          await actions.updateClaimStatus(
-            claimStatusBtn.getAttribute("data-claim-id"),
-            claimStatusBtn.getAttribute("data-claim-status")
-          );
+          event.preventDefault();
+
+          const claimId = claimStatusBtn.getAttribute("data-claim-id");
+          const claimStatus = claimStatusBtn.getAttribute("data-claim-status");
+
+          if (!claimId || !claimStatus) return;
+
+          await actions.updateClaimStatus(claimId, claimStatus);
           return;
         }
 
         if (modalClose) {
+          event.preventDefault();
+          event.stopPropagation();
+          actions.closeModal();
+        }
+      });
+
+      document.addEventListener("keydown", function (event) {
+        if (event.key === "Escape") {
           actions.closeModal();
         }
       });
     }
 
     window.AXIOM_ADMIN_AFFILIATES = {
+      init: boot,
       loadAffiliates: actions.loadAffiliates.bind(actions),
       updateStatus: actions.updateStatus.bind(actions),
       openAffiliateDetails: actions.openAffiliateDetails.bind(actions),
       closeModal: actions.closeModal.bind(actions),
       updateClaimStatus: actions.updateClaimStatus.bind(actions),
       recordPayout: actions.recordPayout.bind(actions),
-      affiliates: state.affiliates,
-      filteredAffiliates: state.filteredAffiliates,
-      selectedAffiliate: state.selectedAffiliate
+      get affiliates() {
+        return state.affiliates;
+      },
+      get filteredAffiliates() {
+        return state.filteredAffiliates;
+      },
+      get selectedAffiliate() {
+        return state.selectedAffiliate;
+      }
     };
 
     await actions.loadAffiliates();
