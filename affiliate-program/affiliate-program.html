@@ -118,6 +118,11 @@
       margin-left: 0 !important;
     }
 
+    #affiliateGuestView[hidden],
+    #affiliateDashboardView[hidden] {
+      display: none !important;
+    }
+
     @media (max-width: 640px) {
       .header-inner {
         padding-left: 12px !important;
@@ -259,9 +264,14 @@
 
   <main class="affiliate-program-main">
     <div class="affiliate-program-container">
-      <div id="affiliateHeroMount"></div>
-      <div id="affiliateAuthMount"></div>
-      <div id="affiliateDashboardMount"></div>
+      <div id="affiliateGuestView">
+        <div id="affiliateHeroMount"></div>
+        <div id="affiliateAuthMount"></div>
+      </div>
+
+      <div id="affiliateDashboardView" hidden>
+        <div id="affiliateDashboardMount"></div>
+      </div>
     </div>
   </main>
 
