@@ -41,6 +41,16 @@
 
       return data || [];
     } catch (error) {
+      const isAbortError =
+        error &&
+        (error.name === "AbortError" ||
+          String(error.message || "").toLowerCase().includes("lock was stolen"));
+
+      if (isAbortError) {
+        console.warn("Transient checkout_sessions load abort:", error);
+        return [];
+      }
+
       showOneTimeError(
         "checkout_sessions",
         "Dashboard failed to load checkout sessions: " + (error?.message || "Load failed"),
@@ -73,6 +83,16 @@
 
       return data || [];
     } catch (error) {
+      const isAbortError =
+        error &&
+        (error.name === "AbortError" ||
+          String(error.message || "").toLowerCase().includes("lock was stolen"));
+
+      if (isAbortError) {
+        console.warn("Transient orders load abort:", error);
+        return [];
+      }
+
       showOneTimeError(
         "orders",
         "Dashboard failed to load orders: " + (error?.message || "Load failed"),
