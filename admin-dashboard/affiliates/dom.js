@@ -1,10 +1,13 @@
-window.AXIOM_ADMIN_AFFILIATES_DOM = {
-  cache() {
+(function () {
+  function getRefs() {
     return {
       tableBody: document.getElementById("affiliatesAdminTableBody"),
       searchInput: document.getElementById("affiliateSearchInput"),
       statusFilter: document.getElementById("affiliateStatusFilter"),
+
       refreshBtn: document.getElementById("refreshAffiliatesBtn"),
+      refreshTopBtn: document.getElementById("refreshAffiliatesBtnTop"),
+      refreshSidebarBtn: document.getElementById("refreshAffiliatesSidebarBtn"),
 
       statTotal: document.getElementById("affiliateStatTotal"),
       statPending: document.getElementById("affiliateStatPending"),
@@ -16,4 +19,8 @@ window.AXIOM_ADMIN_AFFILIATES_DOM = {
       recordPayoutForm: document.getElementById("affiliateRecordPayoutForm")
     };
   }
-};
+
+  window.AXIOM_ADMIN_AFFILIATES_DOM = {
+    getRefs
+  };
+})();
