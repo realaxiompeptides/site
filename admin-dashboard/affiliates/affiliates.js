@@ -1,10 +1,10 @@
-(function () {
+((function () {
   const AFFILIATE_SPLIT_FILES = [
     "affiliates/state.js",
-    "affiliates/helpers.js",
+    "affiliates/utils.js",
     "affiliates/dom.js",
-    "affiliates/data.js",
     "affiliates/render.js",
+    "affiliates/data.js",
     "affiliates/actions.js",
     "affiliates/init.js"
   ];
