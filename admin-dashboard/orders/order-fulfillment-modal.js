@@ -300,18 +300,34 @@ window.AXIOM_ORDER_FULFILLMENT_MODAL = {
       window.AXIOM_ORDER_DETAIL.setOrder(this.currentOrder);
     }
 
+    const refreshTasks = [];
+
     if (
       window.AXIOM_DASHBOARD_APP &&
       typeof window.AXIOM_DASHBOARD_APP.refreshOrders === "function"
     ) {
-      await window.AXIOM_DASHBOARD_APP.refreshOrders();
+      refreshTasks.push(
+        window.AXIOM_DASHBOARD_APP.refreshOrders().catch((error) => {
+          console.error("refreshOrders failed after order update:", error);
+          return null;
+        })
+      );
     }
 
     if (
       window.AXIOM_DASHBOARD_APP &&
       typeof window.AXIOM_DASHBOARD_APP.refreshHomeDashboard === "function"
     ) {
-      await window.AXIOM_DASHBOARD_APP.refreshHomeDashboard();
+      refreshTasks.push(
+        window.AXIOM_DASHBOARD_APP.refreshHomeDashboard().catch((error) => {
+          console.error("refreshHomeDashboard failed after order update:", error);
+          return null;
+        })
+      );
+    }
+
+    if (refreshTasks.length) {
+      await Promise.allSettled(refreshTasks);
     }
   },
 
@@ -384,6 +400,7 @@ window.AXIOM_ORDER_FULFILLMENT_MODAL = {
       ];
 
       const updatedOrder = await this.updateOrderWithFallback(payloadVariants);
+
       await this.refreshOrderViews(updatedOrder);
 
       this.setMessage("orderFulfillmentModalSuccess", "Order fulfilled successfully.", "success");
@@ -395,7 +412,7 @@ window.AXIOM_ORDER_FULFILLMENT_MODAL = {
       console.error("Failed to fulfill order:", error);
       this.setMessage(
         "orderFulfillmentModalError",
-        "Failed to update order. Check your orders table columns and Supabase policies.",
+        "Failed to update order: " + (error.message || "Unknown error"),
         "error"
       );
     }
@@ -477,7 +494,7 @@ window.AXIOM_ORDER_FULFILLMENT_MODAL = {
       console.error("Failed to mark order shipped:", error);
       this.setMessage(
         "orderFulfillmentModalError",
-        "Failed to update order. Check your orders table columns and Supabase policies.",
+        "Failed to update order: " + (error.message || "Unknown error"),
         "error"
       );
     }
