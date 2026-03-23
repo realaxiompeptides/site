@@ -1,27 +1,43 @@
-window.AXIOM_ADMIN_AFFILIATES_DATA = {
-  async loadAffiliates(dom, state) {
-    if (!window.axiomSupabase) return;
+(function () {
+  const state = window.AXIOM_ADMIN_AFFILIATES_STATE;
+  const utils = window.AXIOM_ADMIN_AFFILIATES_UTILS;
 
-    if (dom.tableBody) {
-      dom.tableBody.innerHTML = `<tr><td colspan="10">Loading affiliates...</td></tr>`;
+  async function loadAffiliates() {
+    const refs = window.AXIOM_ADMIN_AFFILIATES_DOM.getRefs();
+
+    if (!window.axiomSupabase || !refs.tableBody) return;
+
+    try {
+      refs.tableBody.innerHTML = `<tr><td colspan="10">Loading affiliates...</td></tr>`;
+
+      const { data, error } = await window.axiomSupabase
+        .from("affiliate_admin_summary")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+
+      state.affiliates = Array.isArray(data) ? data : [];
+      window.AXIOM_ADMIN_AFFILIATES_RENDER.applyFilters();
+      window.AXIOM_ADMIN_AFFILIATES_RENDER.renderStats();
+    } catch (error) {
+      console.error("Failed to load affiliates:", error);
+
+      state.affiliates = [];
+      state.filteredAffiliates = [];
+      window.AXIOM_ADMIN_AFFILIATES_RENDER.renderStats();
+
+      if (refs.tableBody) {
+        refs.tableBody.innerHTML = `
+          <tr>
+            <td colspan="10">Failed to load affiliates: ${utils.escapeHtml(error.message || "Unknown error")}</td>
+          </tr>
+        `;
+      }
     }
+  }
 
-    const { data, error } = await window.axiomSupabase
-      .from("affiliate_admin_summary")
-      .select("*")
-      .order("created_at", { ascending: false });
-
-    if (error) throw error;
-
-    state.affiliates = Array.isArray(data) ? data : [];
-  },
-
-  async openAffiliateDetails(affiliateId, state) {
-    if (!affiliateId || !window.axiomSupabase) return null;
-
-    const summary = state.affiliates.find((item) => String(item.id) === String(affiliateId)) || null;
-    state.selectedAffiliate = summary;
-
+  async function fetchAffiliateDetailData(affiliateId) {
     const [conversionsResult, claimsResult, payoutsResult] = await Promise.all([
       window.axiomSupabase
         .from("affiliate_conversions")
@@ -50,40 +66,14 @@ window.AXIOM_ADMIN_AFFILIATES_DATA = {
     if (payoutsResult.error) throw payoutsResult.error;
 
     return {
-      summary,
       conversions: Array.isArray(conversionsResult.data) ? conversionsResult.data : [],
       claims: Array.isArray(claimsResult.data) ? claimsResult.data : [],
       payouts: Array.isArray(payoutsResult.data) ? payoutsResult.data : []
     };
-  },
-
-  async updateStatus(affiliateId, status) {
-    const { error } = await window.axiomSupabase.rpc("admin_update_affiliate_status", {
-      p_affiliate_id: affiliateId,
-      p_status: status
-    });
-
-    if (error) throw error;
-  },
-
-  async updateClaimStatus(claimId, status) {
-    const { error } = await window.axiomSupabase.rpc("admin_update_affiliate_claim_status", {
-      p_claim_request_id: claimId,
-      p_status: status
-    });
-
-    if (error) throw error;
-  },
-
-  async recordPayout(payload) {
-    const { error } = await window.axiomSupabase.rpc("admin_record_affiliate_payout", {
-      p_affiliate_id: payload.affiliateId,
-      p_amount: payload.amount,
-      p_payout_method: payload.method || null,
-      p_payout_reference: payload.reference || null,
-      p_notes: payload.notes || null
-    });
-
-    if (error) throw error;
   }
-};
+
+  window.AXIOM_ADMIN_AFFILIATES_DATA = {
+    loadAffiliates,
+    fetchAffiliateDetailData
+  };
+})();
