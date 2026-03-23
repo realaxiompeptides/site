@@ -1,15 +1,16 @@
-((function () {
+(function () {
   const AFFILIATE_SPLIT_FILES = [
-    "affiliates/state.js",
-    "affiliates/utils.js",
-    "affiliates/dom.js",
-    "affiliates/render.js",
-    "affiliates/data.js",
-    "affiliates/actions.js",
-    "affiliates/init.js"
+    "state.js",
+    "utils.js",
+    "dom.js",
+    "render.js",
+    "data.js",
+    "actions.js",
+    "init.js"
   ];
 
-  let affiliateBootStarted = false;
+  let affiliateBootPromise = null;
+  let affiliateBootFinished = false;
 
   function getCurrentScriptBase() {
     const currentScript = document.currentScript;
@@ -30,10 +31,18 @@
     return "";
   }
 
+  function normalizeUrl(url) {
+    const a = document.createElement("a");
+    a.href = url;
+    return a.href;
+  }
+
   function loadScriptSequentially(src) {
     return new Promise(function (resolve, reject) {
+      const normalizedSrc = normalizeUrl(src);
+
       const existing = Array.from(document.scripts).find(function (script) {
-        return script.src === src;
+        return normalizeUrl(script.src || "") === normalizedSrc;
       });
 
       if (existing) {
@@ -54,7 +63,7 @@
         existing.addEventListener(
           "error",
           function () {
-            reject(new Error("Failed to load " + src));
+            reject(new Error("Failed to load " + normalizedSrc));
           },
           { once: true }
         );
@@ -63,7 +72,7 @@
       }
 
       const script = document.createElement("script");
-      script.src = src;
+      script.src = normalizedSrc;
       script.defer = false;
       script.async = false;
 
@@ -79,7 +88,7 @@
       script.addEventListener(
         "error",
         function () {
-          reject(new Error("Failed to load " + src));
+          reject(new Error("Failed to load " + normalizedSrc));
         },
         { once: true }
       );
@@ -96,29 +105,71 @@
     }
   }
 
-  async function bootAffiliates() {
-    if (affiliateBootStarted) return;
-    affiliateBootStarted = true;
+  async function waitForAffiliateMount(timeoutMs) {
+    const startedAt = Date.now();
 
-    try {
-      await loadAffiliateDependencies();
+    while (Date.now() - startedAt < timeoutMs) {
+      const mount =
+        document.getElementById("affiliateManagementMount") ||
+        document.getElementById("affiliatesMount") ||
+        document.querySelector("[data-affiliate-admin-root]") ||
+        document.querySelector(".affiliate-management-section") ||
+        document.querySelector(".affiliate-admin-section");
 
-      if (
-        window.AXIOM_ADMIN_AFFILIATES_INIT &&
-        typeof window.AXIOM_ADMIN_AFFILIATES_INIT.boot === "function"
-      ) {
-        await window.AXIOM_ADMIN_AFFILIATES_INIT.boot();
-      } else {
-        throw new Error("AXIOM_ADMIN_AFFILIATES_INIT.boot is missing.");
-      }
-    } catch (error) {
-      console.error("Affiliate admin failed to initialize:", error);
+      if (mount) return mount;
+
+      await new Promise(function (resolve) {
+        setTimeout(resolve, 50);
+      });
     }
+
+    return null;
   }
 
+  async function runAffiliateBoot() {
+    await loadAffiliateDependencies();
+
+    if (
+      !window.AXIOM_ADMIN_AFFILIATES_INIT ||
+      typeof window.AXIOM_ADMIN_AFFILIATES_INIT.boot !== "function"
+    ) {
+      throw new Error("AXIOM_ADMIN_AFFILIATES_INIT.boot is missing.");
+    }
+
+    await waitForAffiliateMount(4000);
+    await window.AXIOM_ADMIN_AFFILIATES_INIT.boot();
+    affiliateBootFinished = true;
+  }
+
+  function bootAffiliates() {
+    if (affiliateBootFinished) {
+      return Promise.resolve();
+    }
+
+    if (affiliateBootPromise) {
+      return affiliateBootPromise;
+    }
+
+    affiliateBootPromise = runAffiliateBoot().catch(function (error) {
+      affiliateBootPromise = null;
+      console.error("Affiliate admin failed to initialize:", error);
+      throw error;
+    });
+
+    return affiliateBootPromise;
+  }
+
+  window.AXIOM_ADMIN_AFFILIATES_BOOT = bootAffiliates;
+
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", bootAffiliates, { once: true });
+    document.addEventListener(
+      "DOMContentLoaded",
+      function () {
+        bootAffiliates().catch(function () {});
+      },
+      { once: true }
+    );
   } else {
-    bootAffiliates();
+    bootAffiliates().catch(function () {});
   }
 })();
