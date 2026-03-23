@@ -212,7 +212,18 @@ function getAppliedDiscountState() {
       discountType: String(result?.discountType || ""),
       discountValue: toNumber(result?.discountValue, 0),
       description: String(result?.description || ""),
-      isApplied: result?.isApplied === true
+      isApplied: result?.isApplied === true,
+
+      isAffiliateCode: result?.isAffiliateCode === true,
+      affiliateId: result?.affiliateId || null,
+      affiliateCode: normalizeDiscountCode(result?.affiliateCode || ""),
+      affiliateReferralCode: normalizeDiscountCode(result?.affiliateReferralCode || ""),
+      affiliateDiscountAmount: toNumber(result?.affiliateDiscountAmount, 0),
+      affiliateCommissionAmount: toNumber(result?.affiliateCommissionAmount, 0),
+      affiliateCommissionType: String(result?.affiliateCommissionType || ""),
+      affiliateCommissionValue: toNumber(result?.affiliateCommissionValue, 0),
+      affiliateEmail: String(result?.affiliateEmail || ""),
+      affiliateFullName: String(result?.affiliateFullName || "")
     };
   }
 
@@ -225,7 +236,22 @@ function getAppliedDiscountState() {
     discountType: "",
     discountValue: 0,
     description: "",
-    isApplied: Boolean(sessionCode && sessionAmount > 0)
+    isApplied: Boolean(sessionCode && sessionAmount > 0),
+
+    isAffiliateCode: Boolean(
+      axiomCurrentCheckoutSession?.affiliate_id &&
+      axiomCurrentCheckoutSession?.discount_code &&
+      sessionCode
+    ),
+    affiliateId: axiomCurrentCheckoutSession?.affiliate_id || null,
+    affiliateCode: normalizeDiscountCode(axiomCurrentCheckoutSession?.affiliate_code || ""),
+    affiliateReferralCode: normalizeDiscountCode(axiomCurrentCheckoutSession?.affiliate_code || ""),
+    affiliateDiscountAmount: toNumber(axiomCurrentCheckoutSession?.affiliate_discount_amount, 0),
+    affiliateCommissionAmount: toNumber(axiomCurrentCheckoutSession?.affiliate_commission_amount, 0),
+    affiliateCommissionType: "",
+    affiliateCommissionValue: 0,
+    affiliateEmail: "",
+    affiliateFullName: ""
   };
 }
 
@@ -305,7 +331,15 @@ function normalizeSessionShape(session) {
     customer_phone: session.customer_phone || session.contact?.phone || "",
     customer_first_name: session.customer_first_name || shippingAddress.first_name || "",
     customer_last_name: session.customer_last_name || shippingAddress.last_name || "",
-    payment_method: normalizePaymentMethodValue(session.payment_method || "")
+    payment_method: normalizePaymentMethodValue(session.payment_method || ""),
+
+    affiliate_id: session.affiliate_id || null,
+    affiliate_code: normalizeDiscountCode(session.affiliate_code || ""),
+    affiliate_click_id: session.affiliate_click_id || null,
+    affiliate_referral_session_id: session.affiliate_referral_session_id || null,
+    affiliate_landing_page: session.affiliate_landing_page || "",
+    affiliate_discount_amount: toNumber(session.affiliate_discount_amount, 0),
+    affiliate_commission_amount: toNumber(session.affiliate_commission_amount, 0)
   };
 }
 
@@ -600,6 +634,61 @@ function calculateEstimatedRates(items) {
   };
 }
 
+function getAffiliateStateForSession(discountState) {
+  const currentAffiliateId = axiomCurrentCheckoutSession?.affiliate_id || null;
+  const currentAffiliateCode = normalizeDiscountCode(axiomCurrentCheckoutSession?.affiliate_code || "");
+  const currentAffiliateClickId = axiomCurrentCheckoutSession?.affiliate_click_id || null;
+  const currentAffiliateReferralSessionId =
+    axiomCurrentCheckoutSession?.affiliate_referral_session_id || null;
+  const currentAffiliateLandingPage = axiomCurrentCheckoutSession?.affiliate_landing_page || "";
+  const currentAffiliateDiscountAmount = toNumber(axiomCurrentCheckoutSession?.affiliate_discount_amount, 0);
+  const currentAffiliateCommissionAmount = toNumber(axiomCurrentCheckoutSession?.affiliate_commission_amount, 0);
+
+  const hasExistingAffiliate = Boolean(currentAffiliateId || currentAffiliateCode);
+
+  if (hasExistingAffiliate) {
+    return {
+      affiliate_id: currentAffiliateId,
+      affiliate_code: currentAffiliateCode || null,
+      affiliate_click_id: currentAffiliateClickId || null,
+      affiliate_referral_session_id: currentAffiliateReferralSessionId || null,
+      affiliate_landing_page: currentAffiliateLandingPage || null,
+      affiliate_discount_amount: currentAffiliateDiscountAmount,
+      affiliate_commission_amount: currentAffiliateCommissionAmount
+    };
+  }
+
+  if (discountState?.isApplied && discountState?.isAffiliateCode && discountState?.affiliateId) {
+    return {
+      affiliate_id: discountState.affiliateId,
+      affiliate_code: normalizeDiscountCode(
+        discountState.affiliateReferralCode || discountState.affiliateCode || discountState.code || ""
+      ) || null,
+      affiliate_click_id: null,
+      affiliate_referral_session_id: null,
+      affiliate_landing_page: null,
+      affiliate_discount_amount: toNumber(
+        discountState.affiliateDiscountAmount !== undefined &&
+        discountState.affiliateDiscountAmount !== null
+          ? discountState.affiliateDiscountAmount
+          : discountState.discountAmount,
+        0
+      ),
+      affiliate_commission_amount: toNumber(discountState.affiliateCommissionAmount, 0)
+    };
+  }
+
+  return {
+    affiliate_id: null,
+    affiliate_code: null,
+    affiliate_click_id: null,
+    affiliate_referral_session_id: null,
+    affiliate_landing_page: null,
+    affiliate_discount_amount: 0,
+    affiliate_commission_amount: 0
+  };
+}
+
 async function fetchCurrentCheckoutSession() {
   if (hasSupabaseCheckoutSession()) {
     try {
@@ -788,6 +877,7 @@ async function syncCheckoutSessionFromForm() {
   const billingAddress = getCheckoutBillingAddress();
   const paymentMethod = getSelectedPaymentMethod();
   const shippingSelection = getSelectedShippingSelectionObject();
+  const affiliateState = getAffiliateStateForSession(discountState);
 
   if (hasSupabaseCheckoutSession()) {
     await window.AXIOM_CHECKOUT_SESSION.patchSession({
@@ -811,6 +901,15 @@ async function syncCheckoutSessionFromForm() {
       shipping_method_name: shippingSelection.method_name || null,
       shipping_carrier: shippingSelection.carrier || null,
       shipping_service_level: shippingSelection.service_level || null,
+
+      affiliate_id: affiliateState.affiliate_id,
+      affiliate_code: affiliateState.affiliate_code,
+      affiliate_click_id: affiliateState.affiliate_click_id,
+      affiliate_referral_session_id: affiliateState.affiliate_referral_session_id,
+      affiliate_landing_page: affiliateState.affiliate_landing_page,
+      affiliate_discount_amount: affiliateState.affiliate_discount_amount,
+      affiliate_commission_amount: affiliateState.affiliate_commission_amount,
+
       last_activity_at: new Date().toISOString()
     });
   } else if (hasLocalCheckoutSession()) {
@@ -843,6 +942,14 @@ async function syncCheckoutSessionFromForm() {
     session.shipping_carrier = shippingSelection.carrier || null;
     session.shipping_service_level = shippingSelection.service_level || null;
 
+    session.affiliate_id = affiliateState.affiliate_id;
+    session.affiliate_code = affiliateState.affiliate_code;
+    session.affiliate_click_id = affiliateState.affiliate_click_id;
+    session.affiliate_referral_session_id = affiliateState.affiliate_referral_session_id;
+    session.affiliate_landing_page = affiliateState.affiliate_landing_page;
+    session.affiliate_discount_amount = affiliateState.affiliate_discount_amount;
+    session.affiliate_commission_amount = affiliateState.affiliate_commission_amount;
+
     window.AXIOM_CHECKOUT_SESSION.saveSession(session);
   }
 
@@ -867,6 +974,15 @@ async function syncCheckoutSessionFromForm() {
     shipping_method_name: shippingSelection.method_name || null,
     shipping_carrier: shippingSelection.carrier || null,
     shipping_service_level: shippingSelection.service_level || null,
+
+    affiliate_id: affiliateState.affiliate_id,
+    affiliate_code: affiliateState.affiliate_code,
+    affiliate_click_id: affiliateState.affiliate_click_id,
+    affiliate_referral_session_id: affiliateState.affiliate_referral_session_id,
+    affiliate_landing_page: affiliateState.affiliate_landing_page,
+    affiliate_discount_amount: affiliateState.affiliate_discount_amount,
+    affiliate_commission_amount: affiliateState.affiliate_commission_amount,
+
     last_activity_at: new Date().toISOString()
   });
 
