@@ -1,7 +1,19 @@
 (function () {
   let cachedDom = null;
 
-  function first(selectors) {
+  function getById(id) {
+    return document.getElementById(id);
+  }
+
+  function getAllByIds(ids) {
+    return ids
+      .map(function (id) {
+        return getById(id);
+      })
+      .filter(Boolean);
+  }
+
+  function getFirst(selectors) {
     for (let i = 0; i < selectors.length; i += 1) {
       const element = document.querySelector(selectors[i]);
       if (element) return element;
@@ -9,108 +21,65 @@
     return null;
   }
 
-  function all(selector) {
-    return Array.from(document.querySelectorAll(selector));
-  }
-
   function resolveDom() {
-    const root =
-      document.getElementById("affiliateManagementMount") ||
-      document.getElementById("affiliatesMount") ||
-      document.querySelector("[data-affiliate-admin-root]") ||
-      document.querySelector(".affiliate-management-section") ||
-      document.querySelector(".affiliate-admin-section") ||
-      document;
-
-    const refreshButtons = all(
-      [
-        "#refreshAffiliatesBtn",
-        "#affiliateRefreshBtn",
-        "[data-affiliate-refresh]",
-        ".affiliate-refresh-btn"
-      ].join(",")
-    );
-
-    const searchInput = first([
-      "#affiliateSearchInput",
-      "[data-affiliate-search]",
-      "input[placeholder*='Search by name']",
-      "input[placeholder*='Search by name, email']"
+    const refreshButtons = getAllByIds([
+      "refreshAffiliatesBtn",
+      "refreshAffiliatesBtnTop",
+      "refreshAffiliatesSidebarBtn"
     ]);
 
-    const statusFilter = first([
-      "#affiliateStatusFilter",
-      "[data-affiliate-status-filter]",
-      "select"
-    ]);
+    const tableBody =
+      getById("affiliatesAdminTableBody") ||
+      getById("affiliateTableBody") ||
+      getById("affiliatesTableBody") ||
+      getFirst(["[data-affiliate-table-body]", "tbody"]);
 
-    const tableBody = first([
-      "#affiliatesTableBody",
-      "#affiliateTableBody",
-      "[data-affiliate-table-body]",
-      "tbody"
-    ]);
+    const searchInput =
+      getById("affiliateSearchInput") ||
+      getFirst([
+        "[data-affiliate-search]",
+        "input[placeholder*='Search by name']",
+        "input[placeholder*='Search by name, email']"
+      ]);
 
-    const loadingRow = first([
-      "[data-affiliate-loading-row]"
-    ]);
+    const statusFilter =
+      getById("affiliateStatusFilter") ||
+      getFirst([
+        "[data-affiliate-status-filter]",
+        "select"
+      ]);
 
-    const emptyState = first([
-      "#affiliateEmptyState",
-      "[data-affiliate-empty]"
-    ]);
+    const modal =
+      getById("affiliateDetailModal") ||
+      getFirst(["[data-affiliate-detail-modal]"]);
 
-    const errorState = first([
-      "#affiliateErrorState",
-      "[data-affiliate-error]"
-    ]);
+    const closeModalBtn =
+      getById("closeAffiliateDetailModal") ||
+      getFirst(["[data-affiliate-modal-close]"]);
 
-    const totalAffiliatesValue = first([
-      "#totalAffiliatesValue",
-      "[data-affiliate-total]",
-      "[data-summary='total-affiliates']"
-    ]);
-
-    const pendingAffiliatesValue = first([
-      "#pendingAffiliatesValue",
-      "[data-affiliate-pending]",
-      "[data-summary='pending-affiliates']"
-    ]);
-
-    const approvedAffiliatesValue = first([
-      "#approvedAffiliatesValue",
-      "[data-affiliate-approved]",
-      "[data-summary='approved-affiliates']"
-    ]);
-
-    const claimableValue = first([
-      "#claimableValue",
-      "[data-affiliate-claimable]",
-      "[data-summary='claimable-amount']"
-    ]);
+    const recordPayoutForm =
+      getById("affiliateRecordPayoutForm") ||
+      getFirst(["form[data-affiliate-record-payout]"]);
 
     return {
-      root: root,
       refreshButtons: refreshButtons,
-      refreshBtn: refreshButtons[0] || null,
+      refreshBtn: getById("refreshAffiliatesBtn"),
+      refreshTopBtn: getById("refreshAffiliatesBtnTop"),
+      refreshSidebarBtn: getById("refreshAffiliatesSidebarBtn"),
+
+      tableBody: tableBody,
       searchInput: searchInput,
       statusFilter: statusFilter,
-      tableBody: tableBody,
-      loadingRow: loadingRow,
-      emptyState: emptyState,
-      errorState: errorState,
-      totalAffiliatesValue: totalAffiliatesValue,
-      pendingAffiliatesValue: pendingAffiliatesValue,
-      approvedAffiliatesValue: approvedAffiliatesValue,
-      claimableValue: claimableValue
-    };
-  }
 
-  function get() {
-    if (!cachedDom) {
-      cachedDom = resolveDom();
-    }
-    return cachedDom;
+      statTotal: getById("affiliateStatTotal"),
+      statPending: getById("affiliateStatPending"),
+      statApproved: getById("affiliateStatApproved"),
+      statClaimable: getById("affiliateStatClaimable"),
+
+      modal: modal,
+      closeModalBtn: closeModalBtn,
+      recordPayoutForm: recordPayoutForm
+    };
   }
 
   function cache() {
@@ -118,14 +87,13 @@
     return cachedDom;
   }
 
+  function get() {
+    return cachedDom || cache();
+  }
+
   function refresh() {
     cachedDom = resolveDom();
     return cachedDom;
-  }
-
-  function exists() {
-    const dom = get();
-    return Boolean(dom.root && dom.tableBody);
   }
 
   function setText(element, value) {
@@ -162,10 +130,9 @@
   }
 
   window.AXIOM_ADMIN_AFFILIATES_DOM = {
-    get: get,
     cache: cache,
+    get: get,
     refresh: refresh,
-    exists: exists,
     setText: setText,
     setHTML: setHTML,
     show: show,
