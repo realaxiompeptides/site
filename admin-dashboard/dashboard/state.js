@@ -7,6 +7,7 @@ window.DASHBOARD_PARTIALS = [
   { mountId: "analyticsMount", file: "analytics/analytics.html" },
   { mountId: "orderDetailMount", file: "order-detail/order-detail.html" },
   { mountId: "paymentTrackingMount", file: "payment-tracking/payment-tracking.html" }
+  { mountId: "affiliatesAdminMount", file: "affiliates/affiliates.html" }
 ];
 
 window.AXIOM_DASHBOARD_STATE = window.AXIOM_DASHBOARD_STATE || {
