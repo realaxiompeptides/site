@@ -285,10 +285,19 @@
       affiliate_code: args.affiliate_code || "",
       affiliate_click_id: args.affiliate_click_id || null,
       affiliate_referral_session_id: args.affiliate_referral_session_id || null,
+      affiliate_landing_page: args.affiliate_landing_page || args.landing_page || getCurrentUrl(),
       landing_page: args.landing_page || getCurrentUrl(),
       current_page: getCurrentUrl(),
       referrer: getReferrer(),
       visitor_id: args.visitor_id || getVisitorId(),
+      affiliate_discount_amount:
+        args.affiliate_discount_amount !== undefined && args.affiliate_discount_amount !== null
+          ? Number(args.affiliate_discount_amount || 0)
+          : 0,
+      affiliate_commission_amount:
+        args.affiliate_commission_amount !== undefined && args.affiliate_commission_amount !== null
+          ? Number(args.affiliate_commission_amount || 0)
+          : 0,
       captured_at: args.captured_at || getNowIso()
     };
   }
@@ -488,7 +497,13 @@
       affiliate_click_id: click ? click.id : null,
       affiliate_referral_session_id: referralSession ? referralSession.id : null,
       landing_page: getCurrentUrl(),
-      visitor_id: visitorId
+      affiliate_landing_page: getCurrentUrl(),
+      visitor_id: visitorId,
+      affiliate_discount_amount: 0,
+      affiliate_commission_amount:
+        String(affiliate.commission_type || "").toLowerCase() === "percent"
+          ? Number(affiliate.commission_value || 0)
+          : 0
     });
 
     setStoredAttribution(payload);
@@ -513,9 +528,110 @@
       affiliate_code: stored.affiliate_code || "",
       affiliate_click_id: stored.affiliate_click_id || null,
       affiliate_referral_session_id: stored.affiliate_referral_session_id || null,
-      affiliate_landing_page: stored.landing_page || "",
-      visitor_id: stored.visitor_id || getVisitorId()
+      affiliate_landing_page: stored.affiliate_landing_page || stored.landing_page || "",
+      visitor_id: stored.visitor_id || getVisitorId(),
+      affiliate_discount_amount: Number(stored.affiliate_discount_amount || 0),
+      affiliate_commission_amount: Number(stored.affiliate_commission_amount || 0)
     };
+  }
+
+  async function syncAttributionIntoCheckoutSession() {
+    const supabase = getSupabase();
+    const attribution = getAttributionForCheckout();
+
+    if (!supabase || !attribution || !attribution.affiliate_id || !attribution.affiliate_code) {
+      return;
+    }
+
+    if (
+      !window.AXIOM_CHECKOUT_SESSION ||
+      typeof window.AXIOM_CHECKOUT_SESSION.ensureSession !== "function"
+    ) {
+      return;
+    }
+
+    try {
+      const sessionId = await window.AXIOM_CHECKOUT_SESSION.ensureSession();
+      if (!sessionId) return;
+
+      const { data: checkoutRow, error: checkoutError } = await supabase
+        .from("checkout_sessions")
+        .select("id, affiliate_id, affiliate_code, affiliate_click_id, affiliate_referral_session_id")
+        .eq("session_id", sessionId)
+        .maybeSingle();
+
+      if (checkoutError || !checkoutRow) {
+        if (checkoutError) {
+          console.error("Failed loading checkout session for affiliate sync:", checkoutError);
+        }
+        return;
+      }
+
+      const existingAffiliateId = checkoutRow.affiliate_id || null;
+      const existingAffiliateCode = checkoutRow.affiliate_code || "";
+
+      if (
+        existingAffiliateId &&
+        existingAffiliateCode &&
+        String(existingAffiliateCode).trim().toUpperCase() !==
+          String(attribution.affiliate_code || "").trim().toUpperCase()
+      ) {
+        return;
+      }
+
+      const alreadySynced =
+        String(existingAffiliateId || "") === String(attribution.affiliate_id || "") &&
+        String(existingAffiliateCode || "") === String(attribution.affiliate_code || "") &&
+        String(checkoutRow.affiliate_click_id || "") === String(attribution.affiliate_click_id || "") &&
+        String(checkoutRow.affiliate_referral_session_id || "") ===
+          String(attribution.affiliate_referral_session_id || "");
+
+      if (alreadySynced) {
+        return;
+      }
+
+      const updatePayload = {
+        affiliate_id: attribution.affiliate_id || null,
+        affiliate_code: attribution.affiliate_code || null,
+        affiliate_click_id: attribution.affiliate_click_id || null,
+        affiliate_referral_session_id: attribution.affiliate_referral_session_id || null,
+        affiliate_landing_page: attribution.affiliate_landing_page || null,
+        affiliate_discount_amount: Number(attribution.affiliate_discount_amount || 0),
+        affiliate_commission_amount: Number(attribution.affiliate_commission_amount || 0),
+        updated_at: getNowIso(),
+        last_activity_at: getNowIso()
+      };
+
+      const { error: updateError } = await supabase
+        .from("checkout_sessions")
+        .update(updatePayload)
+        .eq("id", checkoutRow.id);
+
+      if (updateError) {
+        console.error("Failed syncing affiliate attribution into checkout session:", updateError);
+      }
+    } catch (error) {
+      console.error("Affiliate checkout session sync crashed:", error);
+    }
+  }
+
+  function scheduleCheckoutAttributionSync() {
+    let attempts = 0;
+    const maxAttempts = 20;
+
+    function runAttempt() {
+      attempts += 1;
+
+      syncAttributionIntoCheckoutSession().catch(function (error) {
+        console.error("Scheduled checkout affiliate sync failed:", error);
+      });
+
+      if (attempts < maxAttempts) {
+        setTimeout(runAttempt, 750);
+      }
+    }
+
+    runAttempt();
   }
 
   async function initAffiliateTracking() {
@@ -536,6 +652,9 @@
       } else {
         await restoreExistingAttribution();
       }
+
+      await syncAttributionIntoCheckoutSession();
+      scheduleCheckoutAttributionSync();
     } catch (error) {
       console.error("Affiliate tracking init failed:", error);
     }
@@ -548,6 +667,7 @@
     getVisitorId: getVisitorId,
     clearAttribution: clearStoredAttribution,
     clearVisitorId: clearStoredVisitorId,
+    syncAttributionIntoCheckoutSession: syncAttributionIntoCheckoutSession,
     storageKey: STORAGE_KEY,
     sessionStorageKey: SESSION_STORAGE_KEY,
     cookieKey: ATTR_COOKIE_KEY,
