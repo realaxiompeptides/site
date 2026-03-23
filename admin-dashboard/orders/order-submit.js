@@ -67,6 +67,137 @@ window.AXIOM_ORDER_SUBMIT = {
       return highest + 1;
     }
 
+    async function getAffiliateCommissionRate(affiliateId) {
+      if (!affiliateId) return 0;
+
+      try {
+        const { data, error } = await supabase
+          .from("affiliates")
+          .select("commission_type, commission_value")
+          .eq("id", affiliateId)
+          .maybeSingle();
+
+        if (error || !data) {
+          if (error) {
+            console.error("Failed to load affiliate commission rate:", error);
+          }
+          return 0;
+        }
+
+        if (String(data.commission_type || "").toLowerCase() !== "percent") {
+          return 0;
+        }
+
+        return Number(data.commission_value || 0);
+      } catch (error) {
+        console.error("Affiliate commission lookup crashed:", error);
+        return 0;
+      }
+    }
+
+    function calculateAffiliateCommission(subtotal, discountAmount, commissionRate) {
+      const commissionableAmount = Math.max(
+        Number(subtotal || 0) - Number(discountAmount || 0),
+        0
+      );
+
+      return Number(
+        ((commissionableAmount * Number(commissionRate || 0)) / 100).toFixed(2)
+      );
+    }
+
+    async function insertAffiliateConversionIfNeeded(args) {
+      const sessionRow = args.sessionRow;
+      const orderRow = args.orderRow;
+
+      if (!sessionRow || !orderRow) return;
+
+      const affiliateId = sessionRow.affiliate_id || null;
+      const affiliateCode = sessionRow.affiliate_code || null;
+
+      if (!affiliateId || !affiliateCode) {
+        return;
+      }
+
+      try {
+        const { data: existingConversion, error: existingConversionError } = await supabase
+          .from("affiliate_conversions")
+          .select("id")
+          .eq("order_id", orderRow.id)
+          .maybeSingle();
+
+        if (existingConversionError) {
+          console.error("Affiliate conversion lookup failed:", existingConversionError);
+          return;
+        }
+
+        if (existingConversion?.id) {
+          return;
+        }
+
+        const commissionRate = await getAffiliateCommissionRate(affiliateId);
+        const commissionAmount = calculateAffiliateCommission(
+          sessionRow.subtotal,
+          sessionRow.discount_amount,
+          commissionRate
+        );
+
+        const conversionPayload = {
+          affiliate_id: affiliateId,
+          referral_code: affiliateCode,
+          affiliate_click_id: sessionRow.affiliate_click_id || null,
+          affiliate_referral_session_id: sessionRow.affiliate_referral_session_id || null,
+          checkout_session_id: sessionRow.id,
+          order_id: orderRow.id,
+          order_number: orderRow.order_number,
+          customer_email: sessionRow.customer_email || null,
+          subtotal: Number(sessionRow.subtotal || 0),
+          total_amount: Number(sessionRow.total_amount || 0),
+          discount_amount: Number(sessionRow.discount_amount || 0),
+          commission_amount: commissionAmount,
+          commission_status:
+            String(orderRow.fulfillment_status || "").toLowerCase() === "fulfilled" ||
+            String(orderRow.fulfillment_status || "").toLowerCase() === "shipped"
+              ? "claimable"
+              : "pending",
+          claimable_at:
+            String(orderRow.fulfillment_status || "").toLowerCase() === "fulfilled" ||
+            String(orderRow.fulfillment_status || "").toLowerCase() === "shipped"
+              ? nowIso
+              : null,
+          created_at: nowIso,
+          updated_at: nowIso
+        };
+
+        const { error: affiliateConversionError } = await supabase
+          .from("affiliate_conversions")
+          .insert(conversionPayload);
+
+        if (affiliateConversionError) {
+          console.error("Affiliate conversion insert failed:", affiliateConversionError);
+        }
+
+        if (sessionRow.affiliate_referral_session_id) {
+          const { error: referralSessionUpdateError } = await supabase
+            .from("affiliate_referral_sessions")
+            .update({
+              is_converted: true,
+              updated_at: nowIso
+            })
+            .eq("id", sessionRow.affiliate_referral_session_id);
+
+          if (referralSessionUpdateError) {
+            console.error(
+              "Affiliate referral session converted update failed:",
+              referralSessionUpdateError
+            );
+          }
+        }
+      } catch (error) {
+        console.error("Affiliate conversion flow crashed:", error);
+      }
+    }
+
     try {
       const sessionId = await window.AXIOM_CHECKOUT_SESSION.ensureSession();
       if (!sessionId) {
@@ -124,6 +255,11 @@ window.AXIOM_ORDER_SUBMIT = {
           console.error("Existing order checkout session update failed:", existingCheckoutUpdateError);
         }
 
+        await insertAffiliateConversionIfNeeded({
+          sessionRow: sessionRow,
+          orderRow: existingOrder
+        });
+
         return {
           ok: true,
           orderId: existingOrder.id,
@@ -165,6 +301,17 @@ window.AXIOM_ORDER_SUBMIT = {
         tracking_number: sessionRow.tracking_number || null,
         tracking_url: sessionRow.tracking_url || null,
         notes: sessionRow.notes || null,
+        customer_auth_user_id: sessionRow.customer_auth_user_id || null,
+        discount_code: sessionRow.discount_code || null,
+        affiliate_id: sessionRow.affiliate_id || null,
+        affiliate_code: sessionRow.affiliate_code || null,
+        affiliate_click_id: sessionRow.affiliate_click_id || null,
+        affiliate_referral_session_id: sessionRow.affiliate_referral_session_id || null,
+        affiliate_discount_amount: Number(sessionRow.affiliate_discount_amount || 0),
+        affiliate_commission_amount: Number(sessionRow.affiliate_commission_amount || 0),
+        affiliate_landing_page: sessionRow.affiliate_landing_page || null,
+        shipping_carrier: sessionRow.shipping_carrier || null,
+        shipping_service: sessionRow.shipping_service_level || null,
         created_at: nowIso,
         updated_at: nowIso
       };
@@ -243,7 +390,9 @@ window.AXIOM_ORDER_SUBMIT = {
             payment_method: orderInsert.payment_method,
             total_amount: orderInsert.total_amount,
             payment_status: orderInsert.payment_status,
-            fulfillment_status: orderInsert.fulfillment_status
+            fulfillment_status: orderInsert.fulfillment_status,
+            affiliate_id: orderInsert.affiliate_id || null,
+            affiliate_code: orderInsert.affiliate_code || null
           },
           created_at: nowIso
         });
@@ -251,6 +400,11 @@ window.AXIOM_ORDER_SUBMIT = {
       if (eventError) {
         console.error("Order event insert failed:", eventError);
       }
+
+      await insertAffiliateConversionIfNeeded({
+        sessionRow: sessionRow,
+        orderRow: orderInsert
+      });
 
       return {
         ok: true,
