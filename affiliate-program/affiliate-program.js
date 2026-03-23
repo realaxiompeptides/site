@@ -9,8 +9,9 @@ document.addEventListener("DOMContentLoaded", async function () {
     try {
       const response = await fetch(url, { cache: "no-store" });
       if (!response.ok) {
-        throw new Error(`Failed to load ${url}`);
+        throw new Error("Failed to load " + url);
       }
+
       mountEl.innerHTML = await response.text();
       return true;
     } catch (error) {
@@ -29,6 +30,6 @@ document.addEventListener("DOMContentLoaded", async function () {
     window.AXIOM_AFFILIATE_DASHBOARD &&
     typeof window.AXIOM_AFFILIATE_DASHBOARD.init === "function"
   ) {
-    window.AXIOM_AFFILIATE_DASHBOARD.init();
+    await window.AXIOM_AFFILIATE_DASHBOARD.init();
   }
 });
