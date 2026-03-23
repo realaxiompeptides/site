@@ -9,7 +9,7 @@
     "dashboard/home.js",
     "dashboard/analytics.js",
     "dashboard/products.js",
-    "dashboard/affiliates.js",
+    "affiliates/affiliates.js",
     "dashboard/realtime.js",
     "dashboard/init.js"
   ];
