@@ -42,16 +42,14 @@
     if (dom.searchInput && !dom.searchInput.dataset.bound) {
       dom.searchInput.dataset.bound = "true";
       dom.searchInput.addEventListener("input", function () {
-        renderApi.applyFilters(dom, state);
-        renderApi.renderTable(dom, state);
+        actions.applyFilters();
       });
     }
 
     if (dom.statusFilter && !dom.statusFilter.dataset.bound) {
       dom.statusFilter.dataset.bound = "true";
       dom.statusFilter.addEventListener("change", function () {
-        renderApi.applyFilters(dom, state);
-        renderApi.renderTable(dom, state);
+        actions.applyFilters();
       });
     }
 
@@ -188,6 +186,7 @@
     window.AXIOM_ADMIN_AFFILIATES = {
       init: boot,
       loadAffiliates: actions.loadAffiliates.bind(actions),
+      applyFilters: actions.applyFilters.bind(actions),
       updateStatus: actions.updateStatus.bind(actions),
       openAffiliateDetails: actions.openAffiliateDetails.bind(actions),
       closeModal: actions.closeModal.bind(actions),
@@ -201,6 +200,9 @@
       },
       get selectedAffiliate() {
         return state.selectedAffiliate;
+      },
+      get selectedAffiliateId() {
+        return state.selectedAffiliateId;
       }
     };
 
@@ -208,6 +210,6 @@
   }
 
   window.AXIOM_ADMIN_AFFILIATES_INIT = {
-    boot
+    boot: boot
   };
 })();
