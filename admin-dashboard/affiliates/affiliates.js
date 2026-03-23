@@ -5,7 +5,6 @@
     "affiliates/dom.js",
     "affiliates/data.js",
     "affiliates/render.js",
-    "affiliates/modal.js",
     "affiliates/actions.js",
     "affiliates/init.js"
   ];
@@ -103,6 +102,15 @@
 
     try {
       await loadAffiliateDependencies();
+
+      if (
+        window.AXIOM_ADMIN_AFFILIATES_INIT &&
+        typeof window.AXIOM_ADMIN_AFFILIATES_INIT.boot === "function"
+      ) {
+        await window.AXIOM_ADMIN_AFFILIATES_INIT.boot();
+      } else {
+        throw new Error("AXIOM_ADMIN_AFFILIATES_INIT.boot is missing.");
+      }
     } catch (error) {
       console.error("Affiliate admin failed to initialize:", error);
     }
