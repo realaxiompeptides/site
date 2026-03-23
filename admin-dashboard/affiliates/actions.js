@@ -1,252 +1,183 @@
 (function () {
   const state = window.AXIOM_ADMIN_AFFILIATES_STATE;
+  const utils = window.AXIOM_ADMIN_AFFILIATES_UTILS;
+  const domApi = window.AXIOM_ADMIN_AFFILIATES_DOM;
+  const renderApi = window.AXIOM_ADMIN_AFFILIATES_RENDER;
+  const dataApi = window.AXIOM_ADMIN_AFFILIATES_DATA;
 
-  function openModal() {
-    const refs = window.AXIOM_ADMIN_AFFILIATES_DOM.getRefs();
+  const actions = {
+    dom: null,
 
-    if (refs.modal) {
-      refs.modal.hidden = false;
-      refs.modal.style.display = "block";
-      refs.modal.style.pointerEvents = "auto";
-      refs.modal.setAttribute("aria-hidden", "false");
-      document.body.style.overflow = "hidden";
-    }
-  }
+    applyFilters: function applyFilters() {
+      const dom = this.dom || domApi.get();
 
-  function closeModal() {
-    const refs = window.AXIOM_ADMIN_AFFILIATES_DOM.getRefs();
+      state.setSearch(dom.searchInput ? dom.searchInput.value : "");
+      state.setStatus(dom.statusFilter ? dom.statusFilter.value : "all");
 
-    if (refs.modal) {
-      refs.modal.hidden = true;
-      refs.modal.style.display = "";
-      refs.modal.style.pointerEvents = "";
-      refs.modal.setAttribute("aria-hidden", "true");
-    }
+      const filtered = utils.filterAffiliates(state.affiliates, state.filters);
+      state.setFilteredAffiliates(filtered);
+      renderApi.renderTable();
+    },
 
-    document.body.style.overflow = "";
-  }
+    loadAffiliates: async function loadAffiliates() {
+      this.dom = domApi.cache();
 
-  async function openAffiliateDetails(affiliateId) {
-    if (!affiliateId || !window.axiomSupabase) return;
-
-    try {
-      const summary =
-        state.affiliates.find((item) => String(item.id) === String(affiliateId)) || null;
-
-      state.selectedAffiliate = summary;
-
-      const detailData = await window.AXIOM_ADMIN_AFFILIATES_DATA.fetchAffiliateDetailData(affiliateId);
-      window.AXIOM_ADMIN_AFFILIATES_RENDER.renderAffiliateDetail(summary, detailData);
-      openModal();
-    } catch (error) {
-      console.error("Failed to load affiliate details:", error);
-      alert(error.message || "Failed to load affiliate details.");
-    }
-  }
-
-  async function updateStatus(affiliateId, status) {
-    if (!affiliateId || !status || !window.axiomSupabase) return;
-
-    try {
-      const { error } = await window.axiomSupabase.rpc("admin_update_affiliate_status", {
-        p_affiliate_id: affiliateId,
-        p_status: status
-      });
-
-      if (error) throw error;
-
-      await window.AXIOM_ADMIN_AFFILIATES_DATA.loadAffiliates();
-
-      if (state.selectedAffiliate && String(state.selectedAffiliate.id) === String(affiliateId)) {
-        await openAffiliateDetails(affiliateId);
-      }
-
-      alert(`Affiliate ${status} successfully.`);
-    } catch (error) {
-      console.error("Failed to update affiliate status:", error);
-      alert(error.message || "Failed to update affiliate status.");
-    }
-  }
-
-  async function updateClaimStatus(claimId, status) {
-    if (!claimId || !status || !window.axiomSupabase) return;
-
-    try {
-      const { error } = await window.axiomSupabase.rpc("admin_update_affiliate_claim_status", {
-        p_claim_request_id: claimId,
-        p_status: status
-      });
-
-      if (error) throw error;
-
-      await window.AXIOM_ADMIN_AFFILIATES_DATA.loadAffiliates();
-
-      if (state.selectedAffiliate?.id) {
-        await openAffiliateDetails(state.selectedAffiliate.id);
-      }
-
-      alert(`Claim ${status} successfully.`);
-    } catch (error) {
-      console.error("Failed to update claim request:", error);
-      alert(error.message || "Failed to update claim request.");
-    }
-  }
-
-  async function recordPayout() {
-    const affiliateId = document.getElementById("affiliatePayoutAffiliateId")?.value || "";
-    const amount = Number(document.getElementById("affiliatePayoutAmount")?.value || 0);
-    const method = document.getElementById("affiliatePayoutMethod")?.value.trim() || "";
-    const reference = document.getElementById("affiliatePayoutReference")?.value.trim() || "";
-    const notes = document.getElementById("affiliatePayoutNotes")?.value.trim() || "";
-
-    if (!affiliateId) {
-      alert("Missing affiliate.");
-      return;
-    }
-
-    if (!amount || amount <= 0) {
-      alert("Enter a valid payout amount.");
-      return;
-    }
-
-    try {
-      const { error } = await window.axiomSupabase.rpc("admin_record_affiliate_payout", {
-        p_affiliate_id: affiliateId,
-        p_amount: amount,
-        p_payout_method: method || null,
-        p_payout_reference: reference || null,
-        p_notes: notes || null
-      });
-
-      if (error) throw error;
-
-      const refs = window.AXIOM_ADMIN_AFFILIATES_DOM.getRefs();
-      if (refs.recordPayoutForm) refs.recordPayoutForm.reset();
-
-      const payoutAffiliateId = document.getElementById("affiliatePayoutAffiliateId");
-      if (payoutAffiliateId) payoutAffiliateId.value = affiliateId;
-
-      await window.AXIOM_ADMIN_AFFILIATES_DATA.loadAffiliates();
-
-      if (state.selectedAffiliate?.id) {
-        await openAffiliateDetails(state.selectedAffiliate.id);
-      }
-
-      alert("Payout recorded successfully.");
-    } catch (error) {
-      console.error("Failed to record payout:", error);
-      alert(error.message || "Failed to record payout.");
-    }
-  }
-
-  function bindDelegatedEvents() {
-    if (document.body.dataset.affiliateAdminGlobalBound === "true") return;
-    document.body.dataset.affiliateAdminGlobalBound = "true";
-
-    document.addEventListener("click", async (event) => {
-      const refreshBtn = event.target.closest("#refreshAffiliatesBtn");
-      const refreshTopBtn = event.target.closest("#refreshAffiliatesBtnTop");
-      const refreshSidebarBtn = event.target.closest("#refreshAffiliatesSidebarBtn");
-
-      const viewBtn = event.target.closest("[data-action='view'][data-affiliate-id]");
-      const approveBtn = event.target.closest("[data-action='approve'][data-affiliate-id]");
-      const rejectBtn = event.target.closest("[data-action='reject'][data-affiliate-id]");
-      const suspendBtn = event.target.closest("[data-action='suspend'][data-affiliate-id]");
-
-      const closeBtn = event.target.closest("#closeAffiliateDetailModal");
-      const backdropClose = event.target.closest("[data-affiliate-modal-close]");
-
-      const claimStatusBtn = event.target.closest("[data-claim-id][data-claim-status]");
-
-      if (refreshBtn || refreshTopBtn || refreshSidebarBtn) {
-        event.preventDefault();
-        await window.AXIOM_ADMIN_AFFILIATES_DATA.loadAffiliates();
+      if (!this.dom.tableBody) {
+        console.warn("Affiliate admin table body not found.");
         return;
       }
 
-      if (closeBtn || backdropClose) {
-        event.preventDefault();
-        event.stopPropagation();
-        closeModal();
+      try {
+        state.setLoading(true);
+        state.setError(null);
+        renderApi.renderLoading();
+
+        const rawAffiliates = await dataApi.fetchAffiliates();
+        const affiliates = rawAffiliates.map(utils.normalizeAffiliate);
+
+        state.setAffiliates(affiliates);
+        state.setSummary(utils.calculateSummary(affiliates));
+        this.applyFilters();
+        renderApi.renderStats();
+      } catch (error) {
+        console.error("Failed to load affiliates:", error);
+        state.setAffiliates([]);
+        state.setFilteredAffiliates([]);
+        state.setSummary({ total: 0, pending: 0, approved: 0, claimable: 0 });
+        state.setError(error);
+        renderApi.renderStats();
+        renderApi.renderError(error && error.message ? error.message : "Unknown error");
+      } finally {
+        state.setLoading(false);
+      }
+    },
+
+    updateStatus: async function updateStatus(affiliateId, status) {
+      if (!affiliateId || !status) return;
+
+      try {
+        await dataApi.updateAffiliateStatus(affiliateId, status);
+        await this.loadAffiliates();
+
+        if (state.selectedAffiliateId && String(state.selectedAffiliateId) === String(affiliateId)) {
+          await this.openAffiliateDetails(affiliateId);
+        }
+
+        alert("Affiliate " + status + " successfully.");
+      } catch (error) {
+        console.error("Failed to update affiliate status:", error);
+        alert(error.message || "Failed to update affiliate status.");
+      }
+    },
+
+    openAffiliateDetails: async function openAffiliateDetails(affiliateId) {
+      if (!affiliateId) return;
+
+      try {
+        const summary =
+          state.affiliates.find(function (item) {
+            return String(item.id) === String(affiliateId);
+          }) || null;
+
+        state.selectedAffiliateId = affiliateId;
+
+        const detailData = await dataApi.fetchAffiliateDetails(affiliateId);
+        renderApi.renderAffiliateDetail(summary, detailData);
+
+        this.dom = domApi.cache();
+
+        if (this.dom.modal) {
+          this.dom.modal.hidden = false;
+          this.dom.modal.style.display = "block";
+          this.dom.modal.style.pointerEvents = "auto";
+          this.dom.modal.setAttribute("aria-hidden", "false");
+          document.body.style.overflow = "hidden";
+        }
+      } catch (error) {
+        console.error("Failed to load affiliate details:", error);
+        alert(error.message || "Failed to load affiliate details.");
+      }
+    },
+
+    closeModal: function closeModal() {
+      this.dom = domApi.cache();
+
+      if (this.dom.modal) {
+        this.dom.modal.hidden = true;
+        this.dom.modal.style.display = "";
+        this.dom.modal.style.pointerEvents = "";
+        this.dom.modal.setAttribute("aria-hidden", "true");
+      }
+
+      document.body.style.overflow = "";
+    },
+
+    updateClaimStatus: async function updateClaimStatus(claimId, status) {
+      if (!claimId || !status) return;
+
+      try {
+        await dataApi.updateClaimStatus(claimId, status);
+        await this.loadAffiliates();
+
+        if (state.selectedAffiliateId) {
+          await this.openAffiliateDetails(state.selectedAffiliateId);
+        }
+
+        alert("Claim " + status + " successfully.");
+      } catch (error) {
+        console.error("Failed to update claim request:", error);
+        alert(error.message || "Failed to update claim request.");
+      }
+    },
+
+    recordPayout: async function recordPayout() {
+      const affiliateId = document.getElementById("affiliatePayoutAffiliateId")?.value || "";
+      const amount = Number(document.getElementById("affiliatePayoutAmount")?.value || 0);
+      const method = document.getElementById("affiliatePayoutMethod")?.value.trim() || "";
+      const reference = document.getElementById("affiliatePayoutReference")?.value.trim() || "";
+      const notes = document.getElementById("affiliatePayoutNotes")?.value.trim() || "";
+
+      if (!affiliateId) {
+        alert("Missing affiliate.");
         return;
       }
 
-      if (viewBtn) {
-        event.preventDefault();
-        const affiliateId = viewBtn.getAttribute("data-affiliate-id");
-        if (!affiliateId) return;
-        await openAffiliateDetails(affiliateId);
+      if (!amount || amount <= 0) {
+        alert("Enter a valid payout amount.");
         return;
       }
 
-      if (approveBtn) {
-        event.preventDefault();
-        const affiliateId = approveBtn.getAttribute("data-affiliate-id");
-        if (!affiliateId) return;
+      try {
+        await dataApi.recordPayout({
+          affiliateId: affiliateId,
+          amount: amount,
+          method: method,
+          reference: reference,
+          notes: notes
+        });
 
-        const confirmed = window.confirm("Approve this affiliate?");
-        if (!confirmed) return;
+        if (this.dom && this.dom.recordPayoutForm) {
+          this.dom.recordPayoutForm.reset();
+        }
 
-        await updateStatus(affiliateId, "approved");
-        return;
+        const payoutAffiliateId = document.getElementById("affiliatePayoutAffiliateId");
+        if (payoutAffiliateId) {
+          payoutAffiliateId.value = affiliateId;
+        }
+
+        await this.loadAffiliates();
+
+        if (state.selectedAffiliateId) {
+          await this.openAffiliateDetails(state.selectedAffiliateId);
+        }
+
+        alert("Payout recorded successfully.");
+      } catch (error) {
+        console.error("Failed to record payout:", error);
+        alert(error.message || "Failed to record payout.");
       }
-
-      if (rejectBtn) {
-        event.preventDefault();
-        const affiliateId = rejectBtn.getAttribute("data-affiliate-id");
-        if (!affiliateId) return;
-
-        const confirmed = window.confirm("Reject this affiliate?");
-        if (!confirmed) return;
-
-        await updateStatus(affiliateId, "rejected");
-        return;
-      }
-
-      if (suspendBtn) {
-        event.preventDefault();
-        const affiliateId = suspendBtn.getAttribute("data-affiliate-id");
-        if (!affiliateId) return;
-
-        const confirmed = window.confirm("Suspend this affiliate?");
-        if (!confirmed) return;
-
-        await updateStatus(affiliateId, "suspended");
-        return;
-      }
-
-      if (claimStatusBtn) {
-        event.preventDefault();
-        const claimId = claimStatusBtn.getAttribute("data-claim-id");
-        const status = claimStatusBtn.getAttribute("data-claim-status");
-        if (!claimId || !status) return;
-
-        await updateClaimStatus(claimId, status);
-        return;
-      }
-    });
-
-    document.addEventListener("submit", async (event) => {
-      const payoutForm = event.target.closest("#affiliateRecordPayoutForm");
-      if (!payoutForm) return;
-
-      event.preventDefault();
-      await recordPayout();
-    });
-
-    document.addEventListener("keydown", (event) => {
-      if (event.key === "Escape") {
-        closeModal();
-      }
-    });
-  }
-
-  window.AXIOM_ADMIN_AFFILIATES_ACTIONS = {
-    openAffiliateDetails,
-    updateStatus,
-    updateClaimStatus,
-    recordPayout,
-    closeModal,
-    bindDelegatedEvents
+    }
   };
+
+  window.AXIOM_ADMIN_AFFILIATES_ACTIONS = actions;
 })();
