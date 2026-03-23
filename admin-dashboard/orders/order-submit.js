@@ -106,6 +106,114 @@ window.AXIOM_ORDER_SUBMIT = {
       );
     }
 
+    function getBrowserAffiliateAttribution() {
+      try {
+        if (
+          window.AXIOM_AFFILIATE_TRACKING &&
+          typeof window.AXIOM_AFFILIATE_TRACKING.getAttributionForCheckout === "function"
+        ) {
+          const attribution = window.AXIOM_AFFILIATE_TRACKING.getAttributionForCheckout();
+          if (attribution && typeof attribution === "object") {
+            return attribution;
+          }
+        }
+      } catch (error) {
+        console.error("Failed to read AXIOM_AFFILIATE_TRACKING attribution:", error);
+      }
+
+      try {
+        if (window.AXIOM_AFFILIATE_ATTRIBUTION && typeof window.AXIOM_AFFILIATE_ATTRIBUTION === "object") {
+          return {
+            affiliate_id: window.AXIOM_AFFILIATE_ATTRIBUTION.affiliate_id || null,
+            affiliate_code: window.AXIOM_AFFILIATE_ATTRIBUTION.affiliate_code || null,
+            affiliate_click_id: window.AXIOM_AFFILIATE_ATTRIBUTION.affiliate_click_id || null,
+            affiliate_referral_session_id:
+              window.AXIOM_AFFILIATE_ATTRIBUTION.affiliate_referral_session_id || null,
+            affiliate_landing_page: window.AXIOM_AFFILIATE_ATTRIBUTION.landing_page || null,
+            affiliate_discount_amount:
+              Number(window.AXIOM_AFFILIATE_ATTRIBUTION.affiliate_discount_amount || 0),
+            affiliate_commission_amount:
+              Number(window.AXIOM_AFFILIATE_ATTRIBUTION.affiliate_commission_amount || 0)
+          };
+        }
+      } catch (error) {
+        console.error("Failed to read AXIOM_AFFILIATE_ATTRIBUTION:", error);
+      }
+
+      try {
+        const raw = localStorage.getItem("axiom_affiliate_attribution");
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed && typeof parsed === "object") {
+            return {
+              affiliate_id: parsed.affiliate_id || null,
+              affiliate_code: parsed.affiliate_code || null,
+              affiliate_click_id: parsed.affiliate_click_id || null,
+              affiliate_referral_session_id: parsed.affiliate_referral_session_id || null,
+              affiliate_landing_page: parsed.landing_page || null,
+              affiliate_discount_amount: Number(parsed.affiliate_discount_amount || 0),
+              affiliate_commission_amount: Number(parsed.affiliate_commission_amount || 0)
+            };
+          }
+        }
+      } catch (error) {
+        console.error("Failed to read local affiliate attribution:", error);
+      }
+
+      return null;
+    }
+
+    async function hydrateSessionAffiliateAttribution(sessionRow) {
+      if (!sessionRow) return sessionRow;
+
+      const alreadyHasAffiliate =
+        sessionRow.affiliate_id ||
+        sessionRow.affiliate_code ||
+        sessionRow.affiliate_click_id ||
+        sessionRow.affiliate_referral_session_id;
+
+      if (alreadyHasAffiliate) {
+        return sessionRow;
+      }
+
+      const browserAttribution = getBrowserAffiliateAttribution();
+
+      if (
+        !browserAttribution ||
+        (!browserAttribution.affiliate_id && !browserAttribution.affiliate_code)
+      ) {
+        return sessionRow;
+      }
+
+      const patchPayload = {
+        affiliate_id: browserAttribution.affiliate_id || null,
+        affiliate_code: browserAttribution.affiliate_code || null,
+        affiliate_click_id: browserAttribution.affiliate_click_id || null,
+        affiliate_referral_session_id:
+          browserAttribution.affiliate_referral_session_id || null,
+        affiliate_landing_page: browserAttribution.affiliate_landing_page || null,
+        affiliate_discount_amount: Number(browserAttribution.affiliate_discount_amount || 0),
+        affiliate_commission_amount: Number(browserAttribution.affiliate_commission_amount || 0),
+        updated_at: nowIso,
+        last_activity_at: nowIso
+      };
+
+      const { error: patchError } = await supabase
+        .from("checkout_sessions")
+        .update(patchPayload)
+        .eq("id", sessionRow.id);
+
+      if (patchError) {
+        console.error("Failed to hydrate checkout session affiliate attribution:", patchError);
+        return sessionRow;
+      }
+
+      return {
+        ...sessionRow,
+        ...patchPayload
+      };
+    }
+
     async function insertAffiliateConversionIfNeeded(args) {
       const sessionRow = args.sessionRow;
       const orderRow = args.orderRow;
@@ -204,7 +312,7 @@ window.AXIOM_ORDER_SUBMIT = {
         return { ok: false, error: "No checkout session" };
       }
 
-      const { data: sessionRow, error: sessionError } = await supabase
+      let { data: sessionRow, error: sessionError } = await supabase
         .from("checkout_sessions")
         .select("*")
         .eq("session_id", sessionId)
@@ -214,6 +322,8 @@ window.AXIOM_ORDER_SUBMIT = {
         console.error("Session load failed:", sessionError);
         return { ok: false, error: "Failed to load session" };
       }
+
+      sessionRow = await hydrateSessionAffiliateAttribution(sessionRow);
 
       const cartItems = normalizeCartItems(sessionRow.cart_items);
       if (!cartItems.length) {
