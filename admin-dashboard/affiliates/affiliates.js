@@ -13,7 +13,7 @@ window.AXIOM_ADMIN_AFFILIATES = {
     }
 
     if (!this.isInitialized) {
-      this.bindEvents();
+      this.bindStaticEvents();
       this.isInitialized = true;
     }
 
@@ -24,6 +24,7 @@ window.AXIOM_ADMIN_AFFILIATES = {
     this.tableBody = document.getElementById("affiliatesAdminTableBody");
     this.searchInput = document.getElementById("affiliateSearchInput");
     this.statusFilter = document.getElementById("affiliateStatusFilter");
+
     this.refreshBtn = document.getElementById("refreshAffiliatesBtn");
     this.refreshTopBtn = document.getElementById("refreshAffiliatesBtnTop");
     this.refreshSidebarBtn = document.getElementById("refreshAffiliatesSidebarBtn");
@@ -39,102 +40,57 @@ window.AXIOM_ADMIN_AFFILIATES = {
     this.recordPayoutForm = document.getElementById("affiliateRecordPayoutForm");
   },
 
-  bindEvents() {
-    document.addEventListener("click", async (event) => {
-      const refreshBtn = event.target.closest("#refreshAffiliatesBtn");
-      const refreshTopBtn = event.target.closest("#refreshAffiliatesBtnTop");
-      const refreshSidebarBtn = event.target.closest("#refreshAffiliatesSidebarBtn");
-
-      const approveBtn = event.target.closest("[data-affiliate-approve]");
-      const rejectBtn = event.target.closest("[data-affiliate-reject]");
-      const suspendBtn = event.target.closest("[data-affiliate-suspend]");
-      const viewBtn = event.target.closest("[data-affiliate-view]");
-
-      const claimStatusBtn = event.target.closest("[data-claim-id][data-claim-status]");
-      const modalClose = event.target.closest("[data-affiliate-modal-close]");
-      const closeModalBtn = event.target.closest("#closeAffiliateDetailModal");
-
-      if (refreshBtn || refreshTopBtn || refreshSidebarBtn) {
-        event.preventDefault();
+  bindStaticEvents() {
+    if (this.refreshBtn && !this.refreshBtn.dataset.bound) {
+      this.refreshBtn.dataset.bound = "true";
+      this.refreshBtn.addEventListener("click", async () => {
         await this.loadAffiliates();
-        return;
-      }
+      });
+    }
 
-      if (approveBtn) {
-        event.preventDefault();
-        const affiliateId = approveBtn.getAttribute("data-affiliate-approve");
-        if (!affiliateId) return;
+    if (this.refreshTopBtn && !this.refreshTopBtn.dataset.bound) {
+      this.refreshTopBtn.dataset.bound = "true";
+      this.refreshTopBtn.addEventListener("click", async () => {
+        await this.loadAffiliates();
+      });
+    }
 
-        const confirmed = window.confirm("Approve this affiliate?");
-        if (!confirmed) return;
+    if (this.refreshSidebarBtn && !this.refreshSidebarBtn.dataset.bound) {
+      this.refreshSidebarBtn.dataset.bound = "true";
+      this.refreshSidebarBtn.addEventListener("click", async () => {
+        await this.loadAffiliates();
+      });
+    }
 
-        await this.updateStatus(affiliateId, "approved");
-        return;
-      }
+    if (this.searchInput && !this.searchInput.dataset.bound) {
+      this.searchInput.dataset.bound = "true";
+      this.searchInput.addEventListener("input", () => {
+        this.applyFilters();
+      });
+    }
 
-      if (rejectBtn) {
-        event.preventDefault();
-        const affiliateId = rejectBtn.getAttribute("data-affiliate-reject");
-        if (!affiliateId) return;
+    if (this.statusFilter && !this.statusFilter.dataset.bound) {
+      this.statusFilter.dataset.bound = "true";
+      this.statusFilter.addEventListener("change", () => {
+        this.applyFilters();
+      });
+    }
 
-        const confirmed = window.confirm("Reject this affiliate application?");
-        if (!confirmed) return;
-
-        await this.updateStatus(affiliateId, "rejected");
-        return;
-      }
-
-      if (suspendBtn) {
-        event.preventDefault();
-        const affiliateId = suspendBtn.getAttribute("data-affiliate-suspend");
-        if (!affiliateId) return;
-
-        const confirmed = window.confirm("Suspend this affiliate?");
-        if (!confirmed) return;
-
-        await this.updateStatus(affiliateId, "suspended");
-        return;
-      }
-
-      if (viewBtn) {
-        event.preventDefault();
-        const affiliateId = viewBtn.getAttribute("data-affiliate-view");
-        if (!affiliateId) return;
-
-        await this.openAffiliateDetails(affiliateId);
-        return;
-      }
-
-      if (claimStatusBtn) {
-        event.preventDefault();
-        const claimId = claimStatusBtn.getAttribute("data-claim-id");
-        const status = claimStatusBtn.getAttribute("data-claim-status");
-        if (!claimId || !status) return;
-
-        await this.updateClaimStatus(claimId, status);
-        return;
-      }
-
-      if (modalClose || closeModalBtn) {
-        event.preventDefault();
+    if (this.closeModalBtn && !this.closeModalBtn.dataset.bound) {
+      this.closeModalBtn.dataset.bound = "true";
+      this.closeModalBtn.addEventListener("click", () => {
         this.closeModal();
-        return;
-      }
-    });
+      });
+    }
 
-    document.addEventListener("input", (event) => {
-      if (event.target && event.target.id === "affiliateSearchInput") {
-        this.cacheDom();
-        this.applyFilters();
-      }
-    });
-
-    document.addEventListener("change", (event) => {
-      if (event.target && event.target.id === "affiliateStatusFilter") {
-        this.cacheDom();
-        this.applyFilters();
-      }
-    });
+    if (this.modal && !this.modal.dataset.bound) {
+      this.modal.dataset.bound = "true";
+      this.modal.addEventListener("click", (event) => {
+        if (event.target.closest("[data-affiliate-modal-close]")) {
+          this.closeModal();
+        }
+      });
+    }
 
     document.addEventListener("submit", async (event) => {
       const payoutForm = event.target.closest("#affiliateRecordPayoutForm");
@@ -142,6 +98,20 @@ window.AXIOM_ADMIN_AFFILIATES = {
 
       event.preventDefault();
       await this.recordPayout();
+    });
+
+    document.addEventListener("click", async (event) => {
+      const claimStatusBtn = event.target.closest("[data-claim-id][data-claim-status]");
+      if (!claimStatusBtn) return;
+
+      event.preventDefault();
+
+      const claimId = claimStatusBtn.getAttribute("data-claim-id");
+      const status = claimStatusBtn.getAttribute("data-claim-status");
+
+      if (!claimId || !status) return;
+
+      await this.updateClaimStatus(claimId, status);
     });
   },
 
@@ -207,8 +177,8 @@ window.AXIOM_ADMIN_AFFILIATES = {
 
   renderStats() {
     const total = this.affiliates.length;
-    const pending = this.affiliates.filter((item) => item.status === "pending").length;
-    const approved = this.affiliates.filter((item) => item.status === "approved").length;
+    const pending = this.affiliates.filter((item) => String(item.status || "") === "pending").length;
+    const approved = this.affiliates.filter((item) => String(item.status || "") === "approved").length;
     const claimable = this.affiliates.reduce(
       (sum, item) => sum + Number(item.claimable_commission || 0),
       0
@@ -229,7 +199,8 @@ window.AXIOM_ADMIN_AFFILIATES = {
     }
 
     this.tableBody.innerHTML = this.filteredAffiliates.map((item) => {
-      const statusClass = `affiliate-admin-status-${this.escapeHtml(item.status || "pending")}`;
+      const statusValue = this.escapeHtml(item.status || "pending");
+      const statusClass = `affiliate-admin-status-${statusValue}`;
 
       return `
         <tr>
@@ -238,7 +209,7 @@ window.AXIOM_ADMIN_AFFILIATES = {
           <td>${this.escapeHtml(item.discord_username || "—")}</td>
           <td>
             <span class="affiliate-admin-status ${statusClass}">
-              ${this.escapeHtml(item.status || "pending")}
+              ${statusValue}
             </span>
           </td>
           <td>${this.escapeHtml(item.referral_code || "—")}</td>
@@ -248,15 +219,64 @@ window.AXIOM_ADMIN_AFFILIATES = {
           <td>${Number(item.pending_claim_requests || 0)}</td>
           <td>
             <div class="affiliates-admin-actions">
-              <button type="button" class="affiliates-admin-action-btn" data-affiliate-view="${item.id}">View</button>
-              <button type="button" class="affiliates-admin-action-btn affiliates-admin-action-btn-approve" data-affiliate-approve="${item.id}">Approve</button>
-              <button type="button" class="affiliates-admin-action-btn affiliates-admin-action-btn-reject" data-affiliate-reject="${item.id}">Reject</button>
-              <button type="button" class="affiliates-admin-action-btn affiliates-admin-action-btn-suspend" data-affiliate-suspend="${item.id}">Suspend</button>
+              <button type="button" class="affiliates-admin-action-btn" data-action="view" data-affiliate-id="${this.escapeHtml(item.id)}">View</button>
+              <button type="button" class="affiliates-admin-action-btn affiliates-admin-action-btn-approve" data-action="approve" data-affiliate-id="${this.escapeHtml(item.id)}">Approve</button>
+              <button type="button" class="affiliates-admin-action-btn affiliates-admin-action-btn-reject" data-action="reject" data-affiliate-id="${this.escapeHtml(item.id)}">Reject</button>
+              <button type="button" class="affiliates-admin-action-btn affiliates-admin-action-btn-suspend" data-action="suspend" data-affiliate-id="${this.escapeHtml(item.id)}">Suspend</button>
             </div>
           </td>
         </tr>
       `;
     }).join("");
+
+    this.bindRowActionButtons();
+  },
+
+  bindRowActionButtons() {
+    if (!this.tableBody) return;
+
+    const actionButtons = this.tableBody.querySelectorAll("[data-action][data-affiliate-id]");
+
+    actionButtons.forEach((button) => {
+      if (button.dataset.bound === "true") return;
+      button.dataset.bound = "true";
+
+      button.addEventListener("click", async (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+
+        const affiliateId = button.getAttribute("data-affiliate-id");
+        const action = button.getAttribute("data-action");
+
+        if (!affiliateId || !action) return;
+
+        if (action === "view") {
+          await this.openAffiliateDetails(affiliateId);
+          return;
+        }
+
+        if (action === "approve") {
+          const confirmed = window.confirm("Approve this affiliate?");
+          if (!confirmed) return;
+          await this.updateStatus(affiliateId, "approved");
+          return;
+        }
+
+        if (action === "reject") {
+          const confirmed = window.confirm("Reject this affiliate?");
+          if (!confirmed) return;
+          await this.updateStatus(affiliateId, "rejected");
+          return;
+        }
+
+        if (action === "suspend") {
+          const confirmed = window.confirm("Suspend this affiliate?");
+          if (!confirmed) return;
+          await this.updateStatus(affiliateId, "suspended");
+          return;
+        }
+      });
+    });
   },
 
   async updateStatus(affiliateId, status) {
@@ -272,11 +292,8 @@ window.AXIOM_ADMIN_AFFILIATES = {
 
       await this.loadAffiliates();
 
-      if (this.selectedAffiliate && this.selectedAffiliate.id === affiliateId) {
-        const refreshed = this.affiliates.find((item) => String(item.id) === String(affiliateId));
-        if (refreshed) {
-          await this.openAffiliateDetails(affiliateId);
-        }
+      if (this.selectedAffiliate && String(this.selectedAffiliate.id) === String(affiliateId)) {
+        await this.openAffiliateDetails(affiliateId);
       }
 
       alert(`Affiliate ${status} successfully.`);
@@ -290,7 +307,9 @@ window.AXIOM_ADMIN_AFFILIATES = {
     if (!affiliateId || !window.axiomSupabase) return;
 
     try {
-      const summary = this.affiliates.find((item) => String(item.id) === String(affiliateId)) || null;
+      const summary =
+        this.affiliates.find((item) => String(item.id) === String(affiliateId)) || null;
+
       this.selectedAffiliate = summary;
 
       const [conversionsResult, claimsResult, payoutsResult] = await Promise.all([
@@ -351,8 +370,14 @@ window.AXIOM_ADMIN_AFFILIATES = {
       "affiliateDetailDiscount",
       summary ? `${Number(summary.discount_value || 0)}%` : "—"
     );
-    this.setText("affiliateDetailClicks", String(summary?.total_clicks_live || summary?.total_clicks || 0));
-    this.setText("affiliateDetailConversions", String(summary?.total_conversions_live || summary?.total_conversions || 0));
+    this.setText(
+      "affiliateDetailClicks",
+      String(summary?.total_clicks_live || summary?.total_clicks || 0)
+    );
+    this.setText(
+      "affiliateDetailConversions",
+      String(summary?.total_conversions_live || summary?.total_conversions || 0)
+    );
     this.setText("affiliateDetailClaimable", this.formatMoney(summary?.claimable_commission || 0));
     this.setText("affiliateDetailPaid", this.formatMoney(summary?.total_commission_paid || 0));
     this.setText("affiliateDetailCreatedAt", this.formatDate(summary?.created_at));
@@ -360,10 +385,6 @@ window.AXIOM_ADMIN_AFFILIATES = {
     const payoutAffiliateId = document.getElementById("affiliatePayoutAffiliateId");
     if (payoutAffiliateId) {
       payoutAffiliateId.value = summary?.id || "";
-    }
-
-    if (this.modal) {
-      this.modal.setAttribute("data-selected-affiliate-id", summary?.id || "");
     }
 
     const conversionsMount = document.getElementById("affiliateDetailConversionsList");
