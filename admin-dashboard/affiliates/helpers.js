@@ -1,4 +1,4 @@
-window.AXIOM_ADMIN_AFFILIATES_HELPERS = {
+const AXIOM_AFFILIATE_UTILS = {
   formatMoney(value) {
     return `$${Number(value || 0).toFixed(2)}`;
   },
@@ -32,3 +32,6 @@ window.AXIOM_ADMIN_AFFILIATES_HELPERS = {
     }
   }
 };
+
+window.AXIOM_ADMIN_AFFILIATES_HELPERS = AXIOM_AFFILIATE_UTILS;
+window.AXIOM_ADMIN_AFFILIATES_UTILS = AXIOM_AFFILIATE_UTILS;
