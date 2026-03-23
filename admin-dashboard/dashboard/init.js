@@ -7,11 +7,21 @@
   const { refreshProducts } = window.AXIOM_DASHBOARD_PRODUCTS;
   const { subscribeDashboardRealtime } = window.AXIOM_DASHBOARD_REALTIME;
 
+  async function refreshAffiliatesSafe() {
+    if (
+      window.AXIOM_ADMIN_AFFILIATES &&
+      typeof window.AXIOM_ADMIN_AFFILIATES.loadAffiliates === "function"
+    ) {
+      await window.AXIOM_ADMIN_AFFILIATES.loadAffiliates();
+    }
+  }
+
   async function refreshAllDashboardData() {
     await Promise.all([
       refreshHomeDashboard(),
       refreshDashboard(),
-      refreshOrders()
+      refreshOrders(),
+      refreshAffiliatesSafe()
     ]);
   }
 
@@ -23,7 +33,8 @@
       sessions: document.getElementById("dashboardSessionsView"),
       analytics: document.getElementById("dashboardAnalyticsView"),
       orders: document.getElementById("dashboardOrdersView"),
-      products: document.getElementById("dashboardProductsView")
+      products: document.getElementById("dashboardProductsView"),
+      affiliates: document.getElementById("dashboardAffiliatesView")
     };
 
     const buttons = {
@@ -31,13 +42,15 @@
       sessions: document.getElementById("showSessionsViewBtn"),
       analytics: document.getElementById("showAnalyticsViewBtn"),
       orders: document.getElementById("showOrdersViewBtn"),
-      products: document.getElementById("showProductsViewBtn")
+      products: document.getElementById("showProductsViewBtn"),
+      affiliates: document.getElementById("showAffiliatesViewBtn")
     };
 
     const sessionsSidebar = document.getElementById("dashboardSessionsSidebar");
     const analyticsSidebar = document.getElementById("dashboardAnalyticsSidebar");
     const ordersSidebar = document.getElementById("dashboardOrdersSidebar");
     const productsSidebar = document.getElementById("dashboardProductsSidebar");
+    const affiliatesSidebar = document.getElementById("dashboardAffiliatesSidebar");
 
     function setActiveButton(activeKey) {
       Object.entries(buttons).forEach(([key, btn]) => {
@@ -78,6 +91,7 @@
       if (analyticsSidebar) analyticsSidebar.hidden = viewKey !== "analytics";
       if (ordersSidebar) ordersSidebar.hidden = viewKey !== "orders";
       if (productsSidebar) productsSidebar.hidden = viewKey !== "products";
+      if (affiliatesSidebar) affiliatesSidebar.hidden = viewKey !== "affiliates";
 
       setActiveButton(viewKey);
 
@@ -100,6 +114,10 @@
       if (viewKey === "products") {
         await refreshProducts();
       }
+
+      if (viewKey === "affiliates") {
+        await refreshAffiliatesSafe();
+      }
     }
 
     window.AXIOM_DASHBOARD_APP = {
@@ -109,6 +127,7 @@
       refreshDashboard,
       refreshOrders,
       refreshProducts,
+      refreshAffiliates: refreshAffiliatesSafe,
       refreshAllDashboardData,
       renderOrdersList: window.AXIOM_DASHBOARD_ORDERS.renderOrdersList,
       renderRecentOrders: refreshHomeDashboard,
@@ -171,6 +190,14 @@
         await refreshProducts();
       });
 
+      document.getElementById("refreshAffiliatesBtn")?.addEventListener("click", async function () {
+        await refreshAffiliatesSafe();
+      });
+
+      document.getElementById("refreshAffiliatesBtnTop")?.addEventListener("click", async function () {
+        await refreshAffiliatesSafe();
+      });
+
       document.getElementById("refreshHomeDashboardBtn")?.addEventListener("click", async function () {
         await refreshHomeDashboard();
       });
@@ -196,6 +223,10 @@
         await showView("products");
       });
 
+      buttons.affiliates?.addEventListener("click", async function () {
+        await showView("affiliates");
+      });
+
       document.getElementById("quickOpenSessionsBtn")?.addEventListener("click", async function () {
         await showView("sessions");
       });
@@ -211,6 +242,10 @@
 
       document.getElementById("quickOpenProductsBtn")?.addEventListener("click", async function () {
         await showView("products");
+      });
+
+      document.getElementById("quickOpenAffiliatesBtn")?.addEventListener("click", async function () {
+        await showView("affiliates");
       });
 
       subscribeDashboardRealtime();
