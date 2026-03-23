@@ -1,11 +1,22 @@
-window.AXIOM_DISCOUNT_CODES_UI = (function () {
+      window.AXIOM_DISCOUNT_CODES_UI = (function () {
   const state = {
     code: "",
     discountAmount: 0,
     discountType: "",
     discountValue: 0,
     description: "",
-    isApplied: false
+    isApplied: false,
+
+    isAffiliateCode: false,
+    affiliateId: null,
+    affiliateCode: "",
+    affiliateReferralCode: "",
+    affiliateDiscountAmount: 0,
+    affiliateCommissionAmount: 0,
+    affiliateCommissionType: "",
+    affiliateCommissionValue: 0,
+    affiliateEmail: "",
+    affiliateFullName: ""
   };
 
   function toNumber(value, fallback = 0) {
@@ -15,6 +26,13 @@ window.AXIOM_DISCOUNT_CODES_UI = (function () {
 
   function normalizeCode(value) {
     return String(value || "").trim().toUpperCase();
+  }
+
+  function toText(value, fallback = "") {
+    if (value === null || typeof value === "undefined") {
+      return fallback;
+    }
+    return String(value);
   }
 
   function getInput() {
@@ -69,13 +87,28 @@ window.AXIOM_DISCOUNT_CODES_UI = (function () {
     }
   }
 
-  function clearAppliedDiscount() {
+  function resetState() {
     state.code = "";
     state.discountAmount = 0;
     state.discountType = "";
     state.discountValue = 0;
     state.description = "";
     state.isApplied = false;
+
+    state.isAffiliateCode = false;
+    state.affiliateId = null;
+    state.affiliateCode = "";
+    state.affiliateReferralCode = "";
+    state.affiliateDiscountAmount = 0;
+    state.affiliateCommissionAmount = 0;
+    state.affiliateCommissionType = "";
+    state.affiliateCommissionValue = 0;
+    state.affiliateEmail = "";
+    state.affiliateFullName = "";
+  }
+
+  function clearAppliedDiscount() {
+    resetState();
 
     const appliedCodeEl = getAppliedCodeEl();
     const topAppliedCodeEl = getTopAppliedCodeEl();
@@ -123,7 +156,18 @@ window.AXIOM_DISCOUNT_CODES_UI = (function () {
       discountType: state.discountType,
       discountValue: state.discountValue,
       description: state.description,
-      isApplied: state.isApplied
+      isApplied: state.isApplied,
+
+      isAffiliateCode: state.isAffiliateCode,
+      affiliateId: state.affiliateId,
+      affiliateCode: state.affiliateCode,
+      affiliateReferralCode: state.affiliateReferralCode,
+      affiliateDiscountAmount: state.affiliateDiscountAmount,
+      affiliateCommissionAmount: state.affiliateCommissionAmount,
+      affiliateCommissionType: state.affiliateCommissionType,
+      affiliateCommissionValue: state.affiliateCommissionValue,
+      affiliateEmail: state.affiliateEmail,
+      affiliateFullName: state.affiliateFullName
     };
   }
 
@@ -164,10 +208,28 @@ window.AXIOM_DISCOUNT_CODES_UI = (function () {
 
       state.code = normalizeCode(result.code || code);
       state.discountAmount = toNumber(result.discount_amount, 0);
-      state.discountType = String(result.discount_type || "");
+      state.discountType = toText(result.discount_type, "");
       state.discountValue = toNumber(result.discount_value, 0);
-      state.description = String(result.description || "");
+      state.description = toText(result.description, "");
       state.isApplied = true;
+
+      state.isAffiliateCode = result.is_affiliate_code === true;
+      state.affiliateId = result.affiliate_id || null;
+      state.affiliateCode = normalizeCode(result.affiliate_code || result.code || code);
+      state.affiliateReferralCode = normalizeCode(
+        result.affiliate_referral_code || result.affiliate_code || result.code || code
+      );
+      state.affiliateDiscountAmount = toNumber(
+        result.affiliate_discount_amount !== undefined && result.affiliate_discount_amount !== null
+          ? result.affiliate_discount_amount
+          : result.discount_amount,
+        0
+      );
+      state.affiliateCommissionAmount = toNumber(result.affiliate_commission_amount, 0);
+      state.affiliateCommissionType = toText(result.affiliate_commission_type, "");
+      state.affiliateCommissionValue = toNumber(result.affiliate_commission_value, 0);
+      state.affiliateEmail = toText(result.affiliate_email, "");
+      state.affiliateFullName = toText(result.affiliate_full_name, "");
 
       applyDiscountToUi();
       setFeedback(result.message || "Discount code applied.", "success");
