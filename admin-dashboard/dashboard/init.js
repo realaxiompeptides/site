@@ -26,7 +26,18 @@
   }
 
   async function boot() {
-    const state = window.AXIOM_DASHBOARD_STATE;
+    const state = window.AXIOM_DASHBOARD_STATE || {
+      allSessions: [],
+      allOrders: [],
+      selectedSessionId: null,
+      selectedOrderId: null,
+      dashboardRealtimeChannel: null,
+      hasShownCheckoutSessionsError: false,
+      hasShownOrdersError: false,
+      isOrderDetailOpen: false
+    };
+
+    window.AXIOM_DASHBOARD_STATE = state;
 
     const views = {
       home: document.getElementById("dashboardHomeView"),
@@ -129,7 +140,11 @@
       refreshProducts,
       refreshAffiliates: refreshAffiliatesSafe,
       refreshAllDashboardData,
-      renderOrdersList: window.AXIOM_DASHBOARD_ORDERS.renderOrdersList,
+      renderOrdersList:
+        window.AXIOM_DASHBOARD_ORDERS &&
+        typeof window.AXIOM_DASHBOARD_ORDERS.renderOrdersList === "function"
+          ? window.AXIOM_DASHBOARD_ORDERS.renderOrdersList
+          : function () {},
       renderRecentOrders: refreshHomeDashboard,
       orders: state.allOrders,
       checkoutSessionsForTracking: state.allSessions
