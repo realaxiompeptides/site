@@ -71,8 +71,26 @@
   function normalizeAffiliate(raw) {
     const affiliate = raw || {};
 
+    const totalClicksLive = safeNumber(
+      affiliate.total_clicks_live,
+      safeNumber(affiliate.total_clicks, 0)
+    );
+
+    const totalConversionsLive = safeNumber(
+      affiliate.total_conversions_live,
+      safeNumber(affiliate.total_conversions, 0)
+    );
+
+    const claimableCommission = safeNumber(
+      affiliate.claimable_commission != null
+        ? affiliate.claimable_commission
+        : affiliate.claimable_amount,
+      0
+    );
+
     return {
       id: safeText(affiliate.id, ""),
+      auth_user_id: safeText(affiliate.auth_user_id, ""),
       email: safeText(affiliate.email, ""),
       full_name: safeText(affiliate.full_name, ""),
       discord_username: safeText(
@@ -81,18 +99,31 @@
       ),
       referral_code: safeText(affiliate.referral_code, ""),
       status: safeLower(affiliate.status || "pending") || "pending",
+
+      commission_type: safeText(affiliate.commission_type, "percent"),
+      commission_value: safeNumber(affiliate.commission_value, 0),
+      discount_type: safeText(affiliate.discount_type, "percent"),
+      discount_value: safeNumber(affiliate.discount_value, 0),
+
       total_clicks: safeNumber(affiliate.total_clicks, 0),
+      total_clicks_live: totalClicksLive,
+
       total_conversions: safeNumber(affiliate.total_conversions, 0),
+      total_conversions_live: totalConversionsLive,
+
       total_commission_earned: safeNumber(affiliate.total_commission_earned, 0),
       total_commission_paid: safeNumber(affiliate.total_commission_paid, 0),
-      claimable_amount: safeNumber(
-        affiliate.claimable_amount != null
-          ? affiliate.claimable_amount
-          : affiliate.claimable_commission,
-        0
-      ),
+
+      claimable_commission: claimableCommission,
+      claimable_amount: claimableCommission,
+
+      pending_claim_requests: safeNumber(affiliate.pending_claim_requests, 0),
+
       payout_email: safeText(affiliate.payout_email, ""),
+      notes: safeText(affiliate.notes, ""),
       created_at: affiliate.created_at || null,
+      updated_at: affiliate.updated_at || null,
+
       raw: affiliate
     };
   }
@@ -114,7 +145,12 @@
           summary.approved += 1;
         }
 
-        summary.claimable += safeNumber(affiliate.claimable_amount, 0);
+        summary.claimable += safeNumber(
+          affiliate.claimable_commission != null
+            ? affiliate.claimable_commission
+            : affiliate.claimable_amount,
+          0
+        );
 
         return summary;
       },
