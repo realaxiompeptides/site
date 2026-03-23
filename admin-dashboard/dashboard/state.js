@@ -6,7 +6,7 @@ window.DASHBOARD_PARTIALS = [
   { mountId: "cartItemsMount", file: "cart-items/cart-items.html" },
   { mountId: "analyticsMount", file: "analytics/analytics.html" },
   { mountId: "orderDetailMount", file: "order-detail/order-detail.html" },
-  { mountId: "paymentTrackingMount", file: "payment-tracking/payment-tracking.html" }
+  { mountId: "paymentTrackingMount", file: "payment-tracking/payment-tracking.html" },
   { mountId: "affiliatesAdminMount", file: "affiliates/affiliates.html" }
 ];
 
