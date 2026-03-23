@@ -10,7 +10,7 @@
 
   <meta
     name="description"
-    content="Axiom Peptides admin dashboard for orders, checkout sessions, analytics, tracking, and payment reporting."
+    content="Axiom Peptides admin dashboard for orders, checkout sessions, analytics, tracking, payment reporting, and affiliate management."
   />
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -29,6 +29,7 @@
   <link rel="stylesheet" href="dashboard.css?v=63" />
   <link rel="stylesheet" href="order-detail/order-detail.css?v=63" />
   <link rel="stylesheet" href="payment-tracking/payment-tracking.css?v=63" />
+  <link rel="stylesheet" href="affiliates/affiliates.css?v=1" />
 </head>
 
 <body class="axiom-dashboard-page">
@@ -39,7 +40,7 @@
 
       <div class="dashboard-sidebar-top">
         <h1>Axiom Dashboard</h1>
-        <p>Store admin, checkout tracking, visitor analytics, order operations, and payment tracking</p>
+        <p>Store admin, checkout tracking, visitor analytics, order operations, payment tracking, and affiliate management</p>
       </div>
 
       <div class="dashboard-search-wrap">
@@ -93,6 +94,16 @@
           >
             <i class="fa-solid fa-boxes-stacked"></i>
             <span>Products</span>
+          </button>
+
+          <button
+            type="button"
+            class="dashboard-nav-link"
+            id="showAffiliatesViewBtn"
+            data-dashboard-view="affiliates"
+          >
+            <i class="fa-solid fa-handshake"></i>
+            <span>Affiliates</span>
           </button>
 
         </nav>
@@ -149,6 +160,16 @@
           id="refreshProductsBtn"
         >
           Refresh Products
+        </button>
+      </div>
+
+      <div class="dashboard-search-wrap" id="dashboardAffiliatesSidebar" hidden>
+        <button
+          type="button"
+          class="dashboard-btn dashboard-btn-secondary"
+          id="refreshAffiliatesBtn"
+        >
+          Refresh Affiliates
         </button>
       </div>
 
@@ -442,6 +463,34 @@
 
       </section>
 
+      <!-- AFFILIATES VIEW -->
+      <section id="dashboardAffiliatesView" hidden>
+
+        <section class="dashboard-main-header">
+          <div>
+            <p class="dashboard-kicker">Affiliates</p>
+            <h2>Affiliate Management</h2>
+          </div>
+
+          <button
+            type="button"
+            class="dashboard-btn dashboard-btn-secondary"
+            id="refreshAffiliatesBtnTop"
+          >
+            Refresh
+          </button>
+        </section>
+
+        <section class="dashboard-details-grid">
+          <div id="affiliatesAdminMount" class="dashboard-span-2">
+            <div class="dashboard-card dashboard-span-2">
+              <div class="dashboard-loading">Loading affiliates...</div>
+            </div>
+          </div>
+        </section>
+
+      </section>
+
     </main>
 
   </div>
@@ -499,6 +548,7 @@
   <script src="orders/order-fulfillment-modal.js?v=63" defer></script>
   <script src="payment-tracking/payment-tracking.js?v=63" defer></script>
   <script src="order-detail/order-detail.js?v=63" defer></script>
+  <script src="affiliates/affiliates.js?v=1" defer></script>
   <script src="dashboard.js?v=63" defer></script>
 
 </body>
