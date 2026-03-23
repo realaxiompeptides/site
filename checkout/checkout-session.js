@@ -1,6 +1,7 @@
 (function () {
   const CART_STORAGE_KEY = "axiom_cart";
   const SESSION_QUERY_PARAM = "axiom_session";
+  const AFFILIATE_ATTRIBUTION_STORAGE_KEY = "axiom_affiliate_attribution";
 
   let cachedSession = null;
   let activeSessionId = null;
@@ -93,10 +94,155 @@
     return `CHK-${stamp}-${random}`;
   }
 
+  function getCookie(name) {
+    try {
+      const encodedName = encodeURIComponent(name) + "=";
+      const parts = document.cookie ? document.cookie.split("; ") : [];
+
+      for (let index = 0; index < parts.length; index += 1) {
+        const part = parts[index];
+        if (part.indexOf(encodedName) === 0) {
+          return decodeURIComponent(part.substring(encodedName.length));
+        }
+      }
+
+      return "";
+    } catch (error) {
+      return "";
+    }
+  }
+
+  function getAffiliateAttribution() {
+    try {
+      if (
+        window.AXIOM_AFFILIATE_TRACKING &&
+        typeof window.AXIOM_AFFILIATE_TRACKING.getAttributionForCheckout === "function"
+      ) {
+        const trackingAttribution = window.AXIOM_AFFILIATE_TRACKING.getAttributionForCheckout();
+        if (trackingAttribution && typeof trackingAttribution === "object") {
+          return trackingAttribution;
+        }
+      }
+    } catch (error) {
+      console.error("Failed reading affiliate attribution from tracking API", error);
+    }
+
+    try {
+      if (window.AXIOM_AFFILIATE_ATTRIBUTION && typeof window.AXIOM_AFFILIATE_ATTRIBUTION === "object") {
+        return {
+          affiliate_id: window.AXIOM_AFFILIATE_ATTRIBUTION.affiliate_id || null,
+          affiliate_code: window.AXIOM_AFFILIATE_ATTRIBUTION.affiliate_code || "",
+          affiliate_click_id: window.AXIOM_AFFILIATE_ATTRIBUTION.affiliate_click_id || null,
+          affiliate_referral_session_id: window.AXIOM_AFFILIATE_ATTRIBUTION.affiliate_referral_session_id || null,
+          affiliate_landing_page: window.AXIOM_AFFILIATE_ATTRIBUTION.landing_page || "",
+          visitor_id: window.AXIOM_AFFILIATE_ATTRIBUTION.visitor_id || ""
+        };
+      }
+    } catch (error) {
+      console.error("Failed reading window affiliate attribution", error);
+    }
+
+    try {
+      const rawLocal = localStorage.getItem(AFFILIATE_ATTRIBUTION_STORAGE_KEY);
+      if (rawLocal) {
+        const parsedLocal = JSON.parse(rawLocal);
+        if (parsedLocal && typeof parsedLocal === "object") {
+          return {
+            affiliate_id: parsedLocal.affiliate_id || null,
+            affiliate_code: parsedLocal.affiliate_code || "",
+            affiliate_click_id: parsedLocal.affiliate_click_id || null,
+            affiliate_referral_session_id: parsedLocal.affiliate_referral_session_id || null,
+            affiliate_landing_page: parsedLocal.landing_page || "",
+            visitor_id: parsedLocal.visitor_id || ""
+          };
+        }
+      }
+    } catch (error) {
+      console.error("Failed reading local affiliate attribution", error);
+    }
+
+    try {
+      const rawSession = sessionStorage.getItem("axiom_affiliate_attribution_session");
+      if (rawSession) {
+        const parsedSession = JSON.parse(rawSession);
+        if (parsedSession && typeof parsedSession === "object") {
+          return {
+            affiliate_id: parsedSession.affiliate_id || null,
+            affiliate_code: parsedSession.affiliate_code || "",
+            affiliate_click_id: parsedSession.affiliate_click_id || null,
+            affiliate_referral_session_id: parsedSession.affiliate_referral_session_id || null,
+            affiliate_landing_page: parsedSession.landing_page || "",
+            visitor_id: parsedSession.visitor_id || ""
+          };
+        }
+      }
+    } catch (error) {
+      console.error("Failed reading session affiliate attribution", error);
+    }
+
+    try {
+      const rawCookie = getCookie("axiom_affiliate_attribution");
+      if (rawCookie) {
+        const parsedCookie = JSON.parse(rawCookie);
+        if (parsedCookie && typeof parsedCookie === "object") {
+          return {
+            affiliate_id: parsedCookie.affiliate_id || null,
+            affiliate_code: parsedCookie.affiliate_code || "",
+            affiliate_click_id: parsedCookie.affiliate_click_id || null,
+            affiliate_referral_session_id: parsedCookie.affiliate_referral_session_id || null,
+            affiliate_landing_page: parsedCookie.landing_page || "",
+            visitor_id: parsedCookie.visitor_id || ""
+          };
+        }
+      }
+    } catch (error) {
+      console.error("Failed reading cookie affiliate attribution", error);
+    }
+
+    return null;
+  }
+
+  function mergeAffiliateAttributionIntoSession(session) {
+    const attribution = getAffiliateAttribution();
+    if (!attribution) {
+      return session;
+    }
+
+    if (!session.affiliate_id && attribution.affiliate_id) {
+      session.affiliate_id = attribution.affiliate_id;
+    }
+
+    if (!session.affiliate_code && attribution.affiliate_code) {
+      session.affiliate_code = attribution.affiliate_code;
+    }
+
+    if (!session.affiliate_click_id && attribution.affiliate_click_id) {
+      session.affiliate_click_id = attribution.affiliate_click_id;
+    }
+
+    if (!session.affiliate_referral_session_id && attribution.affiliate_referral_session_id) {
+      session.affiliate_referral_session_id = attribution.affiliate_referral_session_id;
+    }
+
+    if (!session.affiliate_landing_page && attribution.affiliate_landing_page) {
+      session.affiliate_landing_page = attribution.affiliate_landing_page;
+    }
+
+    if (session.affiliate_discount_amount === undefined || session.affiliate_discount_amount === null) {
+      session.affiliate_discount_amount = 0;
+    }
+
+    if (session.affiliate_commission_amount === undefined || session.affiliate_commission_amount === null) {
+      session.affiliate_commission_amount = 0;
+    }
+
+    return session;
+  }
+
   function getEmptySession() {
     const now = new Date().toISOString();
 
-    return {
+    const empty = {
       session_id: generateSessionId(),
       session_status: "active",
       payment_status: "unpaid",
@@ -165,8 +311,18 @@
       shipping_service_level: "",
       notes: "",
       currency: "USD",
-      order_number: null
+      order_number: null,
+
+      affiliate_id: null,
+      affiliate_code: "",
+      affiliate_click_id: null,
+      affiliate_referral_session_id: null,
+      affiliate_discount_amount: 0,
+      affiliate_commission_amount: 0,
+      affiliate_landing_page: ""
     };
+
+    return mergeAffiliateAttributionIntoSession(empty);
   }
 
   function normalizeSessionShape(session) {
@@ -259,6 +415,8 @@
     );
 
     normalized.discount_amount = Number(normalized.discount_amount || 0);
+    normalized.affiliate_discount_amount = Number(normalized.affiliate_discount_amount || 0);
+    normalized.affiliate_commission_amount = Number(normalized.affiliate_commission_amount || 0);
 
     normalized.total_amount = Number(
       normalized.total_amount !== undefined && normalized.total_amount !== null
@@ -269,7 +427,7 @@
     normalized.tax = normalized.tax_amount;
     normalized.total = normalized.total_amount;
 
-    return normalized;
+    return mergeAffiliateAttributionIntoSession(normalized);
   }
 
   function buildPersistedRow(session) {
@@ -301,6 +459,13 @@
       shipping_carrier: normalized.shipping_carrier || "",
       shipping_service_level: normalized.shipping_service_level || "",
       currency: normalized.currency || "USD",
+      affiliate_id: normalized.affiliate_id || null,
+      affiliate_code: normalized.affiliate_code || "",
+      affiliate_click_id: normalized.affiliate_click_id || null,
+      affiliate_referral_session_id: normalized.affiliate_referral_session_id || null,
+      affiliate_discount_amount: Number(normalized.affiliate_discount_amount || 0),
+      affiliate_commission_amount: Number(normalized.affiliate_commission_amount || 0),
+      affiliate_landing_page: normalized.affiliate_landing_page || "",
       updated_at: now,
       last_activity_at: now
     };
@@ -477,6 +642,8 @@
     session.total_amount = session.subtotal + shippingAmount + taxAmount - discountAmount;
     session.total = session.total_amount;
 
+    mergeAffiliateAttributionIntoSession(session);
+
     return await saveSession(session);
   }
 
@@ -586,6 +753,8 @@
       Number(session.discount_amount || 0);
     session.total = session.total_amount;
 
+    mergeAffiliateAttributionIntoSession(session);
+
     return await saveSession(session);
   }
 
@@ -594,6 +763,7 @@
     session.contact = { ...session.contact, ...(fields || {}) };
     session.customer_email = session.contact.email || session.customer_email || "";
     session.customer_phone = session.contact.phone || session.customer_phone || "";
+    mergeAffiliateAttributionIntoSession(session);
     return await saveSession(session);
   }
 
@@ -602,18 +772,21 @@
     session.shipping_address = { ...session.shipping_address, ...(fields || {}) };
     session.customer_first_name = session.shipping_address.first_name || session.customer_first_name || "";
     session.customer_last_name = session.shipping_address.last_name || session.customer_last_name || "";
+    mergeAffiliateAttributionIntoSession(session);
     return await saveSession(session);
   }
 
   async function updateBillingAddress(fields) {
     const session = await getSession();
     session.billing_address = { ...session.billing_address, ...(fields || {}) };
+    mergeAffiliateAttributionIntoSession(session);
     return await saveSession(session);
   }
 
   async function updatePaymentMethod(paymentMethod) {
     const session = await getSession();
     session.payment_method = paymentMethod || "";
+    mergeAffiliateAttributionIntoSession(session);
     return await saveSession(session);
   }
 
@@ -645,6 +818,8 @@
 
     session.total = session.total_amount;
 
+    mergeAffiliateAttributionIntoSession(session);
+
     return await saveSession(session);
   }
 
@@ -660,6 +835,8 @@
 
     session.total = session.total_amount;
 
+    mergeAffiliateAttributionIntoSession(session);
+
     return await saveSession(session);
   }
 
@@ -673,6 +850,8 @@
     if (status === "converted") {
       session.completed_at = new Date().toISOString();
     }
+
+    mergeAffiliateAttributionIntoSession(session);
 
     return await saveSession(session);
   }
