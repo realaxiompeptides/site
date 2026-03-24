@@ -124,7 +124,7 @@
       throw new Error("Referral code is required.");
     }
 
-    const { error } = await window.axiomSupabase.rpc("admin_update_affiliate_referral_code", {
+    const { data, error } = await window.axiomSupabase.rpc("admin_update_affiliate_referral_code", {
       p_affiliate_id: affiliateId,
       p_new_referral_code: cleanCode
     });
@@ -133,7 +133,7 @@
       throw error;
     }
 
-    return true;
+    return Array.isArray(data) && data.length ? data[0] : true;
   }
 
   window.AXIOM_ADMIN_AFFILIATES_DATA = {
