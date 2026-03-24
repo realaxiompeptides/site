@@ -96,6 +96,33 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
+  async function syncAffiliateBeforeSubmit() {
+    if (
+      window.AXIOM_AFFILIATE_TRACKING &&
+      typeof window.AXIOM_AFFILIATE_TRACKING.syncAttributionIntoCheckoutSession === "function"
+    ) {
+      try {
+        await window.AXIOM_AFFILIATE_TRACKING.syncAttributionIntoCheckoutSession();
+      } catch (error) {
+        console.error("Affiliate checkout sync failed before submit:", error);
+      }
+    }
+  }
+
+  function getDiscountUiState() {
+    if (
+      window.AXIOM_DISCOUNT_CODES_UI &&
+      typeof window.AXIOM_DISCOUNT_CODES_UI.getAppliedDiscount === "function"
+    ) {
+      try {
+        return window.AXIOM_DISCOUNT_CODES_UI.getAppliedDiscount() || null;
+      } catch (error) {
+        console.error("Failed to read discount UI state:", error);
+      }
+    }
+    return null;
+  }
+
   form.addEventListener("submit", async function (e) {
     e.preventDefault();
 
@@ -145,6 +172,8 @@ document.addEventListener("DOMContentLoaded", function () {
         showError("Could not create or load your checkout session.");
         return;
       }
+
+      await syncAffiliateBeforeSubmit();
 
       const currentSession = await window.AXIOM_CHECKOUT_SESSION.getSession(true);
       const sessionCartItems = normalizeCartItems(currentSession?.cart_items || []);
@@ -218,10 +247,12 @@ document.addEventListener("DOMContentLoaded", function () {
         );
       }, 0);
 
-      const taxAmount = Number(currentSession?.tax_amount || currentSession?.tax || 0);
-      const discountAmount = Number(currentSession?.discount_amount || 0);
+      const taxAmount = toNumber(currentSession?.tax_amount || currentSession?.tax || 0);
+      const discountAmount = toNumber(currentSession?.discount_amount || 0);
       const discountCode = normalizeCode(currentSession?.discount_code || "");
       const totalAmount = Math.max(0, subtotal - discountAmount + shippingAmount + taxAmount);
+
+      const discountUiState = getDiscountUiState();
 
       const existingAffiliateId = currentSession?.affiliate_id || null;
       const existingAffiliateCode = currentSession?.affiliate_code || null;
@@ -229,7 +260,38 @@ document.addEventListener("DOMContentLoaded", function () {
       const existingAffiliateReferralSessionId =
         currentSession?.affiliate_referral_session_id || null;
       const existingAffiliateLandingPage = currentSession?.affiliate_landing_page || null;
-      const existingAffiliateDiscountAmount = Number(currentSession?.affiliate_discount_amount || 0);
+
+      const existingAffiliateDiscountAmount = toNumber(
+        currentSession?.affiliate_discount_amount,
+        0
+      );
+
+      const existingAffiliateCommissionAmount = toNumber(
+        currentSession?.affiliate_commission_amount,
+        0
+      );
+
+      const isAffiliateDiscountApplied =
+        discountUiState &&
+        discountUiState.isApplied === true &&
+        discountUiState.isAffiliateCode === true;
+
+      const affiliateDiscountAmountForSession = isAffiliateDiscountApplied
+        ? toNumber(
+            discountUiState.affiliateDiscountAmount !== undefined &&
+            discountUiState.affiliateDiscountAmount !== null
+              ? discountUiState.affiliateDiscountAmount
+              : discountUiState.discountAmount,
+            existingAffiliateDiscountAmount
+          )
+        : existingAffiliateDiscountAmount;
+
+      const affiliateCommissionAmountForSession = isAffiliateDiscountApplied
+        ? toNumber(
+            discountUiState.affiliateCommissionAmount,
+            existingAffiliateCommissionAmount
+          )
+        : existingAffiliateCommissionAmount;
 
       const patchPayload = {
         session_status: "pending_payment",
@@ -269,14 +331,16 @@ document.addEventListener("DOMContentLoaded", function () {
         affiliate_click_id: existingAffiliateClickId,
         affiliate_referral_session_id: existingAffiliateReferralSessionId,
         affiliate_landing_page: existingAffiliateLandingPage,
-        affiliate_discount_amount: existingAffiliateDiscountAmount,
-        affiliate_commission_amount: 0,
+        affiliate_discount_amount: affiliateDiscountAmountForSession,
+        affiliate_commission_amount: affiliateCommissionAmountForSession,
 
         updated_at: new Date().toISOString(),
         last_activity_at: new Date().toISOString()
       };
 
       await window.AXIOM_CHECKOUT_SESSION.patchSession(patchPayload);
+
+      await syncAffiliateBeforeSubmit();
 
       const { data: refreshedSessionRow, error: refreshedSessionError } =
         await window.axiomSupabase
@@ -329,6 +393,23 @@ document.addEventListener("DOMContentLoaded", function () {
       if (!redirectOrderNumber) {
         showError("The order was created, but the order number was missing.");
         return;
+      }
+
+      try {
+        const orderId = result.orderId || result.order_id || null;
+
+        if (orderId) {
+          window.dispatchEvent(
+            new CustomEvent("axiom-order-created", {
+              detail: {
+                orderId: orderId,
+                orderNumber: redirectOrderNumber
+              }
+            })
+          );
+        }
+      } catch (eventDispatchError) {
+        console.error("Order-created event dispatch failed:", eventDispatchError);
       }
 
       try {
