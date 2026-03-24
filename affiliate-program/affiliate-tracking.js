@@ -352,6 +352,27 @@
     return result.data || null;
   }
 
+  async function fetchAffiliateByDiscountCode(code) {
+    const supabase = getSupabase();
+    if (!supabase || !code) return null;
+
+    const cleanCode = String(code || "").trim().toUpperCase();
+    if (!cleanCode) return null;
+
+    const result = await supabase
+      .from("affiliates")
+      .select("*")
+      .eq("referral_code", cleanCode)
+      .eq("status", "approved")
+      .maybeSingle();
+
+    if (result.error) {
+      throw result.error;
+    }
+
+    return result.data || null;
+  }
+
   async function createAffiliateClick(affiliate, visitorId) {
     const supabase = getSupabase();
     if (!supabase || !affiliate || !affiliate.id) return null;
@@ -550,6 +571,49 @@
     await refreshTrackedSession(existing);
   }
 
+  async function adoptAffiliateFromDiscountCode(discountCode) {
+    const supabase = getSupabase();
+    if (!supabase) return null;
+
+    const cleanCode = String(discountCode || "").trim().toUpperCase();
+    if (!cleanCode) return null;
+
+    const existing = getStoredAttribution();
+    if (existing && existing.affiliate_id && existing.affiliate_code) {
+      return existing;
+    }
+
+    const affiliate = await fetchAffiliateByDiscountCode(cleanCode);
+    if (!affiliate || !affiliate.id) {
+      return null;
+    }
+
+    const visitorId = getVisitorId();
+    const click = await createAffiliateClick(affiliate, visitorId);
+    const referralSession = await createOrUpdateReferralSession(affiliate, visitorId);
+
+    const payload = buildAttributionPayload({
+      affiliate_id: affiliate.id,
+      affiliate_code: affiliate.referral_code,
+      affiliate_click_id: click ? click.id : null,
+      affiliate_referral_session_id: referralSession ? referralSession.id : null,
+      landing_page: getCurrentUrl(),
+      affiliate_landing_page: getCurrentUrl(),
+      visitor_id: visitorId,
+      affiliate_discount_amount:
+        String(affiliate.discount_type || "").toLowerCase() === "percent"
+          ? Number(affiliate.discount_value || 0)
+          : Number(affiliate.discount_value || 0),
+      affiliate_commission_amount:
+        String(affiliate.commission_type || "").toLowerCase() === "percent"
+          ? Number(affiliate.commission_value || 0)
+          : 0
+    });
+
+    setStoredAttribution(payload);
+    return payload;
+  }
+
   function getAttributionForCheckout() {
     const stored = getStoredAttribution();
     if (!stored) return null;
@@ -594,7 +658,7 @@
       const { data: checkoutRow, error: checkoutError } = await supabase
         .from("checkout_sessions")
         .select(
-          "id, affiliate_id, affiliate_code, affiliate_click_id, affiliate_referral_session_id, affiliate_landing_page, affiliate_discount_amount, affiliate_commission_amount"
+          "id, affiliate_id, affiliate_code, affiliate_click_id, affiliate_referral_session_id, affiliate_landing_page, affiliate_discount_amount, affiliate_commission_amount, discount_code"
         )
         .eq("session_id", sessionId)
         .maybeSingle();
@@ -608,12 +672,21 @@
 
       const existingAffiliateId = checkoutRow.affiliate_id || null;
       const existingAffiliateCode = checkoutRow.affiliate_code || "";
+      const checkoutDiscountCode = String(checkoutRow.discount_code || "").trim().toUpperCase();
+      const incomingAffiliateCode = String(attribution.affiliate_code || "").trim().toUpperCase();
+
+      if (
+        checkoutDiscountCode &&
+        incomingAffiliateCode &&
+        checkoutDiscountCode === incomingAffiliateCode
+      ) {
+        attribution.affiliate_discount_amount = Number(attribution.affiliate_discount_amount || 0);
+      }
 
       if (
         existingAffiliateId &&
         existingAffiliateCode &&
-        String(existingAffiliateCode).trim().toUpperCase() !==
-          String(attribution.affiliate_code || "").trim().toUpperCase()
+        String(existingAffiliateCode).trim().toUpperCase() !== incomingAffiliateCode
       ) {
         return;
       }
@@ -677,6 +750,146 @@
     }
   }
 
+  async function syncDiscountCodeIntoAffiliateAttribution(discountCode) {
+    try {
+      const cleanCode = String(discountCode || "").trim().toUpperCase();
+      if (!cleanCode) return null;
+
+      const existing = getStoredAttribution();
+      if (
+        existing &&
+        existing.affiliate_code &&
+        String(existing.affiliate_code).trim().toUpperCase() === cleanCode
+      ) {
+        await syncAttributionIntoCheckoutSession();
+        return existing;
+      }
+
+      const adopted = await adoptAffiliateFromDiscountCode(cleanCode);
+      if (adopted) {
+        await syncAttributionIntoCheckoutSession();
+        scheduleCheckoutAttributionSync();
+      }
+      return adopted;
+    } catch (error) {
+      console.error("Failed syncing discount code into affiliate attribution:", error);
+      return null;
+    }
+  }
+
+  async function syncConversionForOrder(orderId) {
+    const supabase = getSupabase();
+    if (!supabase || !orderId) return null;
+
+    try {
+      const { data: orderRow, error: orderError } = await supabase
+        .from("orders")
+        .select("*")
+        .eq("id", orderId)
+        .maybeSingle();
+
+      if (orderError || !orderRow) {
+        if (orderError) {
+          console.error("Failed loading order for affiliate conversion sync:", orderError);
+        }
+        return null;
+      }
+
+      if (!orderRow.affiliate_id || !orderRow.affiliate_code) {
+        return null;
+      }
+
+      const { data: existingConversion, error: existingConversionError } = await supabase
+        .from("affiliate_conversions")
+        .select("id, commission_status")
+        .eq("order_id", orderRow.id)
+        .maybeSingle();
+
+      if (existingConversionError) {
+        console.error("Failed loading existing affiliate conversion:", existingConversionError);
+        return null;
+      }
+
+      const fulfillmentStatus = String(orderRow.fulfillment_status || "").toLowerCase();
+      const isClaimable = fulfillmentStatus === "fulfilled" || fulfillmentStatus === "shipped";
+      const commissionStatus = isClaimable ? "claimable" : "pending";
+      const claimableAt = isClaimable ? getNowIso() : null;
+
+      if (existingConversion && existingConversion.id) {
+        const { error: updateError } = await supabase
+          .from("affiliate_conversions")
+          .update({
+            affiliate_id: orderRow.affiliate_id,
+            referral_code: orderRow.affiliate_code,
+            affiliate_click_id: orderRow.affiliate_click_id || null,
+            affiliate_referral_session_id: orderRow.affiliate_referral_session_id || null,
+            checkout_session_id: orderRow.checkout_session_id || null,
+            order_number: orderRow.order_number || null,
+            customer_email: orderRow.customer_email || null,
+            subtotal: Number(orderRow.subtotal || 0),
+            total_amount: Number(orderRow.total_amount || 0),
+            discount_amount: Number(orderRow.discount_amount || 0),
+            commission_amount: Number(orderRow.affiliate_commission_amount || 0),
+            commission_status: commissionStatus,
+            claimable_at: claimableAt,
+            updated_at: getNowIso()
+          })
+          .eq("id", existingConversion.id);
+
+        if (updateError) {
+          console.error("Failed updating affiliate conversion:", updateError);
+        }
+
+        return true;
+      }
+
+      const { error: insertError } = await supabase
+        .from("affiliate_conversions")
+        .insert({
+          affiliate_id: orderRow.affiliate_id,
+          referral_code: orderRow.affiliate_code,
+          affiliate_click_id: orderRow.affiliate_click_id || null,
+          affiliate_referral_session_id: orderRow.affiliate_referral_session_id || null,
+          checkout_session_id: orderRow.checkout_session_id || null,
+          order_id: orderRow.id,
+          order_number: orderRow.order_number || null,
+          customer_email: orderRow.customer_email || null,
+          subtotal: Number(orderRow.subtotal || 0),
+          total_amount: Number(orderRow.total_amount || 0),
+          discount_amount: Number(orderRow.discount_amount || 0),
+          commission_amount: Number(orderRow.affiliate_commission_amount || 0),
+          commission_status: commissionStatus,
+          claimable_at: claimableAt,
+          created_at: getNowIso(),
+          updated_at: getNowIso()
+        });
+
+      if (insertError) {
+        console.error("Failed inserting affiliate conversion:", insertError);
+        return null;
+      }
+
+      if (orderRow.affiliate_referral_session_id) {
+        const { error: referralUpdateError } = await supabase
+          .from("affiliate_referral_sessions")
+          .update({
+            is_converted: true,
+            updated_at: getNowIso()
+          })
+          .eq("id", orderRow.affiliate_referral_session_id);
+
+        if (referralUpdateError) {
+          console.error("Failed marking affiliate referral session converted:", referralUpdateError);
+        }
+      }
+
+      return true;
+    } catch (error) {
+      console.error("Affiliate conversion sync crashed:", error);
+      return null;
+    }
+  }
+
   function clearScheduledSync() {
     if (syncTimeoutId) {
       clearTimeout(syncTimeoutId);
@@ -730,6 +943,30 @@
       });
     });
 
+    window.addEventListener("axiom-discount-updated", function (event) {
+      const code =
+        event && event.detail && event.detail.code
+          ? String(event.detail.code || "").trim().toUpperCase()
+          : "";
+
+      if (!code) {
+        return;
+      }
+
+      syncDiscountCodeIntoAffiliateAttribution(code).catch(function (error) {
+        console.error("Discount-updated affiliate sync failed:", error);
+      });
+    });
+
+    window.addEventListener("axiom-order-created", function (event) {
+      const orderId = event && event.detail ? event.detail.orderId : null;
+      if (!orderId) return;
+
+      syncConversionForOrder(orderId).catch(function (error) {
+        console.error("Order-created affiliate conversion sync failed:", error);
+      });
+    });
+
     document.addEventListener("visibilitychange", function () {
       if (document.visibilityState === "visible") {
         syncAttributionIntoCheckoutSession().catch(function (error) {
@@ -774,6 +1011,8 @@
     clearAttribution: clearStoredAttribution,
     clearVisitorId: clearStoredVisitorId,
     syncAttributionIntoCheckoutSession: syncAttributionIntoCheckoutSession,
+    syncDiscountCodeIntoAffiliateAttribution: syncDiscountCodeIntoAffiliateAttribution,
+    syncConversionForOrder: syncConversionForOrder,
     storageKey: STORAGE_KEY,
     sessionStorageKey: SESSION_STORAGE_KEY,
     cookieKey: ATTR_COOKIE_KEY,
