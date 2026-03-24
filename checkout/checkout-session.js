@@ -3,6 +3,11 @@
   const SESSION_QUERY_PARAM = "axiom_session";
   const AFFILIATE_ATTRIBUTION_STORAGE_KEY = "axiom_affiliate_attribution";
 
+  const CHECKOUT_SESSION_ID_STORAGE_KEY = "axiom_checkout_session_id";
+  const CHECKOUT_SESSION_ID_SESSION_KEY = "axiom_checkout_session_id_session";
+  const CHECKOUT_SESSION_ID_COOKIE_KEY = "axiom_checkout_session_id";
+  const CHECKOUT_SESSION_ID_COOKIE_DAYS = 30;
+
   let cachedSession = null;
   let activeSessionId = null;
   let ensureSessionPromise = null;
@@ -24,6 +29,115 @@
       console.error(`Failed to read ${key}`, error);
       return fallback;
     }
+  }
+
+  function getExpiryDate(days) {
+    const date = new Date();
+    date.setTime(date.getTime() + days * 24 * 60 * 60 * 1000);
+    return date;
+  }
+
+  function setCookie(name, value, days) {
+    try {
+      const expires = getExpiryDate(days).toUTCString();
+      document.cookie =
+        encodeURIComponent(name) +
+        "=" +
+        encodeURIComponent(value) +
+        "; expires=" +
+        expires +
+        "; path=/; SameSite=Lax";
+    } catch (error) {
+      console.error(`Failed to set cookie ${name}`, error);
+    }
+  }
+
+  function clearCookie(name) {
+    try {
+      document.cookie =
+        encodeURIComponent(name) +
+        "=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax";
+    } catch (error) {
+      console.error(`Failed to clear cookie ${name}`, error);
+    }
+  }
+
+  function getCookie(name) {
+    try {
+      const encodedName = encodeURIComponent(name) + "=";
+      const parts = document.cookie ? document.cookie.split("; ") : [];
+
+      for (let index = 0; index < parts.length; index += 1) {
+        const part = parts[index];
+        if (part.indexOf(encodedName) === 0) {
+          return decodeURIComponent(part.substring(encodedName.length));
+        }
+      }
+
+      return "";
+    } catch (error) {
+      return "";
+    }
+  }
+
+  function persistActiveSessionId(sessionId) {
+    const cleanId = String(sessionId || "").trim();
+
+    try {
+      if (cleanId) {
+        localStorage.setItem(CHECKOUT_SESSION_ID_STORAGE_KEY, cleanId);
+      } else {
+        localStorage.removeItem(CHECKOUT_SESSION_ID_STORAGE_KEY);
+      }
+    } catch (error) {
+      console.error("Failed persisting checkout session id to localStorage", error);
+    }
+
+    try {
+      if (cleanId) {
+        sessionStorage.setItem(CHECKOUT_SESSION_ID_SESSION_KEY, cleanId);
+      } else {
+        sessionStorage.removeItem(CHECKOUT_SESSION_ID_SESSION_KEY);
+      }
+    } catch (error) {
+      console.error("Failed persisting checkout session id to sessionStorage", error);
+    }
+
+    try {
+      if (cleanId) {
+        setCookie(CHECKOUT_SESSION_ID_COOKIE_KEY, cleanId, CHECKOUT_SESSION_ID_COOKIE_DAYS);
+      } else {
+        clearCookie(CHECKOUT_SESSION_ID_COOKIE_KEY);
+      }
+    } catch (error) {
+      console.error("Failed persisting checkout session id to cookie", error);
+    }
+  }
+
+  function getStoredSessionId() {
+    let sessionId = "";
+
+    try {
+      sessionId = localStorage.getItem(CHECKOUT_SESSION_ID_STORAGE_KEY) || "";
+    } catch (error) {}
+
+    if (!sessionId) {
+      try {
+        sessionId = sessionStorage.getItem(CHECKOUT_SESSION_ID_SESSION_KEY) || "";
+      } catch (error) {}
+    }
+
+    if (!sessionId) {
+      try {
+        sessionId = getCookie(CHECKOUT_SESSION_ID_COOKIE_KEY) || "";
+      } catch (error) {}
+    }
+
+    return String(sessionId || "").trim();
+  }
+
+  function clearStoredSessionId() {
+    persistActiveSessionId("");
   }
 
   function getCart() {
@@ -92,24 +206,6 @@
     const random = Math.random().toString(36).slice(2, 10).toUpperCase();
     const stamp = Date.now().toString(36).toUpperCase();
     return `CHK-${stamp}-${random}`;
-  }
-
-  function getCookie(name) {
-    try {
-      const encodedName = encodeURIComponent(name) + "=";
-      const parts = document.cookie ? document.cookie.split("; ") : [];
-
-      for (let index = 0; index < parts.length; index += 1) {
-        const part = parts[index];
-        if (part.indexOf(encodedName) === 0) {
-          return decodeURIComponent(part.substring(encodedName.length));
-        }
-      }
-
-      return "";
-    } catch (error) {
-      return "";
-    }
   }
 
   function getAffiliateAttribution() {
@@ -483,6 +579,7 @@
 
   function setActiveSessionId(sessionId) {
     activeSessionId = sessionId || null;
+    persistActiveSessionId(activeSessionId);
 
     try {
       const url = new URL(window.location.href);
@@ -503,6 +600,15 @@
     } catch (error) {
       return "";
     }
+  }
+
+  function getBestKnownSessionId() {
+    return (
+      String(activeSessionId || "").trim() ||
+      getStoredSessionId() ||
+      String(getSessionIdFromUrl() || "").trim() ||
+      ""
+    );
   }
 
   async function fetchSessionBySessionId(sessionId) {
@@ -560,12 +666,12 @@
       return normalizeSessionShape(cachedSession);
     }
 
-    const sessionId = activeSessionId || getSessionIdFromUrl();
+    const sessionId = getBestKnownSessionId();
 
     if (!sessionId) {
       const empty = getEmptySession();
       cachedSession = empty;
-      activeSessionId = empty.session_id;
+      setActiveSessionId(empty.session_id);
       return normalizeSessionShape(empty);
     }
 
@@ -573,14 +679,14 @@
 
     if (found) {
       cachedSession = found;
-      activeSessionId = found.session_id;
+      setActiveSessionId(found.session_id);
       return normalizeSessionShape(found);
     }
 
     const empty = getEmptySession();
     empty.session_id = sessionId;
     cachedSession = empty;
-    activeSessionId = empty.session_id;
+    setActiveSessionId(empty.session_id);
     return normalizeSessionShape(empty);
   }
 
@@ -594,7 +700,7 @@
     }
 
     ensureSessionPromise = (async function () {
-      const existingId = activeSessionId || getSessionIdFromUrl();
+      const existingId = getBestKnownSessionId();
 
       if (existingId) {
         const existing = await fetchSessionBySessionId(existingId);
@@ -1000,6 +1106,17 @@
       });
     });
 
+    window.addEventListener("storage", function (event) {
+      if (
+        event.key === CHECKOUT_SESSION_ID_STORAGE_KEY &&
+        event.newValue &&
+        event.newValue !== activeSessionId
+      ) {
+        activeSessionId = String(event.newValue || "").trim() || null;
+        cachedSession = null;
+      }
+    });
+
     document.addEventListener("visibilitychange", function () {
       if (document.visibilityState === "hidden") {
         getSession()
@@ -1025,8 +1142,19 @@
     updateTax,
     updateSessionStatus,
     updateFromCheckoutForm,
-    bindCheckoutTracking
+    bindCheckoutTracking,
+    clearStoredSessionId
   };
+
+  try {
+    const initialKnownSessionId = getBestKnownSessionId();
+    if (initialKnownSessionId) {
+      activeSessionId = initialKnownSessionId;
+      persistActiveSessionId(initialKnownSessionId);
+    }
+  } catch (error) {
+    console.error("Failed initializing stored checkout session id", error);
+  }
 
   console.log("AXIOM_CHECKOUT_SESSION ready", !!window.AXIOM_CHECKOUT_SESSION);
 })();
