@@ -47,6 +47,15 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
+  function normalizeCode(value) {
+    return String(value || "").trim().toUpperCase();
+  }
+
+  function toNumber(value, fallback = 0) {
+    const num = Number(value);
+    return Number.isFinite(num) ? num : fallback;
+  }
+
   function showError(message, extra) {
     if (extra) {
       console.error(message, extra);
@@ -150,7 +159,16 @@ document.addEventListener("DOMContentLoaded", function () {
 
       const shippingOption = selectedShipping.closest(".shipping-option");
       const shippingLabel =
-        shippingOption?.querySelector("span")?.textContent?.trim() || "";
+        selectedShipping.dataset.methodName ||
+        shippingOption?.querySelector(".shipping-option-name")?.textContent?.trim() ||
+        shippingOption?.querySelector("span")?.textContent?.trim() ||
+        "";
+
+      const shippingEta =
+        selectedShipping.dataset.eta ||
+        shippingOption?.querySelector(".shipping-option-eta")?.textContent?.trim() ||
+        "";
+
       const shippingAmount = Number(selectedShipping.value || 0);
       const shippingCode =
         selectedShipping.dataset.code ||
@@ -201,7 +219,17 @@ document.addEventListener("DOMContentLoaded", function () {
       }, 0);
 
       const taxAmount = Number(currentSession?.tax_amount || currentSession?.tax || 0);
-      const totalAmount = subtotal + shippingAmount + taxAmount;
+      const discountAmount = Number(currentSession?.discount_amount || 0);
+      const discountCode = normalizeCode(currentSession?.discount_code || "");
+      const totalAmount = Math.max(0, subtotal - discountAmount + shippingAmount + taxAmount);
+
+      const existingAffiliateId = currentSession?.affiliate_id || null;
+      const existingAffiliateCode = currentSession?.affiliate_code || null;
+      const existingAffiliateClickId = currentSession?.affiliate_click_id || null;
+      const existingAffiliateReferralSessionId =
+        currentSession?.affiliate_referral_session_id || null;
+      const existingAffiliateLandingPage = currentSession?.affiliate_landing_page || null;
+      const existingAffiliateDiscountAmount = Number(currentSession?.affiliate_discount_amount || 0);
 
       const patchPayload = {
         session_status: "pending_payment",
@@ -222,16 +250,28 @@ document.addEventListener("DOMContentLoaded", function () {
           code: shippingCode,
           method_code: shippingCode,
           carrier: shippingLabel.includes("USPS") ? "USPS" : "",
-          service_level: shippingLabel
+          service_level: shippingEta || shippingLabel,
+          eta: shippingEta || ""
         },
         shipping_method_code: shippingCode,
         shipping_method_name: shippingLabel || null,
         shipping_carrier: shippingLabel.includes("USPS") ? "USPS" : null,
-        shipping_service_level: shippingLabel || null,
+        shipping_service_level: shippingEta || shippingLabel || null,
         subtotal: subtotal,
         shipping_amount: shippingAmount,
         tax_amount: taxAmount,
+        discount_amount: discountAmount,
+        discount_code: discountCode || null,
         total_amount: totalAmount,
+
+        affiliate_id: existingAffiliateId,
+        affiliate_code: existingAffiliateCode,
+        affiliate_click_id: existingAffiliateClickId,
+        affiliate_referral_session_id: existingAffiliateReferralSessionId,
+        affiliate_landing_page: existingAffiliateLandingPage,
+        affiliate_discount_amount: existingAffiliateDiscountAmount,
+        affiliate_commission_amount: 0,
+
         updated_at: new Date().toISOString(),
         last_activity_at: new Date().toISOString()
       };
@@ -298,7 +338,10 @@ document.addEventListener("DOMContentLoaded", function () {
           shipping_amount: 0,
           tax_amount: 0,
           discount_amount: 0,
-          total_amount: 0
+          discount_code: null,
+          total_amount: 0,
+          affiliate_discount_amount: 0,
+          affiliate_commission_amount: 0
         });
       } catch (cartClearError) {
         console.error("Backend cart clear failed after order creation:", cartClearError);
