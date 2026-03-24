@@ -54,6 +54,42 @@
           <strong id="affiliateDashboardDiscountRate">—</strong>
         </div>
       </div>
+
+      <div class="affiliate-code-editor">
+        <p class="affiliate-code-editor-title">Change Referral / Discount Code</p>
+        <p class="affiliate-muted affiliate-code-editor-copy">
+          This updates your referral link code and the checkout discount code customers can use.
+        </p>
+
+        <div class="affiliate-code-editor-controls">
+          <input
+            id="affiliateReferralCodeInput"
+            type="text"
+            maxlength="12"
+            placeholder="Enter new code"
+            autocomplete="off"
+            spellcheck="false"
+          />
+          <div class="affiliate-code-editor-actions">
+            <button
+              type="button"
+              class="affiliate-btn affiliate-btn-primary"
+              id="affiliateSaveReferralCodeBtn"
+            >
+              Save Code
+            </button>
+            <button
+              type="button"
+              class="affiliate-btn affiliate-btn-secondary"
+              id="affiliateCopyReferralCodeBtn"
+            >
+              Copy Code
+            </button>
+          </div>
+        </div>
+
+        <p id="affiliateReferralCodeStatus" class="affiliate-form-message"></p>
+      </div>
     </div>
 
     <div class="affiliate-stat-card">
