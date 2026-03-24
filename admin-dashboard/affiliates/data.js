@@ -109,11 +109,39 @@
     return true;
   }
 
+  async function updateAffiliateReferralCode(affiliateId, newCode) {
+    if (!window.axiomSupabase) {
+      throw new Error("axiomSupabase is not available.");
+    }
+
+    const cleanCode = String(newCode || "").trim().toUpperCase();
+
+    if (!affiliateId) {
+      throw new Error("Missing affiliate id.");
+    }
+
+    if (!cleanCode) {
+      throw new Error("Referral code is required.");
+    }
+
+    const { error } = await window.axiomSupabase.rpc("admin_update_affiliate_referral_code", {
+      p_affiliate_id: affiliateId,
+      p_new_referral_code: cleanCode
+    });
+
+    if (error) {
+      throw error;
+    }
+
+    return true;
+  }
+
   window.AXIOM_ADMIN_AFFILIATES_DATA = {
     fetchAffiliates: fetchAffiliates,
     updateAffiliateStatus: updateAffiliateStatus,
     fetchAffiliateDetails: fetchAffiliateDetails,
     updateClaimStatus: updateClaimStatus,
-    recordPayout: recordPayout
+    recordPayout: recordPayout,
+    updateAffiliateReferralCode: updateAffiliateReferralCode
   };
 })();
