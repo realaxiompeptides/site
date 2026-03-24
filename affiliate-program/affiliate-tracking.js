@@ -132,6 +132,15 @@
     return (params.get(name) || "").trim();
   }
 
+  function normalizeCode(value) {
+    return String(value || "").trim().toUpperCase();
+  }
+
+  function toNumber(value, fallback) {
+    const num = Number(value);
+    return Number.isFinite(num) ? num : fallback;
+  }
+
   function isExpired(capturedAt) {
     if (!capturedAt) return false;
 
@@ -142,55 +151,6 @@
     const maxAgeMs = SESSION_TTL_DAYS * 24 * 60 * 60 * 1000;
 
     return ageMs > maxAgeMs;
-  }
-
-  function normalizeStoredAttribution(raw) {
-    if (!raw || typeof raw !== "object") {
-      return null;
-    }
-
-    return {
-      affiliate_id: raw.affiliate_id || null,
-      affiliate_code: raw.affiliate_code || "",
-      affiliate_click_id: raw.affiliate_click_id || null,
-      affiliate_referral_session_id: raw.affiliate_referral_session_id || null,
-      affiliate_landing_page: raw.affiliate_landing_page || raw.landing_page || "",
-      landing_page: raw.landing_page || raw.affiliate_landing_page || "",
-      current_page: raw.current_page || getCurrentUrl(),
-      referrer: raw.referrer || "",
-      visitor_id: raw.visitor_id || getVisitorId(),
-      affiliate_discount_amount: Number(raw.affiliate_discount_amount || 0),
-      affiliate_commission_amount: Number(raw.affiliate_commission_amount || 0),
-      captured_at: raw.captured_at || getNowIso()
-    };
-  }
-
-  function clearStoredAttribution() {
-    try {
-      localStorage.removeItem(STORAGE_KEY);
-    } catch (error) {}
-
-    try {
-      sessionStorage.removeItem(SESSION_STORAGE_KEY);
-    } catch (error) {}
-
-    clearCookie(ATTR_COOKIE_KEY);
-
-    if (window.AXIOM_AFFILIATE_ATTRIBUTION) {
-      delete window.AXIOM_AFFILIATE_ATTRIBUTION;
-    }
-  }
-
-  function clearStoredVisitorId() {
-    try {
-      localStorage.removeItem(VISITOR_KEY);
-    } catch (error) {}
-
-    try {
-      sessionStorage.removeItem(VISITOR_SESSION_KEY);
-    } catch (error) {}
-
-    clearCookie(VISITOR_COOKIE_KEY);
   }
 
   function getVisitorId() {
@@ -229,6 +189,61 @@
     setCookie(VISITOR_COOKIE_KEY, visitorId, SESSION_TTL_DAYS);
 
     return visitorId;
+  }
+
+  function normalizeStoredAttribution(raw) {
+    if (!raw || typeof raw !== "object") {
+      return null;
+    }
+
+    const normalized = {
+      affiliate_id: raw.affiliate_id || null,
+      affiliate_code: normalizeCode(raw.affiliate_code || ""),
+      affiliate_click_id: raw.affiliate_click_id || null,
+      affiliate_referral_session_id: raw.affiliate_referral_session_id || null,
+      affiliate_landing_page: raw.affiliate_landing_page || raw.landing_page || "",
+      landing_page: raw.landing_page || raw.affiliate_landing_page || "",
+      current_page: raw.current_page || getCurrentUrl(),
+      referrer: raw.referrer || "",
+      visitor_id: raw.visitor_id || getVisitorId(),
+      affiliate_discount_amount: toNumber(raw.affiliate_discount_amount, 0),
+      affiliate_commission_amount: toNumber(raw.affiliate_commission_amount, 0),
+      captured_at: raw.captured_at || getNowIso()
+    };
+
+    if (!normalized.affiliate_id && !normalized.affiliate_code) {
+      return null;
+    }
+
+    return normalized;
+  }
+
+  function clearStoredAttribution() {
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch (error) {}
+
+    try {
+      sessionStorage.removeItem(SESSION_STORAGE_KEY);
+    } catch (error) {}
+
+    clearCookie(ATTR_COOKIE_KEY);
+
+    if (window.AXIOM_AFFILIATE_ATTRIBUTION) {
+      delete window.AXIOM_AFFILIATE_ATTRIBUTION;
+    }
+  }
+
+  function clearStoredVisitorId() {
+    try {
+      localStorage.removeItem(VISITOR_KEY);
+    } catch (error) {}
+
+    try {
+      sessionStorage.removeItem(VISITOR_SESSION_KEY);
+    } catch (error) {}
+
+    clearCookie(VISITOR_COOKIE_KEY);
   }
 
   function getStoredAttribution() {
@@ -307,7 +322,10 @@
       })
     );
 
-    setStoredAttribution(nextPayload);
+    if (nextPayload) {
+      setStoredAttribution(nextPayload);
+    }
+
     return nextPayload;
   }
 
@@ -338,25 +356,7 @@
     const supabase = getSupabase();
     if (!supabase || !referralCode) return null;
 
-    const result = await supabase
-      .from("affiliates")
-      .select("*")
-      .eq("referral_code", referralCode)
-      .eq("status", "approved")
-      .maybeSingle();
-
-    if (result.error) {
-      throw result.error;
-    }
-
-    return result.data || null;
-  }
-
-  async function fetchAffiliateByDiscountCode(code) {
-    const supabase = getSupabase();
-    if (!supabase || !code) return null;
-
-    const cleanCode = String(code || "").trim().toUpperCase();
+    const cleanCode = normalizeCode(referralCode);
     if (!cleanCode) return null;
 
     const result = await supabase
@@ -371,6 +371,10 @@
     }
 
     return result.data || null;
+  }
+
+  async function fetchAffiliateByDiscountCode(code) {
+    return await fetchAffiliateByCode(code);
   }
 
   async function createAffiliateClick(affiliate, visitorId) {
@@ -505,11 +509,38 @@
     }
   }
 
+  async function buildAffiliateAttributionForAffiliate(affiliate, options) {
+    if (!affiliate || !affiliate.id) return null;
+
+    const visitorId = options && options.visitorId ? options.visitorId : getVisitorId();
+    const click = await createAffiliateClick(affiliate, visitorId);
+    const referralSession = await createOrUpdateReferralSession(affiliate, visitorId);
+
+    return buildAttributionPayload({
+      affiliate_id: affiliate.id,
+      affiliate_code: affiliate.referral_code,
+      affiliate_click_id: click ? click.id : null,
+      affiliate_referral_session_id: referralSession ? referralSession.id : null,
+      landing_page: options && options.landing_page ? options.landing_page : getCurrentUrl(),
+      affiliate_landing_page:
+        options && options.affiliate_landing_page ? options.affiliate_landing_page : getCurrentUrl(),
+      visitor_id: visitorId,
+      affiliate_discount_amount:
+        String(affiliate.discount_type || "").toLowerCase() === "percent"
+          ? Number(affiliate.discount_value || 0)
+          : Number(affiliate.discount_value || 0),
+      affiliate_commission_amount:
+        String(affiliate.commission_type || "").toLowerCase() === "percent"
+          ? Number(affiliate.commission_value || 0)
+          : Number(affiliate.commission_value || 0)
+    });
+  }
+
   async function handleReferralCode(referralCode) {
     const supabase = getSupabase();
     if (!supabase) return;
 
-    const cleanCode = String(referralCode || "").trim();
+    const cleanCode = normalizeCode(referralCode);
     if (!cleanCode) return;
 
     const visitorId = getVisitorId();
@@ -525,7 +556,7 @@
     if (
       existing &&
       existing.affiliate_code &&
-      String(existing.affiliate_code).trim().toUpperCase() === cleanCode.toUpperCase() &&
+      normalizeCode(existing.affiliate_code) === cleanCode &&
       existing.affiliate_referral_session_id
     ) {
       const refreshedPayload = normalizeStoredAttribution(
@@ -536,31 +567,25 @@
         })
       );
 
-      setStoredAttribution(refreshedPayload);
-      await refreshTrackedSession(refreshedPayload);
+      if (refreshedPayload) {
+        setStoredAttribution(refreshedPayload);
+        await refreshTrackedSession(refreshedPayload);
+      }
+
       maybeStripReferralParamFromUrl();
       return;
     }
 
-    const click = await createAffiliateClick(affiliate, visitorId);
-    const referralSession = await createOrUpdateReferralSession(affiliate, visitorId);
-
-    const payload = buildAttributionPayload({
-      affiliate_id: affiliate.id,
-      affiliate_code: affiliate.referral_code,
-      affiliate_click_id: click ? click.id : null,
-      affiliate_referral_session_id: referralSession ? referralSession.id : null,
+    const payload = await buildAffiliateAttributionForAffiliate(affiliate, {
+      visitorId: visitorId,
       landing_page: getCurrentUrl(),
-      affiliate_landing_page: getCurrentUrl(),
-      visitor_id: visitorId,
-      affiliate_discount_amount: 0,
-      affiliate_commission_amount:
-        String(affiliate.commission_type || "").toLowerCase() === "percent"
-          ? Number(affiliate.commission_value || 0)
-          : 0
+      affiliate_landing_page: getCurrentUrl()
     });
 
-    setStoredAttribution(payload);
+    if (payload) {
+      setStoredAttribution(payload);
+    }
+
     maybeStripReferralParamFromUrl();
   }
 
@@ -575,11 +600,16 @@
     const supabase = getSupabase();
     if (!supabase) return null;
 
-    const cleanCode = String(discountCode || "").trim().toUpperCase();
+    const cleanCode = normalizeCode(discountCode);
     if (!cleanCode) return null;
 
     const existing = getStoredAttribution();
-    if (existing && existing.affiliate_id && existing.affiliate_code) {
+    if (
+      existing &&
+      existing.affiliate_code &&
+      normalizeCode(existing.affiliate_code) === cleanCode &&
+      existing.affiliate_id
+    ) {
       return existing;
     }
 
@@ -588,29 +618,16 @@
       return null;
     }
 
-    const visitorId = getVisitorId();
-    const click = await createAffiliateClick(affiliate, visitorId);
-    const referralSession = await createOrUpdateReferralSession(affiliate, visitorId);
-
-    const payload = buildAttributionPayload({
-      affiliate_id: affiliate.id,
-      affiliate_code: affiliate.referral_code,
-      affiliate_click_id: click ? click.id : null,
-      affiliate_referral_session_id: referralSession ? referralSession.id : null,
+    const payload = await buildAffiliateAttributionForAffiliate(affiliate, {
+      visitorId: getVisitorId(),
       landing_page: getCurrentUrl(),
-      affiliate_landing_page: getCurrentUrl(),
-      visitor_id: visitorId,
-      affiliate_discount_amount:
-        String(affiliate.discount_type || "").toLowerCase() === "percent"
-          ? Number(affiliate.discount_value || 0)
-          : Number(affiliate.discount_value || 0),
-      affiliate_commission_amount:
-        String(affiliate.commission_type || "").toLowerCase() === "percent"
-          ? Number(affiliate.commission_value || 0)
-          : 0
+      affiliate_landing_page: getCurrentUrl()
     });
 
-    setStoredAttribution(payload);
+    if (payload) {
+      setStoredAttribution(payload);
+    }
+
     return payload;
   }
 
@@ -630,15 +647,32 @@
     };
   }
 
-  async function syncAttributionIntoCheckoutSession() {
-    const supabase = getSupabase();
-    const attribution = getAttributionForCheckout();
-
-    if (!supabase || !attribution || !attribution.affiliate_id || !attribution.affiliate_code) {
-      return;
+  function buildAttributionFromCheckoutRow(checkoutRow) {
+    if (!checkoutRow || (!checkoutRow.affiliate_id && !checkoutRow.affiliate_code)) {
+      return null;
     }
 
+    return normalizeStoredAttribution({
+      affiliate_id: checkoutRow.affiliate_id || null,
+      affiliate_code: checkoutRow.affiliate_code || "",
+      affiliate_click_id: checkoutRow.affiliate_click_id || null,
+      affiliate_referral_session_id: checkoutRow.affiliate_referral_session_id || null,
+      affiliate_landing_page: checkoutRow.affiliate_landing_page || "",
+      landing_page: checkoutRow.affiliate_landing_page || "",
+      current_page: getCurrentUrl(),
+      referrer: getReferrer(),
+      visitor_id: getVisitorId(),
+      affiliate_discount_amount: Number(checkoutRow.affiliate_discount_amount || 0),
+      affiliate_commission_amount: Number(checkoutRow.affiliate_commission_amount || 0),
+      captured_at: getNowIso()
+    });
+  }
+
+  async function syncAttributionIntoCheckoutSession() {
+    const supabase = getSupabase();
+
     if (
+      !supabase ||
       !window.AXIOM_CHECKOUT_SESSION ||
       typeof window.AXIOM_CHECKOUT_SESSION.ensureSession !== "function"
     ) {
@@ -670,30 +704,27 @@
         return;
       }
 
-      const existingAffiliateId = checkoutRow.affiliate_id || null;
-      const existingAffiliateCode = checkoutRow.affiliate_code || "";
-      const checkoutDiscountCode = String(checkoutRow.discount_code || "").trim().toUpperCase();
-      const incomingAffiliateCode = String(attribution.affiliate_code || "").trim().toUpperCase();
+      let attribution = getAttributionForCheckout();
 
-      if (
-        checkoutDiscountCode &&
-        incomingAffiliateCode &&
-        checkoutDiscountCode === incomingAffiliateCode
-      ) {
-        attribution.affiliate_discount_amount = Number(attribution.affiliate_discount_amount || 0);
+      if (!attribution && checkoutRow.affiliate_id && checkoutRow.affiliate_code) {
+        const seeded = buildAttributionFromCheckoutRow(checkoutRow);
+        if (seeded) {
+          setStoredAttribution(seeded);
+          attribution = getAttributionForCheckout();
+        }
       }
 
-      if (
-        existingAffiliateId &&
-        existingAffiliateCode &&
-        String(existingAffiliateCode).trim().toUpperCase() !== incomingAffiliateCode
-      ) {
+      if (!attribution || !attribution.affiliate_id || !attribution.affiliate_code) {
         return;
       }
 
+      const existingAffiliateId = checkoutRow.affiliate_id || null;
+      const existingAffiliateCode = normalizeCode(checkoutRow.affiliate_code || "");
+      const incomingAffiliateCode = normalizeCode(attribution.affiliate_code || "");
+
       const alreadySynced =
         String(existingAffiliateId || "") === String(attribution.affiliate_id || "") &&
-        String(existingAffiliateCode || "") === String(attribution.affiliate_code || "") &&
+        existingAffiliateCode === incomingAffiliateCode &&
         String(checkoutRow.affiliate_click_id || "") === String(attribution.affiliate_click_id || "") &&
         String(checkoutRow.affiliate_referral_session_id || "") ===
           String(attribution.affiliate_referral_session_id || "") &&
@@ -730,18 +761,14 @@
         return;
       }
 
-      try {
-        const refreshed = normalizeStoredAttribution(
-          Object.assign({}, getStoredAttribution() || {}, updatePayload, {
-            visitor_id: attribution.visitor_id || getVisitorId()
-          })
-        );
+      const refreshed = normalizeStoredAttribution(
+        Object.assign({}, getStoredAttribution() || {}, updatePayload, {
+          visitor_id: attribution.visitor_id || getVisitorId()
+        })
+      );
 
-        if (refreshed) {
-          setStoredAttribution(refreshed);
-        }
-      } catch (error) {
-        console.error("Failed refreshing stored attribution after checkout sync:", error);
+      if (refreshed) {
+        setStoredAttribution(refreshed);
       }
     } catch (error) {
       console.error("Affiliate checkout session sync crashed:", error);
@@ -752,14 +779,14 @@
 
   async function syncDiscountCodeIntoAffiliateAttribution(discountCode) {
     try {
-      const cleanCode = String(discountCode || "").trim().toUpperCase();
+      const cleanCode = normalizeCode(discountCode);
       if (!cleanCode) return null;
 
       const existing = getStoredAttribution();
       if (
         existing &&
         existing.affiliate_code &&
-        String(existing.affiliate_code).trim().toUpperCase() === cleanCode
+        normalizeCode(existing.affiliate_code) === cleanCode
       ) {
         await syncAttributionIntoCheckoutSession();
         return existing;
@@ -770,6 +797,7 @@
         await syncAttributionIntoCheckoutSession();
         scheduleCheckoutAttributionSync();
       }
+
       return adopted;
     } catch (error) {
       console.error("Failed syncing discount code into affiliate attribution:", error);
@@ -918,6 +946,48 @@
     runAttempt();
   }
 
+  async function hydrateAttributionFromCheckoutSession() {
+    const supabase = getSupabase();
+    if (
+      !supabase ||
+      !window.AXIOM_CHECKOUT_SESSION ||
+      typeof window.AXIOM_CHECKOUT_SESSION.ensureSession !== "function"
+    ) {
+      return null;
+    }
+
+    try {
+      const sessionId = await window.AXIOM_CHECKOUT_SESSION.ensureSession();
+      if (!sessionId) return null;
+
+      const { data: checkoutRow, error } = await supabase
+        .from("checkout_sessions")
+        .select(
+          "affiliate_id, affiliate_code, affiliate_click_id, affiliate_referral_session_id, affiliate_landing_page, affiliate_discount_amount, affiliate_commission_amount"
+        )
+        .eq("session_id", sessionId)
+        .maybeSingle();
+
+      if (error || !checkoutRow) {
+        if (error) {
+          console.error("Failed hydrating affiliate attribution from checkout session:", error);
+        }
+        return null;
+      }
+
+      const payload = buildAttributionFromCheckoutRow(checkoutRow);
+      if (payload) {
+        setStoredAttribution(payload);
+        return payload;
+      }
+
+      return null;
+    } catch (error) {
+      console.error("Checkout session attribution hydrate crashed:", error);
+      return null;
+    }
+  }
+
   function bindAffiliateTrackingListeners() {
     if (window.__axiomAffiliateTrackingBound) {
       return;
@@ -932,9 +1002,15 @@
     });
 
     window.addEventListener("pageshow", function () {
-      syncAttributionIntoCheckoutSession().catch(function (error) {
-        console.error("Pageshow affiliate sync failed:", error);
-      });
+      hydrateAttributionFromCheckoutSession()
+        .catch(function (error) {
+          console.error("Pageshow checkout attribution hydrate failed:", error);
+        })
+        .finally(function () {
+          syncAttributionIntoCheckoutSession().catch(function (error) {
+            console.error("Pageshow affiliate sync failed:", error);
+          });
+        });
     });
 
     window.addEventListener("axiom-cart-updated", function () {
@@ -946,7 +1022,7 @@
     window.addEventListener("axiom-discount-updated", function (event) {
       const code =
         event && event.detail && event.detail.code
-          ? String(event.detail.code || "").trim().toUpperCase()
+          ? normalizeCode(event.detail.code || "")
           : "";
 
       if (!code) {
@@ -969,9 +1045,15 @@
 
     document.addEventListener("visibilitychange", function () {
       if (document.visibilityState === "visible") {
-        syncAttributionIntoCheckoutSession().catch(function (error) {
-          console.error("Visibility affiliate sync failed:", error);
-        });
+        hydrateAttributionFromCheckoutSession()
+          .catch(function (error) {
+            console.error("Visibility checkout attribution hydrate failed:", error);
+          })
+          .finally(function () {
+            syncAttributionIntoCheckoutSession().catch(function (error) {
+              console.error("Visibility affiliate sync failed:", error);
+            });
+          });
       }
     });
   }
@@ -995,6 +1077,7 @@
         await restoreExistingAttribution();
       }
 
+      await hydrateAttributionFromCheckoutSession();
       bindAffiliateTrackingListeners();
       await syncAttributionIntoCheckoutSession();
       scheduleCheckoutAttributionSync();
