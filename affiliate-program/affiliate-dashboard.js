@@ -63,6 +63,88 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
     ];
   },
 
+  getReferralCodeInput() {
+    return (
+      document.getElementById("affiliateReferralCodeInput") ||
+      document.getElementById("affiliateDiscountCodeInput") ||
+      document.getElementById("affiliateCodeInput") ||
+      null
+    );
+  },
+
+  getReferralCodeSaveButton() {
+    return (
+      document.getElementById("affiliateSaveReferralCodeBtn") ||
+      document.getElementById("affiliateUpdateReferralCodeBtn") ||
+      document.getElementById("affiliateSaveDiscountCodeBtn") ||
+      document.getElementById("affiliateUpdateCodeBtn") ||
+      null
+    );
+  },
+
+  getReferralCodeCopyButton() {
+    return (
+      document.getElementById("affiliateCopyReferralCodeBtn") ||
+      document.getElementById("affiliateCopyDiscountCodeBtn") ||
+      document.getElementById("affiliateCopyCodeBtn") ||
+      null
+    );
+  },
+
+  getReferralCodeStatusEl() {
+    return (
+      document.getElementById("affiliateReferralCodeStatus") ||
+      document.getElementById("affiliateDiscountCodeStatus") ||
+      document.getElementById("affiliateCodeStatus") ||
+      null
+    );
+  },
+
+  normalizeCode(value) {
+    return String(value || "")
+      .trim()
+      .toUpperCase()
+      .replace(/[^A-Z0-9_-]/g, "")
+      .slice(0, 12);
+  },
+
+  setReferralCodeStatus(message, type) {
+    const el = this.getReferralCodeStatusEl();
+    if (!el) return;
+
+    el.textContent = message || "";
+    el.classList.remove("is-active", "success", "error");
+
+    if (message) {
+      el.classList.add("is-active", type === "error" ? "error" : "success");
+    }
+  },
+
+  syncReferralCodeUi(code) {
+    const cleanCode = this.normalizeCode(code || "");
+
+    const input = this.getReferralCodeInput();
+    if (input) {
+      input.value = cleanCode;
+    }
+
+    this.setText("affiliateDashboardCode", cleanCode || "—");
+
+    const generatedLinkInput = document.getElementById("affiliateGeneratedLink");
+    if (generatedLinkInput) {
+      const origin = window.location.origin;
+      const pathname = window.location.pathname;
+      const siteRoot = pathname
+        .replace("/affiliate-program/affiliate-program.html", "")
+        .replace("affiliate-program/affiliate-program.html", "");
+      const normalizedSiteRoot = siteRoot.endsWith("/") ? siteRoot.slice(0, -1) : siteRoot;
+
+      generatedLinkInput.value = cleanCode
+        ? origin + normalizedSiteRoot + "/?ref=" + encodeURIComponent(cleanCode)
+        : "";
+    }
+  },
+
   setMessage(message, type) {
     if (!this.messageEl) return;
 
@@ -115,6 +197,12 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
         const generateBtn = event.target.closest("#generateAffiliateLinkBtn");
         const copyBtn = event.target.closest("[data-affiliate-copy]");
         const claimBtn = event.target.closest("#submitAffiliateClaimBtn");
+        const saveCodeBtn = event.target.closest(
+          "#affiliateSaveReferralCodeBtn, #affiliateUpdateReferralCodeBtn, #affiliateSaveDiscountCodeBtn, #affiliateUpdateCodeBtn"
+        );
+        const copyCodeBtn = event.target.closest(
+          "#affiliateCopyReferralCodeBtn, #affiliateCopyDiscountCodeBtn, #affiliateCopyCodeBtn"
+        );
 
         if (generateBtn) {
           event.preventDefault();
@@ -131,6 +219,48 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
         if (claimBtn) {
           event.preventDefault();
           this.submitClaim();
+          return;
+        }
+
+        if (saveCodeBtn) {
+          event.preventDefault();
+          this.updateOwnReferralCode();
+          return;
+        }
+
+        if (copyCodeBtn) {
+          event.preventDefault();
+          const code = (this.affiliateProfile && this.affiliateProfile.referral_code) || "";
+          this.copyValue(code, copyCodeBtn);
+          return;
+        }
+      });
+
+      document.addEventListener("input", (event) => {
+        const input = event.target.closest(
+          "#affiliateReferralCodeInput, #affiliateDiscountCodeInput, #affiliateCodeInput"
+        );
+
+        if (!input) return;
+
+        const normalized = this.normalizeCode(input.value);
+        if (input.value !== normalized) {
+          input.value = normalized;
+        }
+
+        this.setReferralCodeStatus("", "");
+      });
+
+      document.addEventListener("keydown", (event) => {
+        const input = event.target.closest(
+          "#affiliateReferralCodeInput, #affiliateDiscountCodeInput, #affiliateCodeInput"
+        );
+
+        if (!input) return;
+
+        if (event.key === "Enter") {
+          event.preventDefault();
+          this.updateOwnReferralCode();
         }
       });
     }
@@ -410,6 +540,7 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
     this.affiliateProfile = null;
     this.showAuth();
     this.setMessage("");
+    this.setReferralCodeStatus("", "");
   },
 
   async loadAffiliateProfile() {
@@ -481,6 +612,9 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
       "affiliateDashboardDiscountRate",
       profile ? String(Number(profile.discount_value || 0)) + "%" : "—"
     );
+
+    this.syncReferralCodeUi((profile && profile.referral_code) || "");
+    this.setReferralCodeStatus("", "");
 
     const stats = await this.fetchStats();
 
@@ -687,6 +821,134 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
     }
   },
 
+  async updateOwnReferralCode() {
+    if (!window.axiomSupabase) {
+      this.setReferralCodeStatus("Supabase is not available.", "error");
+      return;
+    }
+
+    if (!this.currentUser || !this.currentUser.id) {
+      this.setReferralCodeStatus("You must be signed in.", "error");
+      return;
+    }
+
+    if (!this.affiliateProfile || !this.affiliateProfile.id) {
+      this.setReferralCodeStatus("Affiliate profile not found.", "error");
+      return;
+    }
+
+    const input = this.getReferralCodeInput();
+    const saveBtn = this.getReferralCodeSaveButton();
+
+    if (!input) {
+      this.setReferralCodeStatus("Referral code input was not found.", "error");
+      return;
+    }
+
+    const newCode = this.normalizeCode(input.value);
+    const currentCode = this.normalizeCode(this.affiliateProfile.referral_code || "");
+
+    if (!newCode) {
+      this.setReferralCodeStatus("Enter a referral code.", "error");
+      return;
+    }
+
+    if (newCode.length < 4) {
+      this.setReferralCodeStatus("Code must be at least 4 characters.", "error");
+      return;
+    }
+
+    if (newCode.length > 12) {
+      this.setReferralCodeStatus("Code must be 12 characters or less.", "error");
+      return;
+    }
+
+    if (!/^[A-Z0-9_-]+$/.test(newCode)) {
+      this.setReferralCodeStatus("Use only letters, numbers, hyphens, and underscores.", "error");
+      return;
+    }
+
+    if (newCode === currentCode) {
+      this.setReferralCodeStatus("That is already your current code.", "error");
+      return;
+    }
+
+    const originalButtonText = saveBtn ? saveBtn.textContent : "";
+
+    try {
+      if (saveBtn) {
+        saveBtn.disabled = true;
+        saveBtn.textContent = "Saving...";
+      }
+
+      let rpcResult = null;
+      let rpcError = null;
+
+      const ownRpcResponse = await window.axiomSupabase.rpc("affiliate_update_own_referral_code", {
+        p_new_referral_code: newCode
+      });
+
+      if (ownRpcResponse && !ownRpcResponse.error) {
+        rpcResult = ownRpcResponse.data || null;
+      } else {
+        const fallbackResponse = await window.axiomSupabase.rpc("admin_update_affiliate_referral_code", {
+          p_affiliate_id: this.affiliateProfile.id,
+          p_new_referral_code: newCode
+        });
+
+        if (fallbackResponse.error) {
+          rpcError = fallbackResponse.error;
+        } else {
+          rpcResult = fallbackResponse.data || null;
+        }
+      }
+
+      if (rpcError) {
+        throw rpcError;
+      }
+
+      await this.loadAffiliateProfile();
+
+      const updatedCode =
+        this.normalizeCode(
+          (Array.isArray(rpcResult) && rpcResult[0] && rpcResult[0].referral_code) ||
+          (rpcResult && rpcResult.referral_code) ||
+          (this.affiliateProfile && this.affiliateProfile.referral_code) ||
+          newCode
+        );
+
+      if (this.affiliateProfile) {
+        this.affiliateProfile.referral_code = updatedCode;
+      }
+
+      this.syncReferralCodeUi(updatedCode);
+      this.setReferralCodeStatus("Code updated successfully.", "success");
+      this.setMessage("Referral / discount code updated successfully.", "success");
+    } catch (error) {
+      console.error(error);
+
+      const rawMessage = String(error && error.message ? error.message : "Code update failed.");
+      let friendlyMessage = rawMessage;
+
+      if (/already taken/i.test(rawMessage)) {
+        friendlyMessage = "Code already taken.";
+      } else if (/duplicate/i.test(rawMessage)) {
+        friendlyMessage = "Code already taken.";
+      } else if (/12/i.test(rawMessage) && /character/i.test(rawMessage)) {
+        friendlyMessage = "Code must be 12 characters or less.";
+      } else if (/at least 4/i.test(rawMessage)) {
+        friendlyMessage = "Code must be at least 4 characters.";
+      }
+
+      this.setReferralCodeStatus(friendlyMessage, "error");
+    } finally {
+      if (saveBtn) {
+        saveBtn.disabled = false;
+        saveBtn.textContent = originalButtonText || "Save Code";
+      }
+    }
+  },
+
   async copyValue(value, button) {
     if (!value) return;
 
@@ -711,7 +973,7 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
     const source = (name + email).replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
     const base = source.slice(0, 8) || "AXIOMAFF";
     const suffix = Math.random().toString(36).slice(2, 6).toUpperCase();
-    return base + suffix;
+    return (base + suffix).slice(0, 12);
   },
 
   formatMoney(value) {
