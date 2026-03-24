@@ -290,6 +290,100 @@ window.AXIOM_ORDER_FULFILLMENT_MODAL = {
     throw lastError || new Error("Order update failed.");
   },
 
+  async syncAffiliateConversion(updatedOrder) {
+    try {
+      if (!updatedOrder?.id) {
+        return;
+      }
+
+      if (
+        window.AXIOM_AFFILIATE_TRACKING &&
+        typeof window.AXIOM_AFFILIATE_TRACKING.syncConversionForOrder === "function"
+      ) {
+        await window.AXIOM_AFFILIATE_TRACKING.syncConversionForOrder(updatedOrder.id);
+        return;
+      }
+
+      if (!window.axiomSupabase) {
+        return;
+      }
+
+      if (!updatedOrder.affiliate_id || !updatedOrder.affiliate_code) {
+        return;
+      }
+
+      const fulfillmentStatus = String(updatedOrder.fulfillment_status || "").toLowerCase();
+      const isClaimable = fulfillmentStatus === "fulfilled" || fulfillmentStatus === "shipped";
+      const now = new Date().toISOString();
+
+      const { data: existingConversion, error: existingConversionError } = await window.axiomSupabase
+        .from("affiliate_conversions")
+        .select("id")
+        .eq("order_id", updatedOrder.id)
+        .maybeSingle();
+
+      if (existingConversionError) {
+        throw existingConversionError;
+      }
+
+      const payload = {
+        affiliate_id: updatedOrder.affiliate_id,
+        referral_code: updatedOrder.affiliate_code,
+        affiliate_click_id: updatedOrder.affiliate_click_id || null,
+        affiliate_referral_session_id: updatedOrder.affiliate_referral_session_id || null,
+        checkout_session_id: updatedOrder.checkout_session_id || null,
+        order_id: updatedOrder.id,
+        order_number: updatedOrder.order_number || null,
+        customer_email: updatedOrder.customer_email || null,
+        subtotal: Number(updatedOrder.subtotal || 0),
+        total_amount: Number(updatedOrder.total_amount || 0),
+        discount_amount: Number(updatedOrder.discount_amount || 0),
+        commission_amount: Number(updatedOrder.affiliate_commission_amount || 0),
+        commission_status: isClaimable ? "claimable" : "pending",
+        claimable_at: isClaimable ? now : null,
+        updated_at: now
+      };
+
+      if (existingConversion?.id) {
+        const { error: updateError } = await window.axiomSupabase
+          .from("affiliate_conversions")
+          .update(payload)
+          .eq("id", existingConversion.id);
+
+        if (updateError) {
+          throw updateError;
+        }
+      } else {
+        const { error: insertError } = await window.axiomSupabase
+          .from("affiliate_conversions")
+          .insert({
+            ...payload,
+            created_at: now
+          });
+
+        if (insertError) {
+          throw insertError;
+        }
+      }
+
+      if (updatedOrder.affiliate_referral_session_id) {
+        const { error: referralUpdateError } = await window.axiomSupabase
+          .from("affiliate_referral_sessions")
+          .update({
+            is_converted: true,
+            updated_at: now
+          })
+          .eq("id", updatedOrder.affiliate_referral_session_id);
+
+        if (referralUpdateError) {
+          console.error("Failed to mark affiliate referral session converted:", referralUpdateError);
+        }
+      }
+    } catch (error) {
+      console.error("Failed syncing affiliate conversion after order update:", error);
+    }
+  },
+
   async refreshOrderViews(updatedOrder) {
     this.currentOrder = updatedOrder || this.currentOrder;
 
@@ -381,6 +475,16 @@ window.AXIOM_ORDER_FULFILLMENT_MODAL = {
           payment_status: "paid",
           fulfillment_status: "fulfilled",
           order_status: "fulfilled",
+          payment_collected_at: now,
+          confirmed_at: now,
+          completed_at: now,
+          updated_at: now
+        },
+        {
+          payment_method: paymentMethod,
+          payment_status: "paid",
+          fulfillment_status: "fulfilled",
+          order_status: "fulfilled",
           updated_at: now
         },
         {
@@ -401,6 +505,7 @@ window.AXIOM_ORDER_FULFILLMENT_MODAL = {
 
       const updatedOrder = await this.updateOrderWithFallback(payloadVariants);
 
+      await this.syncAffiliateConversion(updatedOrder);
       await this.refreshOrderViews(updatedOrder);
 
       this.setMessage("orderFulfillmentModalSuccess", "Order fulfilled successfully.", "success");
@@ -444,6 +549,7 @@ window.AXIOM_ORDER_FULFILLMENT_MODAL = {
           tracking_url: trackingUrl || null,
           shipping_carrier: carrier || null,
           shipping_service: service || null,
+          shipped_at: now,
           updated_at: now
         },
         {
@@ -476,9 +582,11 @@ window.AXIOM_ORDER_FULFILLMENT_MODAL = {
         shipping_carrier: carrier || updatedOrder?.shipping_carrier || "",
         shipping_service: service || updatedOrder?.shipping_service || "",
         tracking_number: trackingNumber || updatedOrder?.tracking_number || "",
-        tracking_url: trackingUrl || updatedOrder?.tracking_url || ""
+        tracking_url: trackingUrl || updatedOrder?.tracking_url || "",
+        shipped_at: updatedOrder?.shipped_at || now
       };
 
+      await this.syncAffiliateConversion(mergedOrder);
       await this.refreshOrderViews(mergedOrder);
 
       this.fillSavedShipment({
