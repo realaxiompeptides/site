@@ -114,7 +114,15 @@ window.AXIOM_ORDER_SUBMIT = {
         ) {
           const attribution = window.AXIOM_AFFILIATE_TRACKING.getAttributionForCheckout();
           if (attribution && typeof attribution === "object") {
-            return attribution;
+            return {
+              affiliate_id: attribution.affiliate_id || null,
+              affiliate_code: attribution.affiliate_code || null,
+              affiliate_click_id: attribution.affiliate_click_id || null,
+              affiliate_referral_session_id: attribution.affiliate_referral_session_id || null,
+              affiliate_landing_page: attribution.affiliate_landing_page || null,
+              affiliate_discount_amount: Number(attribution.affiliate_discount_amount || 0),
+              affiliate_commission_amount: 0
+            };
           }
         }
       } catch (error) {
@@ -132,8 +140,7 @@ window.AXIOM_ORDER_SUBMIT = {
             affiliate_landing_page: window.AXIOM_AFFILIATE_ATTRIBUTION.landing_page || null,
             affiliate_discount_amount:
               Number(window.AXIOM_AFFILIATE_ATTRIBUTION.affiliate_discount_amount || 0),
-            affiliate_commission_amount:
-              Number(window.AXIOM_AFFILIATE_ATTRIBUTION.affiliate_commission_amount || 0)
+            affiliate_commission_amount: 0
           };
         }
       } catch (error) {
@@ -152,7 +159,7 @@ window.AXIOM_ORDER_SUBMIT = {
               affiliate_referral_session_id: parsed.affiliate_referral_session_id || null,
               affiliate_landing_page: parsed.landing_page || null,
               affiliate_discount_amount: Number(parsed.affiliate_discount_amount || 0),
-              affiliate_commission_amount: Number(parsed.affiliate_commission_amount || 0)
+              affiliate_commission_amount: 0
             };
           }
         }
@@ -193,7 +200,7 @@ window.AXIOM_ORDER_SUBMIT = {
           browserAttribution.affiliate_referral_session_id || null,
         affiliate_landing_page: browserAttribution.affiliate_landing_page || null,
         affiliate_discount_amount: Number(browserAttribution.affiliate_discount_amount || 0),
-        affiliate_commission_amount: Number(browserAttribution.affiliate_commission_amount || 0),
+        affiliate_commission_amount: 0,
         updated_at: nowIso,
         last_activity_at: nowIso
       };
@@ -418,7 +425,7 @@ window.AXIOM_ORDER_SUBMIT = {
         affiliate_click_id: sessionRow.affiliate_click_id || null,
         affiliate_referral_session_id: sessionRow.affiliate_referral_session_id || null,
         affiliate_discount_amount: Number(sessionRow.affiliate_discount_amount || 0),
-        affiliate_commission_amount: Number(sessionRow.affiliate_commission_amount || 0),
+        affiliate_commission_amount: 0,
         affiliate_landing_page: sessionRow.affiliate_landing_page || null,
         shipping_carrier: sessionRow.shipping_carrier || null,
         shipping_service: sessionRow.shipping_service_level || null,
