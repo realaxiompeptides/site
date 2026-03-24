@@ -37,58 +37,67 @@
           <span>Full Name</span>
           <strong id="affiliateDashboardFullName">—</strong>
         </div>
+
         <div class="affiliate-data-row">
           <span>Email</span>
           <strong id="affiliateDashboardEmailRow">—</strong>
         </div>
+
         <div class="affiliate-data-row">
           <span>Referral Code</span>
           <strong id="affiliateDashboardCode">—</strong>
         </div>
+
         <div class="affiliate-data-row">
           <span>Commission Rate</span>
           <strong id="affiliateDashboardCommissionRate">—</strong>
         </div>
-        <div class="affiliate-data-row">
+
+        <div class="affiliate-data-row affiliate-data-row-stack">
           <span>Customer Discount</span>
           <strong id="affiliateDashboardDiscountRate">—</strong>
         </div>
-      </div>
 
-      <div class="affiliate-code-editor">
-        <p class="affiliate-code-editor-title">Change Referral / Discount Code</p>
-        <p class="affiliate-muted affiliate-code-editor-copy">
-          This updates your referral link code and the checkout discount code customers can use.
-        </p>
+        <div class="affiliate-code-editor">
+          <p class="affiliate-code-editor-title">Change Referral / Discount Code</p>
+          <p class="affiliate-code-editor-copy">
+            This updates your referral link code and the checkout discount code customers can use.
+          </p>
 
-        <div class="affiliate-code-editor-controls">
-          <input
-            id="affiliateReferralCodeInput"
-            type="text"
-            maxlength="12"
-            placeholder="Enter new code"
-            autocomplete="off"
-            spellcheck="false"
-          />
+          <div class="affiliate-code-editor-field">
+            <input
+              type="text"
+              id="affiliateReferralCodeInput"
+              class="affiliate-input"
+              maxlength="12"
+              placeholder="Enter new code"
+              autocomplete="off"
+            />
+          </div>
+
           <div class="affiliate-code-editor-actions">
             <button
               type="button"
-              class="affiliate-btn affiliate-btn-primary"
               id="affiliateSaveReferralCodeBtn"
+              class="affiliate-btn affiliate-btn-primary"
             >
               Save Code
             </button>
+
             <button
               type="button"
-              class="affiliate-btn affiliate-btn-secondary"
               id="affiliateCopyReferralCodeBtn"
+              class="affiliate-btn affiliate-btn-secondary"
             >
               Copy Code
             </button>
           </div>
-        </div>
 
-        <p id="affiliateReferralCodeStatus" class="affiliate-form-message"></p>
+          <div
+            id="affiliateReferralCodeMessage"
+            class="affiliate-message affiliate-inline-message"
+          ></div>
+        </div>
       </div>
     </div>
 
