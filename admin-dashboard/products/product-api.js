@@ -51,9 +51,25 @@ window.AXIOM_PRODUCTS_API = (function () {
       weight_oz: safeNumber(variant && variant.weight_oz, 0),
       stock_quantity: safeNumber(variant && variant.stock_quantity, 0),
       image: safeString(variant && variant.image),
+      coa_image_url: safeString(variant && variant.coa_image_url),
+      coa_title: safeString(variant && variant.coa_title),
+      coa_lot_number: safeString(variant && variant.coa_lot_number),
+      coa_tested_at: safeString(variant && variant.coa_tested_at),
+      coa_verified: !!(variant && variant.coa_verified),
       allow_backorder: !!(variant && variant.allow_backorder),
       is_active: variant && variant.is_active === false ? false : true,
       sort_order: safeNumber(variant && variant.sort_order, index)
+    };
+  }
+
+  function normalizeProduct(product) {
+    return {
+      ...product,
+      gallery_images: normalizeGalleryImages(product.gallery_images),
+      main_coa_image: safeString(product.main_coa_image),
+      product_variants: safeArray(product.product_variants).sort(function (a, b) {
+        return safeNumber(a.sort_order, 0) - safeNumber(b.sort_order, 0);
+      })
     };
   }
 
@@ -71,6 +87,7 @@ window.AXIOM_PRODUCTS_API = (function () {
         description,
         long_description,
         main_image,
+        main_coa_image,
         gallery_images,
         is_active,
         sort_order,
@@ -86,6 +103,11 @@ window.AXIOM_PRODUCTS_API = (function () {
           weight_oz,
           stock_quantity,
           image,
+          coa_image_url,
+          coa_title,
+          coa_lot_number,
+          coa_tested_at,
+          coa_verified,
           allow_backorder,
           is_active,
           sort_order,
@@ -100,15 +122,7 @@ window.AXIOM_PRODUCTS_API = (function () {
       throw new Error(error.message || "Failed to load products.");
     }
 
-    return safeArray(data).map(function (product) {
-      return {
-        ...product,
-        gallery_images: normalizeGalleryImages(product.gallery_images),
-        product_variants: safeArray(product.product_variants).sort(function (a, b) {
-          return safeNumber(a.sort_order, 0) - safeNumber(b.sort_order, 0);
-        })
-      };
-    });
+    return safeArray(data).map(normalizeProduct);
   }
 
   async function createProduct() {
@@ -125,6 +139,7 @@ window.AXIOM_PRODUCTS_API = (function () {
       description: "",
       long_description: "",
       main_image: "",
+      main_coa_image: "",
       gallery_images: [],
       is_active: true,
       sort_order: 9999
@@ -142,6 +157,7 @@ window.AXIOM_PRODUCTS_API = (function () {
         description,
         long_description,
         main_image,
+        main_coa_image,
         gallery_images,
         is_active,
         sort_order,
@@ -157,6 +173,11 @@ window.AXIOM_PRODUCTS_API = (function () {
           weight_oz,
           stock_quantity,
           image,
+          coa_image_url,
+          coa_title,
+          coa_lot_number,
+          coa_tested_at,
+          coa_verified,
           allow_backorder,
           is_active,
           sort_order,
@@ -170,11 +191,7 @@ window.AXIOM_PRODUCTS_API = (function () {
       throw new Error(error.message || "Failed to create product.");
     }
 
-    return {
-      ...data,
-      gallery_images: normalizeGalleryImages(data.gallery_images),
-      product_variants: safeArray(data.product_variants)
-    };
+    return normalizeProduct(data);
   }
 
   async function saveProduct(product) {
@@ -196,6 +213,7 @@ window.AXIOM_PRODUCTS_API = (function () {
       description: safeString(product.description),
       long_description: safeString(product.long_description),
       main_image: safeString(product.main_image),
+      main_coa_image: safeString(product.main_coa_image),
       gallery_images: normalizeGalleryImages(product.gallery_images),
       is_active: product.is_active === false ? false : true,
       updated_at: new Date().toISOString()
@@ -217,6 +235,7 @@ window.AXIOM_PRODUCTS_API = (function () {
           description,
           long_description,
           main_image,
+          main_coa_image,
           gallery_images,
           is_active,
           sort_order,
@@ -243,6 +262,7 @@ window.AXIOM_PRODUCTS_API = (function () {
           description,
           long_description,
           main_image,
+          main_coa_image,
           gallery_images,
           is_active,
           sort_order,
@@ -315,6 +335,11 @@ window.AXIOM_PRODUCTS_API = (function () {
           weight_oz: variant.weight_oz,
           stock_quantity: variant.stock_quantity,
           image: variant.image,
+          coa_image_url: variant.coa_image_url,
+          coa_title: variant.coa_title,
+          coa_lot_number: variant.coa_lot_number,
+          coa_tested_at: variant.coa_tested_at || null,
+          coa_verified: variant.coa_verified,
           allow_backorder: variant.allow_backorder,
           is_active: variant.is_active,
           sort_order: variant.sort_order,
@@ -368,6 +393,7 @@ window.AXIOM_PRODUCTS_API = (function () {
         description,
         long_description,
         main_image,
+        main_coa_image,
         gallery_images,
         is_active,
         sort_order,
@@ -383,6 +409,11 @@ window.AXIOM_PRODUCTS_API = (function () {
           weight_oz,
           stock_quantity,
           image,
+          coa_image_url,
+          coa_title,
+          coa_lot_number,
+          coa_tested_at,
+          coa_verified,
           allow_backorder,
           is_active,
           sort_order,
@@ -397,13 +428,7 @@ window.AXIOM_PRODUCTS_API = (function () {
       throw new Error(finalError.message || "Product saved, but failed to reload it.");
     }
 
-    return {
-      ...finalProduct,
-      gallery_images: normalizeGalleryImages(finalProduct.gallery_images),
-      product_variants: safeArray(finalProduct.product_variants).sort(function (a, b) {
-        return safeNumber(a.sort_order, 0) - safeNumber(b.sort_order, 0);
-      })
-    };
+    return normalizeProduct(finalProduct);
   }
 
   async function deleteProduct(productId) {
