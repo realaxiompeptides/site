@@ -5,6 +5,8 @@
 .affiliates-admin-card {
   display: grid;
   gap: 18px;
+  width: 100%;
+  min-width: 0;
 }
 
 .affiliates-admin-header {
@@ -12,6 +14,7 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
+  flex-wrap: wrap;
 }
 
 .affiliates-admin-kicker {
@@ -41,6 +44,7 @@
 .affiliates-admin-header-actions {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 10px;
   flex-wrap: wrap;
 }
@@ -175,6 +179,7 @@
 
 .affiliates-admin-table-wrap {
   overflow: hidden;
+  min-width: 0;
 }
 
 .affiliates-admin-table-wrap-claims {
@@ -287,7 +292,9 @@
 }
 
 .affiliates-admin-actions .affiliates-admin-btn,
-.affiliates-admin-inline-actions .affiliates-admin-btn {
+.affiliates-admin-inline-actions .affiliates-admin-btn,
+.affiliates-admin-actions .affiliates-admin-action-btn,
+.affiliates-admin-inline-actions .affiliates-admin-action-btn {
   min-width: 92px;
 }
 
@@ -522,7 +529,7 @@
 }
 
 /* =========================
-   Mobile
+   Desktop / tablet
    ========================= */
 
 @media (max-width: 980px) {
@@ -533,6 +540,7 @@
 
   .affiliates-admin-header-actions {
     width: 100%;
+    justify-content: stretch;
   }
 
   .affiliates-admin-header-actions .affiliates-admin-btn {
@@ -545,7 +553,15 @@
   .affiliates-admin-form-grid {
     grid-template-columns: 1fr;
   }
+
+  .affiliates-admin-title {
+    font-size: 32px;
+  }
 }
+
+/* =========================
+   Mobile fixes
+   ========================= */
 
 @media (max-width: 720px) {
   .affiliates-admin-card {
@@ -553,20 +569,22 @@
   }
 
   .affiliates-admin-title {
-    font-size: 28px;
+    font-size: 24px;
+    line-height: 1.08;
   }
 
   .affiliates-admin-subtext {
-    font-size: 15px;
-    line-height: 1.55;
+    font-size: 14px;
+    line-height: 1.5;
   }
 
-  .affiliates-admin-stat-card {
-    padding: 18px;
-  }
-
+  .affiliates-admin-stat-card,
   .affiliates-admin-payout-requests-card,
-  .affiliates-admin-detail-card,
+  .affiliates-admin-detail-card {
+    padding: 16px;
+    border-radius: 22px;
+  }
+
   .affiliates-admin-modal-body {
     padding: 16px;
   }
@@ -579,117 +597,185 @@
     font-size: 22px;
   }
 
-  .affiliates-admin-table-wrap {
-    border-radius: 22px;
-  }
-
-  .affiliates-admin-table-wrap-claims {
-    max-height: 260px;
-  }
-
-  /* main affiliates table turns into compact mobile cards */
-  .affiliates-admin-table thead {
-    display: none;
-  }
-
-  .affiliates-admin-table tbody,
-  .affiliates-admin-table tr,
-  .affiliates-admin-table td {
-    display: block;
-    width: 100%;
-    box-sizing: border-box;
-  }
-
-  .affiliates-admin-table tbody tr {
-    margin: 0 0 12px;
-    border: 1px solid #dbe5f0;
-    border-radius: 22px;
-    overflow: hidden;
-    background: #ffffff;
-    box-shadow: 0 10px 28px rgba(15, 23, 42, 0.03);
-  }
-
-  .affiliates-admin-table tbody tr:last-child {
-    margin-bottom: 0;
-  }
-
-  .affiliates-admin-table tbody td {
-    padding: 10px 14px;
-    border-bottom: 1px solid #edf2f7;
-    min-height: 46px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
+  .affiliates-admin-toolbar {
     gap: 12px;
-    font-size: 14px;
   }
 
-  .affiliates-admin-table tbody td:last-child {
-    border-bottom: 0;
-    padding-top: 12px;
-    padding-bottom: 12px;
-  }
-
-  .affiliates-admin-table tbody td::before {
-    content: attr(data-label);
-    flex: 0 0 42%;
-    max-width: 42%;
-    color: #70809d;
-    font-size: 11px;
-    font-weight: 900;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    line-height: 1.3;
-  }
-
-  /* compact actions block */
-  .affiliates-admin-actions {
-    width: 100%;
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 8px;
-  }
-
-  .affiliates-admin-actions .affiliates-admin-btn {
-    width: 100%;
-    min-width: 0;
-    min-height: 40px;
-    padding: 0 10px;
-    font-size: 13px;
-    border-radius: 14px;
-  }
-
-  /* payout request table stays scrollable inside its own box */
-  .affiliates-admin-claims-table {
-    min-width: 720px;
-  }
-}
-
-@media (max-width: 520px) {
-  .affiliates-admin-title {
-    font-size: 24px;
+  .affiliates-admin-search-input,
+  .affiliates-admin-filter-select {
+    min-height: 52px;
+    border-radius: 16px;
+    padding: 0 16px;
+    font-size: 15px;
   }
 
   .affiliates-admin-stat-value {
     font-size: 18px;
   }
 
-  .affiliates-admin-table tbody td {
-    padding: 9px 12px;
+  .affiliates-admin-stat-label {
+    font-size: 12px;
+  }
+
+  .affiliates-admin-header-actions .affiliates-admin-btn,
+  .affiliates-admin-btn,
+  .affiliates-admin-action-btn {
     min-height: 42px;
+    border-radius: 14px;
+    font-size: 13px;
+    padding: 0 12px;
+  }
+
+  /* payout requests should stay compact */
+  .affiliates-admin-table-wrap-claims {
+    max-height: 280px;
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .affiliates-admin-claims-table {
+    min-width: 680px;
+  }
+
+  /* MAIN AFFILIATES TABLE -> compact mobile cards */
+  .affiliates-admin-table:not(.affiliates-admin-claims-table) thead {
+    display: none;
+  }
+
+  .affiliates-admin-table:not(.affiliates-admin-claims-table) tbody,
+  .affiliates-admin-table:not(.affiliates-admin-claims-table) tr,
+  .affiliates-admin-table:not(.affiliates-admin-claims-table) td {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .affiliates-admin-table:not(.affiliates-admin-claims-table) tbody tr {
+    margin: 0 0 12px;
+    border: 1px solid #dbe5f0;
+    border-radius: 20px;
+    overflow: hidden;
+    background: #ffffff;
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.03);
+  }
+
+  .affiliates-admin-table:not(.affiliates-admin-claims-table) tbody tr:last-child {
+    margin-bottom: 0;
+  }
+
+  .affiliates-admin-table:not(.affiliates-admin-claims-table) tbody td {
+    padding: 8px 12px;
+    min-height: 38px;
+    border-bottom: 1px solid #edf2f7;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    font-size: 13px;
+    line-height: 1.35;
+  }
+
+  .affiliates-admin-table:not(.affiliates-admin-claims-table) tbody td:last-child {
+    border-bottom: 0;
+    padding: 10px 12px 12px;
+  }
+
+  .affiliates-admin-table:not(.affiliates-admin-claims-table) tbody td::before {
+    content: attr(data-label);
+    flex: 0 0 40%;
+    max-width: 40%;
+    color: #70809d;
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    line-height: 1.25;
+  }
+
+  .affiliates-admin-table:not(.affiliates-admin-claims-table) tbody td strong,
+  .affiliates-admin-table:not(.affiliates-admin-claims-table) tbody td span,
+  .affiliates-admin-table:not(.affiliates-admin-claims-table) tbody td div {
+    max-width: 58%;
+    text-align: right;
+    word-break: break-word;
+  }
+
+  /* compact action buttons inside each card */
+  .affiliates-admin-table:not(.affiliates-admin-claims-table) .affiliates-admin-actions {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .affiliates-admin-table:not(.affiliates-admin-claims-table) .affiliates-admin-actions .affiliates-admin-btn,
+  .affiliates-admin-table:not(.affiliates-admin-claims-table) .affiliates-admin-actions .affiliates-admin-action-btn {
+    width: 100%;
+    min-width: 0;
+    min-height: 38px;
+    padding: 0 8px;
+    font-size: 12px;
+    border-radius: 13px;
+  }
+
+  .affiliates-admin-badge,
+  .affiliate-admin-status {
+    min-height: 28px;
+    padding: 5px 10px;
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 520px) {
+  .affiliates-admin-title {
+    font-size: 22px;
+  }
+
+  .affiliates-admin-subtext {
     font-size: 13px;
   }
 
-  .affiliates-admin-table tbody td::before {
-    flex: 0 0 40%;
-    max-width: 40%;
-    font-size: 10px;
+  .affiliates-admin-stat-card,
+  .affiliates-admin-payout-requests-card,
+  .affiliates-admin-detail-card {
+    padding: 14px;
   }
 
-  .affiliates-admin-actions .affiliates-admin-btn {
-    min-height: 38px;
+  .affiliates-admin-search-input,
+  .affiliates-admin-filter-select {
+    min-height: 50px;
+    font-size: 14px;
+  }
+
+  .affiliates-admin-stat-value {
+    font-size: 16px;
+  }
+
+  .affiliates-admin-stat-label {
+    font-size: 11px;
+  }
+
+  .affiliates-admin-table:not(.affiliates-admin-claims-table) tbody td {
+    padding: 7px 10px;
+    min-height: 34px;
     font-size: 12px;
-    padding: 0 8px;
+  }
+
+  .affiliates-admin-table:not(.affiliates-admin-claims-table) tbody td::before {
+    font-size: 9px;
+  }
+
+  .affiliates-admin-table:not(.affiliates-admin-claims-table) .affiliates-admin-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .affiliates-admin-table:not(.affiliates-admin-claims-table) .affiliates-admin-actions .affiliates-admin-btn,
+  .affiliates-admin-table:not(.affiliates-admin-claims-table) .affiliates-admin-actions .affiliates-admin-action-btn {
+    min-height: 36px;
+    font-size: 11px;
+    padding: 0 6px;
+    border-radius: 12px;
   }
 
   .affiliates-admin-inline-actions {
@@ -698,7 +784,8 @@
     gap: 8px;
   }
 
-  .affiliates-admin-inline-actions .affiliates-admin-btn {
+  .affiliates-admin-inline-actions .affiliates-admin-btn,
+  .affiliates-admin-inline-actions .affiliates-admin-action-btn {
     width: 100%;
   }
 }
