@@ -59,7 +59,7 @@
 
   function normalizeImagePath(path) {
     const clean = safeString(path);
-    if (!clean) return "../images/products/placeholder.PNG";
+    if (!clean) return "../images/placeholder.PNG";
 
     if (
       clean.startsWith("http://") ||
@@ -118,12 +118,12 @@
       id: safeString(variant && variant.id),
       variant_id: safeString(variant && variant.variant_id),
       label: safeString(variant && variant.label) || "Variant",
-      price: Number(variant && variant.price || 0),
-      compare_at_price: Number(variant && variant.compare_at_price || 0),
-      stock_quantity: Number(variant && variant.stock_quantity || 0),
+      price: Number((variant && variant.price) || 0),
+      compare_at_price: Number((variant && variant.compare_at_price) || 0),
+      stock_quantity: Number((variant && variant.stock_quantity) || 0),
       image: safeString(variant && variant.image),
       is_active: variant && variant.is_active === false ? false : true,
-      sort_order: Number(variant && variant.sort_order || 0),
+      sort_order: Number((variant && variant.sort_order) || 0),
 
       coa_image_url: safeString(variant && variant.coa_image_url),
       coa_title: safeString(variant && variant.coa_title),
@@ -238,11 +238,13 @@
     if (!supabase) return;
 
     try {
+      const visitorId =
+        window.AXIOM_HELPERS && typeof window.AXIOM_HELPERS.getVisitorId === "function"
+          ? window.AXIOM_HELPERS.getVisitorId()
+          : null;
+
       await supabase.from("page_views").insert({
-        visitor_id:
-          window.AXIOM_HELPERS && typeof window.AXIOM_HELPERS.getVisitorId === "function"
-            ? window.AXIOM_HELPERS.getVisitorId()
-            : null,
+        visitor_id: visitorId,
         path:
           (window.location.pathname || "/") +
           "?coa_open=1&product=" +
@@ -584,4 +586,4 @@
   }
 
   document.addEventListener("DOMContentLoaded", init);
-})()
+})();
