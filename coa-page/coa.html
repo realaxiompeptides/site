@@ -24,11 +24,14 @@
     href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
   />
 
+  <!-- SAME SHARED SITE CSS AS HOMEPAGE -->
   <link rel="stylesheet" href="../css/style.css" />
   <link rel="stylesheet" href="../css/menu.css" />
   <link rel="stylesheet" href="../cart/cart.css" />
   <link rel="stylesheet" href="../footer/footer.css" />
   <link rel="stylesheet" href="../age-gate/age-gate.css" />
+
+  <!-- COA PAGE ONLY -->
   <link rel="stylesheet" href="coa.css" />
 
   <style>
@@ -274,13 +277,15 @@
   <div class="site-overlay" id="siteOverlay"></div>
 
   <main class="coa-main">
-    <section class="coa-hero">
-      <div class="container coa-hero-inner">
-        <p class="coa-kicker">COA Library</p>
-        <h1>Browse every product and every variant.</h1>
-        <p class="coa-subtext">
-          This page loads directly from Supabase, groups all live variants under each product,
-          and opens the matching COA image for the selected variant.
+    <section class="coa-hero-section">
+      <div class="coa-hero-bg"></div>
+      <div class="coa-hero-overlay"></div>
+
+      <div class="coa-hero-content container">
+        <p class="hero-kicker">Certificate Library</p>
+        <h1>Browse every COA by product and strength.</h1>
+        <p class="hero-subtext">
+          View live certificates of analysis loaded from your Supabase product catalog, grouped by product and variant.
         </p>
 
         <div class="coa-toolbar">
@@ -299,11 +304,21 @@
       </div>
     </section>
 
-    <section class="coa-content container">
-      <div class="coa-grid" id="coaGrid">
-        <div class="coa-loading-state">
-          <h3>Loading COAs...</h3>
-          <p class="coa-loading-copy">Pulling live products and variants from Supabase.</p>
+    <section class="section-pad light-section">
+      <div class="container">
+        <div class="section-heading">
+          <p class="section-kicker">Research Documentation</p>
+          <h2>Find the exact certificate for each variant.</h2>
+          <p>
+            Every product is grouped with its live strengths and variants so customers can open the right COA for the exact item they are viewing.
+          </p>
+        </div>
+
+        <div class="coa-grid" id="coaGrid">
+          <div class="coa-loading-state">
+            <h3>Loading COAs...</h3>
+            <p class="coa-loading-copy">Pulling live products and variants from Supabase.</p>
+          </div>
         </div>
       </div>
     </section>
@@ -396,108 +411,6 @@
             console.error("Age gate failed to load:", error);
           });
       }
-
-      setTimeout(function () {
-        try {
-          const rawCart = localStorage.getItem("axiom_cart");
-          const cart = JSON.parse(rawCart || "[]");
-          const products = Array.isArray(window.AXIOM_PRODUCTS)
-            ? window.AXIOM_PRODUCTS
-            : Array.isArray(window.productData)
-              ? window.productData
-              : [];
-
-          if (!Array.isArray(cart) || !cart.length || !products.length) return;
-
-          let needsUpdate = false;
-
-          function normalizeImagePath(path) {
-            if (!path || typeof path !== "string") return "";
-            const cleanPath = path.trim();
-
-            if (
-              cleanPath.startsWith("http://") ||
-              cleanPath.startsWith("https://") ||
-              cleanPath.startsWith("/")
-            ) {
-              return cleanPath;
-            }
-
-            if (cleanPath.startsWith("./")) {
-              return cleanPath.replace("./", "");
-            }
-
-            if (cleanPath.startsWith("../")) {
-              return cleanPath.replace("../", "");
-            }
-
-            return cleanPath;
-          }
-
-          function getProductImage(product) {
-            if (!product) return "";
-
-            if (typeof product.image === "string" && product.image.trim()) {
-              return normalizeImagePath(product.image);
-            }
-
-            if (Array.isArray(product.images) && product.images.length) {
-              const firstImage = product.images[0];
-              if (typeof firstImage === "string" && firstImage.trim()) {
-                return normalizeImagePath(firstImage);
-              }
-            }
-
-            if (typeof product.main_image === "string" && product.main_image.trim()) {
-              return normalizeImagePath(product.main_image);
-            }
-
-            return "";
-          }
-
-          const fixedCart = cart.map(function (item) {
-            if (item.image && String(item.image).trim()) {
-              return item;
-            }
-
-            const match = products.find(function (product) {
-              if (item.slug && product.slug && item.slug === product.slug) return true;
-              if (item.id && product.id && String(item.id) === String(product.id)) return true;
-
-              if (Array.isArray(product.variants)) {
-                return product.variants.some(function (variant) {
-                  return item.id && variant.id && String(item.id) === String(variant.id);
-                });
-              }
-
-              if (Array.isArray(product.product_variants)) {
-                return product.product_variants.some(function (variant) {
-                  return item.id && variant.id && String(item.id) === String(variant.id);
-                });
-              }
-
-              return false;
-            });
-
-            const image = getProductImage(match);
-            if (!image) return item;
-
-            needsUpdate = true;
-            return {
-              ...item,
-              image: image
-            };
-          });
-
-          if (needsUpdate) {
-            localStorage.setItem("axiom_cart", JSON.stringify(fixedCart));
-            window.dispatchEvent(new Event("axiom-cart-updated"));
-            window.dispatchEvent(new Event("storage"));
-          }
-        } catch (error) {
-          console.error("Failed to repair cart images:", error);
-        }
-      }, 500);
     });
   </script>
 </body>
