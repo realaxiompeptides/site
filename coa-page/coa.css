@@ -1,34 +1,28 @@
 :root {
-  --coa-bg: #09111f;
-  --coa-surface: #0f1a2d;
-  --coa-surface-2: #13213a;
-  --coa-border: rgba(255, 255, 255, 0.1);
-  --coa-text: #eef4ff;
-  --coa-muted: #99abc9;
+  --coa-bg: #f4f8fc;
+  --coa-surface: #ffffff;
+  --coa-surface-2: #f8fbff;
+  --coa-border: #dbe6f2;
+  --coa-text: #0f172a;
+  --coa-muted: #64748b;
   --coa-brand: #2f84bf;
-  --coa-brand-strong: #5ba8de;
-  --coa-pill: rgba(47, 132, 191, 0.14);
-  --coa-shadow: 0 24px 70px rgba(0, 0, 0, 0.35);
-  --coa-success: #85d7a4;
-  --coa-warning: #f4ca8f;
+  --coa-brand-strong: #256f9f;
+  --coa-pill: rgba(47, 132, 191, 0.1);
+  --coa-shadow: 0 18px 50px rgba(15, 23, 42, 0.08);
+  --coa-success: #15803d;
+  --coa-warning: #b45309;
 }
 
 body.coa-page-body {
   margin: 0;
   min-height: 100vh;
   font-family: "Inter", sans-serif;
-  background:
-    radial-gradient(circle at top, rgba(47, 132, 191, 0.2), transparent 34%),
-    linear-gradient(180deg, #0a1221 0%, #08101b 100%);
+  background: linear-gradient(180deg, #f7fbff 0%, #eef5fb 100%);
   color: var(--coa-text);
 }
 
 .coa-main {
-  padding-bottom: 72px;
-}
-
-.coa-hero {
-  padding: 34px 0 10px;
+  padding: 28px 0 72px;
 }
 
 .coa-hero-inner {
@@ -42,20 +36,21 @@ body.coa-page-body {
   font-weight: 800;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: var(--coa-brand-strong);
+  color: var(--coa-brand);
 }
 
 .coa-hero h1 {
   margin: 0;
-  font-size: clamp(30px, 6vw, 48px);
-  line-height: 1.05;
+  font-size: clamp(32px, 6vw, 52px);
+  line-height: 1.04;
+  color: #0f172a;
 }
 
 .coa-subtext {
   max-width: 760px;
   margin: 16px 0 0;
   font-size: 16px;
-  line-height: 1.7;
+  line-height: 1.75;
   color: var(--coa-muted);
 }
 
@@ -68,9 +63,9 @@ body.coa-page-body {
   margin-top: 28px;
   padding: 18px;
   border: 1px solid var(--coa-border);
-  border-radius: 20px;
-  background: rgba(15, 26, 45, 0.74);
-  backdrop-filter: blur(14px);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(12px);
   box-shadow: var(--coa-shadow);
 }
 
@@ -78,11 +73,11 @@ body.coa-page-body {
   display: flex;
   align-items: center;
   gap: 12px;
-  min-width: min(100%, 360px);
+  min-width: min(100%, 380px);
   padding: 14px 16px;
   border: 1px solid var(--coa-border);
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.03);
+  background: #ffffff;
 }
 
 .coa-search-wrap input {
@@ -116,19 +111,15 @@ body.coa-page-body {
   flex-direction: column;
   overflow: hidden;
   border: 1px solid var(--coa-border);
-  border-radius: 22px;
-  background: linear-gradient(
-    180deg,
-    rgba(19, 33, 58, 0.95),
-    rgba(11, 18, 31, 0.96)
-  );
+  border-radius: 24px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
   box-shadow: var(--coa-shadow);
 }
 
 .coa-card-media {
   position: relative;
   aspect-ratio: 1 / 1;
-  background: rgba(255, 255, 255, 0.025);
+  background: #edf4fb;
 }
 
 .coa-card-media img {
@@ -136,7 +127,7 @@ body.coa-page-body {
   height: 100%;
   object-fit: cover;
   display: block;
-  background: #0d1627;
+  background: #edf4fb;
 }
 
 .coa-card-body {
@@ -158,6 +149,7 @@ body.coa-page-body {
   margin: 0;
   font-size: 20px;
   line-height: 1.2;
+  color: #0f172a;
 }
 
 .coa-card-slug {
@@ -180,15 +172,15 @@ body.coa-page-body {
 }
 
 .coa-pill {
-  color: #b7ddf7;
+  color: #17628f;
   background: var(--coa-pill);
-  border: 1px solid rgba(91, 168, 222, 0.28);
+  border: 1px solid rgba(47, 132, 191, 0.22);
 }
 
 .coa-empty-pill {
   color: var(--coa-warning);
-  background: rgba(236, 172, 61, 0.12);
-  border: 1px solid rgba(236, 172, 61, 0.24);
+  background: rgba(180, 83, 9, 0.08);
+  border: 1px solid rgba(180, 83, 9, 0.15);
 }
 
 .coa-variant-list {
@@ -203,7 +195,7 @@ body.coa-page-body {
   border: 1px solid var(--coa-border);
   border-radius: 12px;
   padding: 11px 14px;
-  background: rgba(255, 255, 255, 0.03);
+  background: #ffffff;
   color: var(--coa-text);
   font: inherit;
   font-weight: 700;
@@ -211,7 +203,8 @@ body.coa-page-body {
   transition:
     transform 0.18s ease,
     border-color 0.18s ease,
-    background 0.18s ease;
+    background 0.18s ease,
+    box-shadow 0.18s ease;
   text-decoration: none;
 }
 
@@ -219,12 +212,13 @@ body.coa-page-body {
 .coa-product-link:hover,
 .coa-variant-btn.is-selected {
   transform: translateY(-1px);
-  border-color: rgba(91, 168, 222, 0.5);
-  background: rgba(47, 132, 191, 0.12);
+  border-color: rgba(47, 132, 191, 0.55);
+  background: rgba(47, 132, 191, 0.08);
+  box-shadow: 0 10px 24px rgba(47, 132, 191, 0.12);
 }
 
 .coa-variant-btn.has-coa {
-  border-color: rgba(133, 215, 164, 0.28);
+  border-color: rgba(21, 128, 61, 0.22);
 }
 
 .coa-variant-btn.no-coa {
@@ -261,18 +255,15 @@ body.coa-page-body {
   grid-column: 1 / -1;
   padding: 28px;
   border: 1px solid var(--coa-border);
-  border-radius: 22px;
-  background: linear-gradient(
-    180deg,
-    rgba(19, 33, 58, 0.95),
-    rgba(11, 18, 31, 0.96)
-  );
+  border-radius: 24px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
   box-shadow: var(--coa-shadow);
 }
 
 .coa-loading-state h3,
 .coa-empty-full h3 {
   margin-top: 0;
+  color: #0f172a;
 }
 
 .coa-modal[hidden] {
@@ -288,8 +279,8 @@ body.coa-page-body {
 .coa-modal-backdrop {
   position: absolute;
   inset: 0;
-  background: rgba(4, 8, 14, 0.72);
-  backdrop-filter: blur(10px);
+  background: rgba(15, 23, 42, 0.56);
+  backdrop-filter: blur(8px);
 }
 
 .coa-modal-dialog {
@@ -301,12 +292,8 @@ body.coa-page-body {
   overflow: auto;
   border: 1px solid var(--coa-border);
   border-radius: 24px;
-  background: linear-gradient(
-    180deg,
-    rgba(14, 23, 39, 0.98),
-    rgba(9, 17, 30, 0.98)
-  );
-  box-shadow: var(--coa-shadow);
+  background: #ffffff;
+  box-shadow: 0 28px 80px rgba(15, 23, 42, 0.22);
 }
 
 .coa-modal-head {
@@ -329,7 +316,7 @@ body.coa-page-body {
   height: 40px;
   border: 1px solid var(--coa-border);
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.05);
+  background: #ffffff;
   color: var(--coa-text);
   cursor: pointer;
 }
@@ -348,14 +335,15 @@ body.coa-page-body {
 
 .coa-empty-state {
   padding: 32px;
-  border: 1px dashed rgba(255, 255, 255, 0.16);
+  border: 1px dashed #cbd5e1;
   border-radius: 18px;
-  background: rgba(255, 255, 255, 0.02);
+  background: #f8fbff;
 }
 
 .coa-empty-state h3 {
   margin-top: 0;
   margin-bottom: 10px;
+  color: #0f172a;
 }
 
 .coa-open-image-link {
@@ -385,7 +373,7 @@ body.coa-page-body {
   border-radius: 999px;
   font-size: 12px;
   font-weight: 700;
-  background: rgba(255, 255, 255, 0.05);
+  background: #f8fbff;
   border: 1px solid var(--coa-border);
   color: var(--coa-text);
 }
@@ -397,6 +385,10 @@ body.coa-page-body {
 }
 
 @media (max-width: 720px) {
+  .coa-main {
+    padding-top: 20px;
+  }
+
   .coa-grid {
     gap: 16px;
   }
