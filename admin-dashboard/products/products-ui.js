@@ -53,6 +53,106 @@ window.AXIOM_PRODUCTS_UI = (function () {
     return String(value || "").trim();
   }
 
+  function normalizeCoaImage(value) {
+    return String(value || "").trim();
+  }
+
+  function getSupabase() {
+    return window.axiomSupabase || null;
+  }
+
+  function getStoragePublicUrl(bucket, path) {
+    const supabase = getSupabase();
+    const clean = String(path || "").trim();
+
+    if (!clean) return "";
+
+    if (
+      clean.startsWith("http://") ||
+      clean.startsWith("https://") ||
+      clean.startsWith("//")
+    ) {
+      return clean;
+    }
+
+    if (!supabase || !supabase.storage) return "";
+
+    const result = supabase.storage.from(bucket).getPublicUrl(clean);
+    return result && result.data && result.data.publicUrl ? result.data.publicUrl : "";
+  }
+
+  function sanitizeFileName(name) {
+    const original = String(name || "file").trim();
+    const pieces = original.split(".");
+    const extension = pieces.length > 1 ? "." + pieces.pop().toLowerCase() : "";
+    const base = pieces.join(".") || "file";
+
+    return (
+      base
+        .toLowerCase()
+        .replace(/[^a-z0-9-_]+/g, "-")
+        .replace(/-+/g, "-")
+        .replace(/^-|-$/g, "") +
+      extension
+    );
+  }
+
+  async function uploadFileToStorage(bucket, path, file) {
+    const supabase = getSupabase();
+
+    if (!supabase) {
+      throw new Error("Supabase client is not available.");
+    }
+
+    const { error } = await supabase.storage.from(bucket).upload(path, file, {
+      upsert: true,
+      contentType: file.type || undefined
+    });
+
+    if (error) {
+      throw new Error(error.message || "Upload failed.");
+    }
+
+    return path;
+  }
+
+  function productFolderSlug(product) {
+    const slug = String((product && product.slug) || "product").trim().toLowerCase();
+    return slug.replace(/[^a-z0-9-_]+/g, "-");
+  }
+
+  function variantFolderSlug(variant, index) {
+    const raw = String(
+      (variant && (variant.variant_id || variant.label)) || ("variant-" + (index + 1))
+    )
+      .trim()
+      .toLowerCase();
+
+    return raw.replace(/[^a-z0-9-_]+/g, "-");
+  }
+
+  function previewImageHtml(title, src) {
+    const cleanSrc = String(src || "").trim();
+
+    if (!cleanSrc) {
+      return `
+        <div style="height:160px; border:1px dashed #dbe4ef; border-radius:16px; background:#f8fbff; display:flex; align-items:center; justify-content:center; color:#7b8aa0; font-size:13px; font-weight:700;">
+          No ${escapeHtml(title)} selected
+        </div>
+      `;
+    }
+
+    return `
+      <div style="border:1px solid #dbe4ef; border-radius:16px; background:#f8fbff; overflow:hidden;">
+        <img
+          src="${escapeHtml(cleanSrc)}"
+          alt="${escapeHtml(title)}"
+          style="width:100%; height:160px; object-fit:cover; display:block;"
+        />
+      </div>
+    `;
+  }
+
   function getMainImage(product) {
     if (product && product.main_image) return product.main_image;
 
@@ -184,6 +284,9 @@ window.AXIOM_PRODUCTS_UI = (function () {
   }
 
   function variantCardHtml(variant, index) {
+    const variantImagePreview = variant.image ? variant.image : "";
+    const variantCoaPreview = getStoragePublicUrl("coa-images", variant.coa_image_url || "");
+
     return `
       <div class="product-variant-card" data-variant-index="${index}" style="border:1px solid #dbe4ef; border-radius:18px; padding:16px; background:#f8fbff; display:grid; gap:12px;">
         <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">
@@ -223,21 +326,69 @@ window.AXIOM_PRODUCTS_UI = (function () {
           </label>
         </div>
 
-        <label>
-          <div style="font-size:12px; font-weight:800; color:#6b7a90; margin-bottom:6px;">Variant Image Path</div>
-          <input class="dashboard-search" data-field="image" value="${escapeHtml(variant.image || "")}" placeholder="images/products/your-variant-image.PNG" />
-        </label>
-
-        <div style="display:flex; gap:16px; flex-wrap:wrap;">
-          <label style="display:flex; gap:8px; align-items:center;">
-            <input type="checkbox" data-field="allow_backorder" ${variant.allow_backorder === true ? "checked" : ""} />
-            <span style="font-size:13px; font-weight:700; color:#0f172a;">Allow Backorder</span>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+          <label>
+            <div style="font-size:12px; font-weight:800; color:#6b7a90; margin-bottom:6px;">Variant Image Path</div>
+            <input class="dashboard-search" data-field="image" value="${escapeHtml(variant.image || "")}" placeholder="images/products/your-variant-image.PNG" />
           </label>
 
-          <label style="display:flex; gap:8px; align-items:center;">
-            <input type="checkbox" data-field="is_active" ${variant.is_active !== false ? "checked" : ""} />
-            <span style="font-size:13px; font-weight:700; color:#0f172a;">Active</span>
+          <label>
+            <div style="font-size:12px; font-weight:800; color:#6b7a90; margin-bottom:6px;">Variant COA Image Path</div>
+            <input class="dashboard-search" data-field="coa_image_url" value="${escapeHtml(variant.coa_image_url || "")}" placeholder="product-slug/variant-coa.png" />
           </label>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+          <label>
+            <div style="font-size:12px; font-weight:800; color:#6b7a90; margin-bottom:6px;">COA Title</div>
+            <input class="dashboard-search" data-field="coa_title" value="${escapeHtml(variant.coa_title || "")}" placeholder="TESAMORELIN 10MG COA" />
+          </label>
+
+          <label>
+            <div style="font-size:12px; font-weight:800; color:#6b7a90; margin-bottom:6px;">COA Lot Number</div>
+            <input class="dashboard-search" data-field="coa_lot_number" value="${escapeHtml(variant.coa_lot_number || "")}" placeholder="LOT-001" />
+          </label>
+
+          <label>
+            <div style="font-size:12px; font-weight:800; color:#6b7a90; margin-bottom:6px;">COA Tested Date</div>
+            <input type="date" class="dashboard-search" data-field="coa_tested_at" value="${escapeHtml(variant.coa_tested_at || "")}" />
+          </label>
+
+          <label style="display:flex; gap:8px; align-items:center; padding-top:28px;">
+            <input type="checkbox" data-field="coa_verified" ${variant.coa_verified === true ? "checked" : ""} />
+            <span style="font-size:13px; font-weight:700; color:#0f172a;">COA Verified</span>
+          </label>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+          <div>
+            <div style="font-size:12px; font-weight:800; color:#6b7a90; margin-bottom:6px;">Variant Image Preview</div>
+            ${previewImageHtml("variant image", variantImagePreview)}
+          </div>
+
+          <div>
+            <div style="font-size:12px; font-weight:800; color:#6b7a90; margin-bottom:6px;">Variant COA Preview</div>
+            ${previewImageHtml("variant COA", variantCoaPreview)}
+          </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+          <label>
+            <div style="font-size:12px; font-weight:800; color:#6b7a90; margin-bottom:6px;">Upload Variant COA</div>
+            <input type="file" accept="image/*" data-variant-coa-upload="${index}" class="dashboard-search" style="padding:10px;" />
+          </label>
+
+          <div style="display:flex; gap:16px; flex-wrap:wrap; align-items:center;">
+            <label style="display:flex; gap:8px; align-items:center;">
+              <input type="checkbox" data-field="allow_backorder" ${variant.allow_backorder === true ? "checked" : ""} />
+              <span style="font-size:13px; font-weight:700; color:#0f172a;">Allow Backorder</span>
+            </label>
+
+            <label style="display:flex; gap:8px; align-items:center;">
+              <input type="checkbox" data-field="is_active" ${variant.is_active !== false ? "checked" : ""} />
+              <span style="font-size:13px; font-weight:700; color:#0f172a;">Active</span>
+            </label>
+          </div>
         </div>
       </div>
     `;
@@ -251,6 +402,7 @@ window.AXIOM_PRODUCTS_UI = (function () {
       badge: document.getElementById("productBadgeInput").value.trim(),
       category: document.getElementById("productCategoryInput").value.trim(),
       main_image: document.getElementById("productMainImageInput").value.trim(),
+      main_coa_image: document.getElementById("productMainCoaImageInput").value.trim(),
       gallery_images: normalizeGalleryImages(
         document.getElementById("productGalleryImagesInput").value
       ),
@@ -274,6 +426,11 @@ window.AXIOM_PRODUCTS_UI = (function () {
         weight_oz: Number(card.querySelector('[data-field="weight_oz"]').value || 0),
         stock_quantity: Number(card.querySelector('[data-field="stock_quantity"]').value || 0),
         image: normalizeVariantImage(card.querySelector('[data-field="image"]').value),
+        coa_image_url: normalizeCoaImage(card.querySelector('[data-field="coa_image_url"]').value),
+        coa_title: card.querySelector('[data-field="coa_title"]').value.trim(),
+        coa_lot_number: card.querySelector('[data-field="coa_lot_number"]').value.trim(),
+        coa_tested_at: card.querySelector('[data-field="coa_tested_at"]').value.trim(),
+        coa_verified: card.querySelector('[data-field="coa_verified"]').checked,
         allow_backorder: card.querySelector('[data-field="allow_backorder"]').checked,
         is_active: card.querySelector('[data-field="is_active"]').checked,
         sort_order: index
@@ -459,10 +616,38 @@ window.AXIOM_PRODUCTS_UI = (function () {
             </label>
           </div>
 
-          <label>
-            <div style="font-size:12px; font-weight:800; color:#6b7a90; margin-bottom:6px;">Main Image Path</div>
-            <input id="productMainImageInput" class="dashboard-search" value="${escapeHtml(product.main_image || "")}" placeholder="images/products/your-main-image.PNG" />
-          </label>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+            <label>
+              <div style="font-size:12px; font-weight:800; color:#6b7a90; margin-bottom:6px;">Main Image Path</div>
+              <input id="productMainImageInput" class="dashboard-search" value="${escapeHtml(product.main_image || "")}" placeholder="images/products/your-main-image.PNG" />
+            </label>
+
+            <label>
+              <div style="font-size:12px; font-weight:800; color:#6b7a90; margin-bottom:6px;">Main COA Image Path</div>
+              <input id="productMainCoaImageInput" class="dashboard-search" value="${escapeHtml(product.main_coa_image || "")}" placeholder="product-slug/main-coa.png" />
+            </label>
+          </div>
+
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+            <div>
+              <div style="font-size:12px; font-weight:800; color:#6b7a90; margin-bottom:6px;">Main Image Preview</div>
+              ${previewImageHtml("main image", product.main_image || "")}
+            </div>
+
+            <div>
+              <div style="font-size:12px; font-weight:800; color:#6b7a90; margin-bottom:6px;">Main COA Preview</div>
+              ${previewImageHtml("main COA image", getStoragePublicUrl("coa-images", product.main_coa_image || ""))}
+            </div>
+          </div>
+
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+            <label>
+              <div style="font-size:12px; font-weight:800; color:#6b7a90; margin-bottom:6px;">Upload Main COA Image</div>
+              <input type="file" accept="image/*" id="productMainCoaUploadInput" class="dashboard-search" style="padding:10px;" />
+            </label>
+
+            <div></div>
+          </div>
 
           <label>
             <div style="font-size:12px; font-weight:800; color:#6b7a90; margin-bottom:6px;">Gallery Images (one path per line)</div>
@@ -529,6 +714,11 @@ window.AXIOM_PRODUCTS_UI = (function () {
         weight_oz: 0,
         stock_quantity: 0,
         image: "",
+        coa_image_url: "",
+        coa_title: "",
+        coa_lot_number: "",
+        coa_tested_at: "",
+        coa_verified: false,
         allow_backorder: false,
         is_active: true,
         sort_order: product.product_variants.length
@@ -570,6 +760,77 @@ window.AXIOM_PRODUCTS_UI = (function () {
 
         product.product_variants.splice(index, 1);
         renderProductDetail();
+      });
+    });
+
+    const mainCoaUploadInput = document.getElementById("productMainCoaUploadInput");
+    if (mainCoaUploadInput) {
+      mainCoaUploadInput.addEventListener("change", async function (event) {
+        const file = event.target.files && event.target.files[0];
+        if (!file) return;
+
+        try {
+          const folder = productFolderSlug(product);
+          const fileName = sanitizeFileName(file.name);
+          const storagePath = `${folder}/main-coa/${Date.now()}-${fileName}`;
+
+          mainCoaUploadInput.disabled = true;
+
+          const uploadedPath = await uploadFileToStorage("coa-images", storagePath, file);
+
+          const input = document.getElementById("productMainCoaImageInput");
+          if (input) {
+            input.value = uploadedPath;
+          }
+
+          product.main_coa_image = uploadedPath;
+          renderProductDetail();
+          alert("Main COA image uploaded. Click Save Product to save it.");
+        } catch (error) {
+          console.error(error);
+          alert(error.message || "Could not upload main COA image.");
+        } finally {
+          mainCoaUploadInput.disabled = false;
+          mainCoaUploadInput.value = "";
+        }
+      });
+    }
+
+    document.querySelectorAll("[data-variant-coa-upload]").forEach(function (input) {
+      input.addEventListener("change", async function (event) {
+        const file = event.target.files && event.target.files[0];
+        if (!file) return;
+
+        const index = Number(input.getAttribute("data-variant-coa-upload"));
+        const currentProduct = getSelectedProduct();
+
+        if (!currentProduct || !Array.isArray(currentProduct.product_variants)) return;
+
+        const variant = currentProduct.product_variants[index] || {};
+        const folder = productFolderSlug(currentProduct);
+        const variantFolder = variantFolderSlug(variant, index);
+        const fileName = sanitizeFileName(file.name);
+        const storagePath = `${folder}/variants/${variantFolder}/coa/${Date.now()}-${fileName}`;
+
+        try {
+          input.disabled = true;
+
+          const uploadedPath = await uploadFileToStorage("coa-images", storagePath, file);
+
+          currentProduct.product_variants[index] = {
+            ...variant,
+            coa_image_url: uploadedPath
+          };
+
+          renderProductDetail();
+          alert("Variant COA uploaded. Click Save Product to save it.");
+        } catch (error) {
+          console.error(error);
+          alert(error.message || "Could not upload variant COA.");
+        } finally {
+          input.disabled = false;
+          input.value = "";
+        }
       });
     });
 
