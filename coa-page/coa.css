@@ -29,13 +29,13 @@ body.coa-page-body {
 
 .coa-hero-bg {
   background:
-    radial-gradient(circle at top left, rgba(79, 163, 217, 0.20), transparent 28%),
+    radial-gradient(circle at top left, rgba(79, 163, 217, 0.2), transparent 28%),
     radial-gradient(circle at top right, rgba(47, 97, 219, 0.18), transparent 30%),
     linear-gradient(135deg, #09172d 0%, #162b46 100%);
 }
 
 .coa-hero-overlay {
-  background: linear-gradient(to bottom, rgba(3, 11, 28, 0.42), rgba(3, 11, 28, 0.76));
+  background: linear-gradient(to bottom, rgba(3, 11, 28, 0.2), rgba(3, 11, 28, 0.52));
 }
 
 .coa-hero-content {
@@ -53,8 +53,9 @@ body.coa-page-body {
   min-height: 50px;
   padding: 12px 20px;
   border-radius: 999px;
-  background: rgba(198, 247, 214, 0.95);
-  color: #1f8a49;
+  background: rgba(32, 76, 128, 0.38);
+  border: 1px solid rgba(111, 178, 233, 0.28);
+  color: #7bc1f4;
   font-weight: 800;
   font-size: 15px;
   margin-bottom: 24px;
@@ -66,12 +67,22 @@ body.coa-page-body {
   font-size: clamp(2.5rem, 6vw, 4.8rem);
   line-height: 0.98;
   color: #ffffff;
+  letter-spacing: -0.03em;
+  font-weight: 900;
+}
+
+.coa-hero-content .hero-subtext {
+  margin: 0 auto;
+  max-width: 860px;
+  font-size: clamp(1rem, 2.3vw, 1.22rem);
+  line-height: 1.75;
+  color: rgba(255, 255, 255, 0.92);
 }
 
 .coa-toolbar {
   display: flex;
-  gap: 16px;
-  align-items: center;
+  gap: 18px;
+  align-items: stretch;
   justify-content: space-between;
   flex-wrap: wrap;
   margin: 34px auto 0;
@@ -79,7 +90,7 @@ body.coa-page-body {
   padding: 18px;
   border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 24px;
-  background: rgba(255, 255, 255, 0.10);
+  background: rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(12px);
 }
 
@@ -94,10 +105,9 @@ body.coa-page-body {
   background: rgba(255, 255, 255, 0.12);
 }
 
-.coa-search-wrap i,
-.coa-search-wrap input::placeholder,
-.coa-stats {
-  color: rgba(255, 255, 255, 0.84);
+.coa-search-wrap i {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 18px;
 }
 
 .coa-search-wrap input {
@@ -107,6 +117,19 @@ body.coa-page-body {
   color: #ffffff;
   background: transparent;
   font: inherit;
+}
+
+.coa-search-wrap input::placeholder {
+  color: rgba(255, 255, 255, 0.76);
+}
+
+.coa-stats {
+  display: flex;
+  align-items: center;
+  padding: 10px 4px 2px;
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 17px;
+  font-weight: 700;
 }
 
 .coa-proof-section {
@@ -193,14 +216,16 @@ body.coa-page-body {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 28px;
+  padding: 34px;
 }
 
 .coa-card-media img {
   width: 100%;
   height: 100%;
   object-fit: contain;
+  object-position: center center;
   display: block;
+  margin: 0 auto;
 }
 
 .coa-card-body {
@@ -231,9 +256,10 @@ body.coa-page-body {
 .coa-empty-pill {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   min-height: 44px;
-  padding: 10px 16px;
+  padding: 10px 18px;
   border-radius: 999px;
   font-size: 14px;
   font-weight: 800;
@@ -242,13 +268,13 @@ body.coa-page-body {
 
 .coa-pill {
   color: #4fa3d9;
-  background: rgba(79, 163, 217, 0.10);
+  background: rgba(79, 163, 217, 0.1);
   border: 1px solid rgba(79, 163, 217, 0.24);
 }
 
 .coa-empty-pill {
   color: #8a6a24;
-  background: rgba(245, 158, 11, 0.10);
+  background: rgba(245, 158, 11, 0.1);
   border: 1px solid rgba(245, 158, 11, 0.22);
 }
 
@@ -357,7 +383,7 @@ body.coa-page-body {
   background: #ffffff;
   border: 1px solid #dbe3ee;
   border-radius: 30px;
-  box-shadow: 0 28px 60px rgba(15, 23, 42, 0.20);
+  box-shadow: 0 28px 60px rgba(15, 23, 42, 0.2);
 }
 
 .coa-modal-head {
@@ -462,7 +488,7 @@ body.coa-page-body {
   border: 1px solid #dbe3ee;
   background: linear-gradient(135deg, #0f1f46, #112f5a);
   color: #ffffff;
-  box-shadow: 0 16px 30px rgba(15, 23, 42, 0.10);
+  box-shadow: 0 16px 30px rgba(15, 23, 42, 0.1);
   padding: 24px;
 }
 
@@ -478,13 +504,6 @@ body.coa-page-body {
   line-height: 1.8;
 }
 
-.coa-empty-state code {
-  background: rgba(255,255,255,0.12);
-  padding: 3px 7px;
-  border-radius: 8px;
-  color: #ffffff;
-}
-
 @media (max-width: 1100px) {
   .coa-proof-grid,
   .coa-grid {
@@ -495,6 +514,13 @@ body.coa-page-body {
 @media (max-width: 640px) {
   .coa-toolbar {
     padding: 14px;
+    gap: 12px;
+  }
+
+  .coa-stats {
+    width: 100%;
+    padding-top: 4px;
+    padding-left: 2px;
   }
 
   .coa-hero-content {
@@ -523,5 +549,9 @@ body.coa-page-body {
   .coa-proof-card {
     padding: 24px 18px;
     border-radius: 24px;
+  }
+
+  .coa-card-media {
+    padding: 24px;
   }
 }
