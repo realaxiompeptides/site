@@ -370,6 +370,18 @@
     `;
   }
 
+  function getCardDescription(product, variants) {
+    if (safeString(product.description)) {
+      return safeString(product.description);
+    }
+
+    if (variants.length > 1) {
+      return "Choose the matching strength to review the certificate associated with this product.";
+    }
+
+    return "Open the available certificate to review the associated product documentation.";
+  }
+
   function renderProducts(products) {
     if (!products.length) {
       renderFullEmptyState("No matching products", "Try a different product or variant search.");
@@ -409,7 +421,7 @@
                 return buildVariantButtonHtml(product, variant, isSelected);
               })
               .join("")
-          : `<p class="coa-helper-text">No variants found for this product yet.</p>`;
+          : `<p class="coa-helper-text">No variants are currently available for this product.</p>`;
 
         return `
           <article class="coa-card" id="coa-product-${escapeHtml(product.slug)}">
@@ -421,7 +433,6 @@
               <div class="coa-card-title-row">
                 <div>
                   <h2 class="coa-card-title">${escapeHtml(product.name)}</h2>
-                  <p class="coa-card-slug">${escapeHtml(product.slug)}</p>
                 </div>
 
                 <span class="${hasAnyCoa ? "coa-pill" : "coa-empty-pill"}">
@@ -436,7 +447,7 @@
 
               <div class="coa-card-footer">
                 <p class="coa-helper-text">
-                  ${variants.length} variant${variants.length === 1 ? "" : "s"} from your live product catalog.
+                  ${escapeHtml(getCardDescription(product, variants))}
                 </p>
 
                 <a
