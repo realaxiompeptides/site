@@ -5,6 +5,23 @@
   const renderApi = window.AXIOM_ADMIN_AFFILIATES_RENDER;
   const dataApi = window.AXIOM_ADMIN_AFFILIATES_DATA;
 
+  function toNumber(value, fallback = 0) {
+    const num = Number(value);
+    return Number.isFinite(num) ? num : fallback;
+  }
+
+  function findAffiliateById(affiliateId) {
+    return (state.affiliates || []).find(function (item) {
+      return String(item.id) === String(affiliateId);
+    }) || null;
+  }
+
+  async function refreshSelectedAffiliateDetails(actionsApi) {
+    if (state.selectedAffiliateId) {
+      await actionsApi.openAffiliateDetails(state.selectedAffiliateId);
+    }
+  }
+
   const actions = {
     dom: null,
 
@@ -17,6 +34,14 @@
       const filtered = utils.filterAffiliates(state.affiliates, state.filters);
       state.setFilteredAffiliates(filtered);
       renderApi.renderTable();
+
+      if (typeof renderApi.renderPayoutRequests === "function") {
+        renderApi.renderPayoutRequests();
+      }
+
+      if (typeof renderApi.renderStats === "function") {
+        renderApi.renderStats();
+      }
     },
 
     loadAffiliates: async function loadAffiliates() {
@@ -37,16 +62,50 @@
 
         state.setAffiliates(affiliates);
         state.setSummary(utils.calculateSummary(affiliates));
+
+        if (typeof dataApi.fetchPayoutRequests === "function") {
+          try {
+            const payoutRequests = await dataApi.fetchPayoutRequests();
+            if (typeof state.setPayoutRequests === "function") {
+              state.setPayoutRequests(Array.isArray(payoutRequests) ? payoutRequests : []);
+            } else {
+              state.payoutRequests = Array.isArray(payoutRequests) ? payoutRequests : [];
+            }
+          } catch (payoutError) {
+            console.error("Failed to load payout requests:", payoutError);
+            if (typeof state.setPayoutRequests === "function") {
+              state.setPayoutRequests([]);
+            } else {
+              state.payoutRequests = [];
+            }
+          }
+        }
+
         this.applyFilters();
         renderApi.renderStats();
+
+        if (typeof renderApi.renderPayoutRequests === "function") {
+          renderApi.renderPayoutRequests();
+        }
       } catch (error) {
         console.error("Failed to load affiliates:", error);
         state.setAffiliates([]);
         state.setFilteredAffiliates([]);
         state.setSummary({ total: 0, pending: 0, approved: 0, claimable: 0 });
         state.setError(error);
+
+        if (typeof state.setPayoutRequests === "function") {
+          state.setPayoutRequests([]);
+        } else {
+          state.payoutRequests = [];
+        }
+
         renderApi.renderStats();
         renderApi.renderError(error && error.message ? error.message : "Unknown error");
+
+        if (typeof renderApi.renderPayoutRequests === "function") {
+          renderApi.renderPayoutRequests();
+        }
       } finally {
         state.setLoading(false);
       }
@@ -74,11 +133,7 @@
       if (!affiliateId) return;
 
       try {
-        const summary =
-          state.affiliates.find(function (item) {
-            return String(item.id) === String(affiliateId);
-          }) || null;
-
+        const summary = findAffiliateById(affiliateId);
         state.selectedAffiliateId = affiliateId;
 
         const detailData = await dataApi.fetchAffiliateDetails(affiliateId);
@@ -118,10 +173,7 @@
       try {
         await dataApi.updateClaimStatus(claimId, status);
         await this.loadAffiliates();
-
-        if (state.selectedAffiliateId) {
-          await this.openAffiliateDetails(state.selectedAffiliateId);
-        }
+        await refreshSelectedAffiliateDetails(this);
 
         alert("Claim " + status + " successfully.");
       } catch (error) {
@@ -130,9 +182,66 @@
       }
     },
 
+    approvePayoutRequest: async function approvePayoutRequest(claimId) {
+      if (!claimId) return;
+
+      try {
+        if (typeof dataApi.updateClaimStatus !== "function") {
+          throw new Error("Claim approval API is not available.");
+        }
+
+        await dataApi.updateClaimStatus(claimId, "approved");
+        await this.loadAffiliates();
+        await refreshSelectedAffiliateDetails(this);
+
+        alert("Payout request approved.");
+      } catch (error) {
+        console.error("Failed to approve payout request:", error);
+        alert(error.message || "Failed to approve payout request.");
+      }
+    },
+
+    denyPayoutRequest: async function denyPayoutRequest(claimId) {
+      if (!claimId) return;
+
+      try {
+        if (typeof dataApi.updateClaimStatus !== "function") {
+          throw new Error("Claim denial API is not available.");
+        }
+
+        await dataApi.updateClaimStatus(claimId, "denied");
+        await this.loadAffiliates();
+        await refreshSelectedAffiliateDetails(this);
+
+        alert("Payout request denied.");
+      } catch (error) {
+        console.error("Failed to deny payout request:", error);
+        alert(error.message || "Failed to deny payout request.");
+      }
+    },
+
+    markPayoutRequestPaid: async function markPayoutRequestPaid(claimId) {
+      if (!claimId) return;
+
+      try {
+        if (typeof dataApi.markClaimPaid !== "function") {
+          throw new Error("Mark-paid payout API is not available.");
+        }
+
+        await dataApi.markClaimPaid(claimId);
+        await this.loadAffiliates();
+        await refreshSelectedAffiliateDetails(this);
+
+        alert("Payout request marked paid.");
+      } catch (error) {
+        console.error("Failed to mark payout request paid:", error);
+        alert(error.message || "Failed to mark payout request paid.");
+      }
+    },
+
     recordPayout: async function recordPayout() {
       const affiliateId = document.getElementById("affiliatePayoutAffiliateId")?.value || "";
-      const amount = Number(document.getElementById("affiliatePayoutAmount")?.value || 0);
+      const amount = toNumber(document.getElementById("affiliatePayoutAmount")?.value, 0);
       const method = document.getElementById("affiliatePayoutMethod")?.value.trim() || "";
       const reference = document.getElementById("affiliatePayoutReference")?.value.trim() || "";
       const notes = document.getElementById("affiliatePayoutNotes")?.value.trim() || "";
@@ -144,6 +253,19 @@
 
       if (!amount || amount <= 0) {
         alert("Enter a valid payout amount.");
+        return;
+      }
+
+      const affiliate = findAffiliateById(affiliateId);
+      const claimableAmount = toNumber(affiliate?.claimable, 0);
+
+      if (claimableAmount <= 0) {
+        alert("This affiliate has no claimable balance.");
+        return;
+      }
+
+      if (amount > claimableAmount) {
+        alert("Payout amount cannot be greater than the affiliate's current claimable balance.");
         return;
       }
 
@@ -166,15 +288,38 @@
         }
 
         await this.loadAffiliates();
-
-        if (state.selectedAffiliateId) {
-          await this.openAffiliateDetails(state.selectedAffiliateId);
-        }
+        await refreshSelectedAffiliateDetails(this);
 
         alert("Payout recorded successfully.");
       } catch (error) {
         console.error("Failed to record payout:", error);
         alert(error.message || "Failed to record payout.");
+      }
+    },
+
+    submitAffiliateClaimReview: async function submitAffiliateClaimReview(claimId, nextStatus) {
+      if (!claimId || !nextStatus) return;
+
+      try {
+        if (nextStatus === "approved") {
+          await this.approvePayoutRequest(claimId);
+          return;
+        }
+
+        if (nextStatus === "denied") {
+          await this.denyPayoutRequest(claimId);
+          return;
+        }
+
+        if (nextStatus === "paid") {
+          await this.markPayoutRequestPaid(claimId);
+          return;
+        }
+
+        throw new Error("Unsupported payout request status.");
+      } catch (error) {
+        console.error("Failed to review payout request:", error);
+        alert(error.message || "Failed to review payout request.");
       }
     }
   };
