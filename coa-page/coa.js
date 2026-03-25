@@ -95,7 +95,7 @@
     coaGrid.innerHTML = `
       <div class="coa-loading-state">
         <h3>Loading COAs...</h3>
-        <p class="coa-loading-copy">Pulling live products and variants from Supabase.</p>
+        <p class="coa-loading-copy">Loading all products and certificates.</p>
       </div>
     `;
   }
