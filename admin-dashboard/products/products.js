@@ -10,6 +10,10 @@ window.AXIOM_PRODUCTS = (function () {
     return value && typeof value === "object" && !Array.isArray(value) ? value : {};
   }
 
+  function safeString(value) {
+    return String(value || "").trim();
+  }
+
   function getListWrap() {
     return document.getElementById("productsListWrap");
   }
@@ -100,6 +104,7 @@ window.AXIOM_PRODUCTS = (function () {
     return products.map(function (product) {
       return {
         ...product,
+        main_coa_image: safeString(product.main_coa_image),
         gallery_images: Array.isArray(product.gallery_images)
           ? product.gallery_images
           : typeof product.gallery_images === "string" && product.gallery_images.trim()
@@ -128,6 +133,7 @@ window.AXIOM_PRODUCTS = (function () {
       description: safePayload.description || "",
       long_description: safePayload.long_description || "",
       main_image: safePayload.main_image || "",
+      main_coa_image: safePayload.main_coa_image || "",
       gallery_images: Array.isArray(safePayload.gallery_images) ? safePayload.gallery_images : [],
       is_active: safePayload.is_active !== false,
       sort_order: Number(safePayload.sort_order || 0),
@@ -159,6 +165,12 @@ window.AXIOM_PRODUCTS = (function () {
           compare_at_price: Number(safeVariant.compare_at_price || 0),
           weight_oz: Number(safeVariant.weight_oz || 0),
           stock_quantity: Number(safeVariant.stock_quantity || 0),
+          image: safeVariant.image || "",
+          coa_image_url: safeVariant.coa_image_url || "",
+          coa_title: safeVariant.coa_title || "",
+          coa_lot_number: safeVariant.coa_lot_number || "",
+          coa_tested_at: safeVariant.coa_tested_at || null,
+          coa_verified: safeVariant.coa_verified === true,
           allow_backorder: safeVariant.allow_backorder === true,
           is_active: safeVariant.is_active !== false,
           sort_order: Number(
@@ -204,6 +216,7 @@ window.AXIOM_PRODUCTS = (function () {
       description: safePayload.description || "",
       long_description: safePayload.long_description || "",
       main_image: safePayload.main_image || "",
+      main_coa_image: safePayload.main_coa_image || "",
       gallery_images: Array.isArray(safePayload.gallery_images) ? safePayload.gallery_images : [],
       is_active: safePayload.is_active !== false,
       updated_at: now
@@ -264,6 +277,12 @@ window.AXIOM_PRODUCTS = (function () {
         compare_at_price: Number(variant.compare_at_price || 0),
         weight_oz: Number(variant.weight_oz || 0),
         stock_quantity: Number(variant.stock_quantity || 0),
+        image: variant.image || "",
+        coa_image_url: variant.coa_image_url || "",
+        coa_title: variant.coa_title || "",
+        coa_lot_number: variant.coa_lot_number || "",
+        coa_tested_at: variant.coa_tested_at || null,
+        coa_verified: variant.coa_verified === true,
         allow_backorder: variant.allow_backorder === true,
         is_active: variant.is_active !== false,
         sort_order: Number(
