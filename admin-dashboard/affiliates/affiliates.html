@@ -60,6 +60,26 @@
         data-affiliate-claimable
       >$0.00</strong>
     </div>
+
+    <div class="affiliates-admin-stat-card">
+      <span class="affiliates-admin-stat-label">Pending Payout Requests</span>
+      <strong
+        class="affiliates-admin-stat-value"
+        id="affiliateStatPendingPayoutRequests"
+        data-summary="pending-payout-requests"
+        data-affiliate-pending-payout-requests
+      >0</strong>
+    </div>
+
+    <div class="affiliates-admin-stat-card">
+      <span class="affiliates-admin-stat-label">Requested Amount</span>
+      <strong
+        class="affiliates-admin-stat-value"
+        id="affiliateStatRequestedAmount"
+        data-summary="requested-amount"
+        data-affiliate-requested-amount
+      >$0.00</strong>
+    </div>
   </div>
 
   <div class="affiliates-admin-toolbar">
@@ -95,6 +115,52 @@
     data-affiliate-error
     hidden
   ></div>
+
+  <div class="affiliates-admin-detail-card affiliates-admin-payout-requests-section">
+    <div class="affiliates-admin-section-header">
+      <div>
+        <h4>Affiliate Payout Requests</h4>
+        <p class="affiliates-admin-subtext">
+          Review payout claims submitted by affiliates and approve, deny, or mark them paid.
+        </p>
+      </div>
+    </div>
+
+    <div class="affiliates-admin-table-wrap">
+      <table class="affiliates-admin-table">
+        <thead>
+          <tr>
+            <th>Affiliate</th>
+            <th>Email</th>
+            <th>Requested</th>
+            <th>Claimable</th>
+            <th>Note</th>
+            <th>Status</th>
+            <th>Requested At</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+
+        <tbody
+          id="affiliatePayoutRequestsTableBody"
+          data-affiliate-payout-requests-body
+        >
+          <tr data-affiliate-payout-loading-row>
+            <td colspan="8">Loading payout requests...</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div
+        class="affiliates-admin-empty"
+        id="affiliatePayoutRequestsEmptyState"
+        data-affiliate-payout-requests-empty
+        hidden
+      >
+        No payout requests found.
+      </div>
+    </div>
+  </div>
 
   <div class="affiliates-admin-table-wrap">
     <table class="affiliates-admin-table">
