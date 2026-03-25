@@ -121,7 +121,7 @@ window.AXIOM_ORDER_SUBMIT = {
               affiliate_referral_session_id: attribution.affiliate_referral_session_id || null,
               affiliate_landing_page: attribution.affiliate_landing_page || null,
               affiliate_discount_amount: Number(attribution.affiliate_discount_amount || 0),
-              affiliate_commission_amount: 0
+              affiliate_commission_amount: Number(attribution.affiliate_commission_amount || 0)
             };
           }
         }
@@ -130,7 +130,10 @@ window.AXIOM_ORDER_SUBMIT = {
       }
 
       try {
-        if (window.AXIOM_AFFILIATE_ATTRIBUTION && typeof window.AXIOM_AFFILIATE_ATTRIBUTION === "object") {
+        if (
+          window.AXIOM_AFFILIATE_ATTRIBUTION &&
+          typeof window.AXIOM_AFFILIATE_ATTRIBUTION === "object"
+        ) {
           return {
             affiliate_id: window.AXIOM_AFFILIATE_ATTRIBUTION.affiliate_id || null,
             affiliate_code: window.AXIOM_AFFILIATE_ATTRIBUTION.affiliate_code || null,
@@ -140,7 +143,8 @@ window.AXIOM_ORDER_SUBMIT = {
             affiliate_landing_page: window.AXIOM_AFFILIATE_ATTRIBUTION.landing_page || null,
             affiliate_discount_amount:
               Number(window.AXIOM_AFFILIATE_ATTRIBUTION.affiliate_discount_amount || 0),
-            affiliate_commission_amount: 0
+            affiliate_commission_amount:
+              Number(window.AXIOM_AFFILIATE_ATTRIBUTION.affiliate_commission_amount || 0)
           };
         }
       } catch (error) {
@@ -159,7 +163,7 @@ window.AXIOM_ORDER_SUBMIT = {
               affiliate_referral_session_id: parsed.affiliate_referral_session_id || null,
               affiliate_landing_page: parsed.landing_page || null,
               affiliate_discount_amount: Number(parsed.affiliate_discount_amount || 0),
-              affiliate_commission_amount: 0
+              affiliate_commission_amount: Number(parsed.affiliate_commission_amount || 0)
             };
           }
         }
@@ -200,7 +204,7 @@ window.AXIOM_ORDER_SUBMIT = {
           browserAttribution.affiliate_referral_session_id || null,
         affiliate_landing_page: browserAttribution.affiliate_landing_page || null,
         affiliate_discount_amount: Number(browserAttribution.affiliate_discount_amount || 0),
-        affiliate_commission_amount: 0,
+        affiliate_commission_amount: Number(browserAttribution.affiliate_commission_amount || 0),
         updated_at: nowIso,
         last_activity_at: nowIso
       };
@@ -227,8 +231,8 @@ window.AXIOM_ORDER_SUBMIT = {
 
       if (!sessionRow || !orderRow) return;
 
-      const affiliateId = sessionRow.affiliate_id || null;
-      const affiliateCode = sessionRow.affiliate_code || null;
+      const affiliateId = orderRow.affiliate_id || sessionRow.affiliate_id || null;
+      const affiliateCode = orderRow.affiliate_code || sessionRow.affiliate_code || null;
 
       if (!affiliateId || !affiliateCode) {
         return;
@@ -246,60 +250,82 @@ window.AXIOM_ORDER_SUBMIT = {
           return;
         }
 
-        if (existingConversion?.id) {
-          return;
+        let commissionAmount = Number(orderRow.affiliate_commission_amount || 0);
+
+        if (!commissionAmount) {
+          const commissionRate = await getAffiliateCommissionRate(affiliateId);
+          commissionAmount = calculateAffiliateCommission(
+            orderRow.subtotal !== undefined ? orderRow.subtotal : sessionRow.subtotal,
+            orderRow.discount_amount !== undefined ? orderRow.discount_amount : sessionRow.discount_amount,
+            commissionRate
+          );
         }
 
-        const commissionRate = await getAffiliateCommissionRate(affiliateId);
-        const commissionAmount = calculateAffiliateCommission(
-          sessionRow.subtotal,
-          sessionRow.discount_amount,
-          commissionRate
-        );
+        const fulfillmentStatus = String(orderRow.fulfillment_status || "").toLowerCase();
+        const isClaimable = fulfillmentStatus === "fulfilled" || fulfillmentStatus === "shipped";
 
         const conversionPayload = {
           affiliate_id: affiliateId,
           referral_code: affiliateCode,
-          affiliate_click_id: sessionRow.affiliate_click_id || null,
-          affiliate_referral_session_id: sessionRow.affiliate_referral_session_id || null,
-          checkout_session_id: sessionRow.id,
+          affiliate_click_id: orderRow.affiliate_click_id || sessionRow.affiliate_click_id || null,
+          affiliate_referral_session_id:
+            orderRow.affiliate_referral_session_id ||
+            sessionRow.affiliate_referral_session_id ||
+            null,
+          checkout_session_id: orderRow.checkout_session_id || sessionRow.id || null,
           order_id: orderRow.id,
           order_number: orderRow.order_number,
-          customer_email: sessionRow.customer_email || null,
-          subtotal: Number(sessionRow.subtotal || 0),
-          total_amount: Number(sessionRow.total_amount || 0),
-          discount_amount: Number(sessionRow.discount_amount || 0),
+          customer_email: orderRow.customer_email || sessionRow.customer_email || null,
+          subtotal: Number(
+            orderRow.subtotal !== undefined ? orderRow.subtotal : sessionRow.subtotal || 0
+          ),
+          total_amount: Number(
+            orderRow.total_amount !== undefined ? orderRow.total_amount : sessionRow.total_amount || 0
+          ),
+          discount_amount: Number(
+            orderRow.discount_amount !== undefined
+              ? orderRow.discount_amount
+              : sessionRow.discount_amount || 0
+          ),
           commission_amount: commissionAmount,
-          commission_status:
-            String(orderRow.fulfillment_status || "").toLowerCase() === "fulfilled" ||
-            String(orderRow.fulfillment_status || "").toLowerCase() === "shipped"
-              ? "claimable"
-              : "pending",
-          claimable_at:
-            String(orderRow.fulfillment_status || "").toLowerCase() === "fulfilled" ||
-            String(orderRow.fulfillment_status || "").toLowerCase() === "shipped"
-              ? nowIso
-              : null,
-          created_at: nowIso,
+          commission_status: isClaimable ? "claimable" : "pending",
+          claimable_at: isClaimable ? nowIso : null,
           updated_at: nowIso
         };
 
-        const { error: affiliateConversionError } = await supabase
-          .from("affiliate_conversions")
-          .insert(conversionPayload);
+        if (existingConversion?.id) {
+          const { error: affiliateConversionUpdateError } = await supabase
+            .from("affiliate_conversions")
+            .update(conversionPayload)
+            .eq("id", existingConversion.id);
 
-        if (affiliateConversionError) {
-          console.error("Affiliate conversion insert failed:", affiliateConversionError);
+          if (affiliateConversionUpdateError) {
+            console.error("Affiliate conversion update failed:", affiliateConversionUpdateError);
+          }
+        } else {
+          const { error: affiliateConversionError } = await supabase
+            .from("affiliate_conversions")
+            .insert({
+              ...conversionPayload,
+              created_at: nowIso
+            });
+
+          if (affiliateConversionError) {
+            console.error("Affiliate conversion insert failed:", affiliateConversionError);
+          }
         }
 
-        if (sessionRow.affiliate_referral_session_id) {
+        if (sessionRow.affiliate_referral_session_id || orderRow.affiliate_referral_session_id) {
           const { error: referralSessionUpdateError } = await supabase
             .from("affiliate_referral_sessions")
             .update({
               is_converted: true,
               updated_at: nowIso
             })
-            .eq("id", sessionRow.affiliate_referral_session_id);
+            .eq(
+              "id",
+              orderRow.affiliate_referral_session_id || sessionRow.affiliate_referral_session_id
+            );
 
           if (referralSessionUpdateError) {
             console.error(
@@ -343,6 +369,32 @@ window.AXIOM_ORDER_SUBMIT = {
       const discountAmount = toNumber(sessionRow.discount_amount);
       const totalAmount = toNumber(sessionRow.total_amount);
 
+      const affiliateIdForCommission = sessionRow.affiliate_id || null;
+      const affiliateCommissionRate = await getAffiliateCommissionRate(affiliateIdForCommission);
+      const affiliateCommissionAmount = affiliateIdForCommission
+        ? calculateAffiliateCommission(subtotal, discountAmount, affiliateCommissionRate)
+        : 0;
+
+      if (affiliateIdForCommission && Number(sessionRow.affiliate_commission_amount || 0) !== affiliateCommissionAmount) {
+        const { error: commissionPatchError } = await supabase
+          .from("checkout_sessions")
+          .update({
+            affiliate_commission_amount: affiliateCommissionAmount,
+            updated_at: nowIso,
+            last_activity_at: nowIso
+          })
+          .eq("id", sessionRow.id);
+
+        if (commissionPatchError) {
+          console.error("Failed to patch checkout session commission amount:", commissionPatchError);
+        } else {
+          sessionRow = {
+            ...sessionRow,
+            affiliate_commission_amount: affiliateCommissionAmount
+          };
+        }
+      }
+
       const { data: existingOrder, error: existingOrderError } = await supabase
         .from("orders")
         .select("*")
@@ -355,6 +407,23 @@ window.AXIOM_ORDER_SUBMIT = {
       }
 
       if (existingOrder) {
+        const existingOrderAffiliateCommissionAmount =
+          existingOrder.affiliate_id
+            ? Number(existingOrder.affiliate_commission_amount || affiliateCommissionAmount || 0)
+            : 0;
+
+        const { error: existingOrderCommissionUpdateError } = await supabase
+          .from("orders")
+          .update({
+            affiliate_commission_amount: existingOrderAffiliateCommissionAmount,
+            updated_at: nowIso
+          })
+          .eq("id", existingOrder.id);
+
+        if (existingOrderCommissionUpdateError) {
+          console.error("Existing order affiliate commission update failed:", existingOrderCommissionUpdateError);
+        }
+
         const { error: existingCheckoutUpdateError } = await supabase
           .from("checkout_sessions")
           .update({
@@ -362,6 +431,7 @@ window.AXIOM_ORDER_SUBMIT = {
             session_status: extraPayload.session_status || "converted",
             payment_status: extraPayload.payment_status || existingOrder.payment_status || "pending",
             fulfillment_status: extraPayload.fulfillment_status || existingOrder.fulfillment_status || "unfulfilled",
+            affiliate_commission_amount: affiliateCommissionAmount,
             confirmed_at: nowIso,
             updated_at: nowIso,
             last_activity_at: nowIso
@@ -373,8 +443,14 @@ window.AXIOM_ORDER_SUBMIT = {
         }
 
         await insertAffiliateConversionIfNeeded({
-          sessionRow: sessionRow,
-          orderRow: existingOrder
+          sessionRow: {
+            ...sessionRow,
+            affiliate_commission_amount: affiliateCommissionAmount
+          },
+          orderRow: {
+            ...existingOrder,
+            affiliate_commission_amount: existingOrderAffiliateCommissionAmount
+          }
         });
 
         return {
@@ -425,7 +501,7 @@ window.AXIOM_ORDER_SUBMIT = {
         affiliate_click_id: sessionRow.affiliate_click_id || null,
         affiliate_referral_session_id: sessionRow.affiliate_referral_session_id || null,
         affiliate_discount_amount: Number(sessionRow.affiliate_discount_amount || 0),
-        affiliate_commission_amount: 0,
+        affiliate_commission_amount: affiliateCommissionAmount,
         affiliate_landing_page: sessionRow.affiliate_landing_page || null,
         shipping_carrier: sessionRow.shipping_carrier || null,
         shipping_service: sessionRow.shipping_service_level || null,
@@ -480,6 +556,7 @@ window.AXIOM_ORDER_SUBMIT = {
         session_status: extraPayload.session_status || "converted",
         payment_status: extraPayload.payment_status || "pending",
         fulfillment_status: extraPayload.fulfillment_status || "unfulfilled",
+        affiliate_commission_amount: affiliateCommissionAmount,
         confirmed_at: nowIso,
         updated_at: nowIso,
         last_activity_at: nowIso
@@ -509,7 +586,8 @@ window.AXIOM_ORDER_SUBMIT = {
             payment_status: orderInsert.payment_status,
             fulfillment_status: orderInsert.fulfillment_status,
             affiliate_id: orderInsert.affiliate_id || null,
-            affiliate_code: orderInsert.affiliate_code || null
+            affiliate_code: orderInsert.affiliate_code || null,
+            affiliate_commission_amount: Number(orderInsert.affiliate_commission_amount || 0)
           },
           created_at: nowIso
         });
@@ -519,8 +597,14 @@ window.AXIOM_ORDER_SUBMIT = {
       }
 
       await insertAffiliateConversionIfNeeded({
-        sessionRow: sessionRow,
-        orderRow: orderInsert
+        sessionRow: {
+          ...sessionRow,
+          affiliate_commission_amount: affiliateCommissionAmount
+        },
+        orderRow: {
+          ...orderInsert,
+          affiliate_commission_amount: affiliateCommissionAmount
+        }
       });
 
       return {
