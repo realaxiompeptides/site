@@ -124,7 +124,6 @@
       image: safeString(variant && variant.image),
       is_active: variant && variant.is_active === false ? false : true,
       sort_order: Number((variant && variant.sort_order) || 0),
-
       coa_image_url: safeString(variant && variant.coa_image_url),
       coa_title: safeString(variant && variant.coa_title),
       coa_lot_number: safeString(variant && variant.coa_lot_number),
@@ -272,8 +271,6 @@
   }
 
   function openCoaModal(product, variant) {
-    if (!modal || !modalTitle || !modalMeta || !modalBody || !modalOpenImage) return;
-
     const productName = safeString(product && product.name) || "Product";
     const variantLabel = safeString(variant && variant.label) || "Variant";
     const title =
@@ -313,7 +310,7 @@
           }
         </div>
 
-        <div class="coa-modal-image-wrap" style="margin-top:16px;">
+        <div class="coa-modal-image-wrap">
           <img src="${escapeHtml(coaImageUrl)}" alt="${escapeHtml(title)}" />
         </div>
       `;
@@ -341,7 +338,6 @@
   }
 
   function closeCoaModal() {
-    if (!modal) return;
     modal.hidden = true;
     document.body.style.overflow = "";
   }
@@ -356,8 +352,6 @@
         class="coa-variant-btn ${hasCoa ? "has-coa" : "no-coa"} ${isSelected ? "is-selected" : ""}"
         data-product-slug="${escapeHtml(product.slug)}"
         data-variant-key="${escapeHtml(variantKey)}"
-        data-variant-label="${escapeHtml(variant.label)}"
-        data-has-coa="${hasCoa ? "true" : "false"}"
       >
         ${escapeHtml(variant.label || "Variant")}
       </button>
