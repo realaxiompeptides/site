@@ -2,7 +2,7 @@ body.coa-page-body {
   margin: 0;
   min-height: 100vh;
   font-family: "Inter", sans-serif;
-  background: #f8fafc;
+  background: #f8fbff;
   color: #0f172a;
 }
 
@@ -12,7 +12,7 @@ body.coa-page-body {
 
 .coa-hero-section {
   position: relative;
-  min-height: 52vh;
+  min-height: 54vh;
   display: grid;
   place-items: center;
   overflow: hidden;
@@ -35,7 +35,7 @@ body.coa-page-body {
 }
 
 .coa-hero-overlay {
-  background: linear-gradient(to bottom, rgba(3, 11, 28, 0.42), rgba(3, 11, 28, 0.78));
+  background: linear-gradient(to bottom, rgba(3, 11, 28, 0.42), rgba(3, 11, 28, 0.76));
 }
 
 .coa-hero-content {
@@ -46,11 +46,25 @@ body.coa-page-body {
   padding: 56px 0 70px;
 }
 
+.coa-trust-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 50px;
+  padding: 12px 20px;
+  border-radius: 999px;
+  background: rgba(198, 247, 214, 0.95);
+  color: #1f8a49;
+  font-weight: 800;
+  font-size: 15px;
+  margin-bottom: 24px;
+}
+
 .coa-hero-content h1 {
-  margin: 0 auto 16px;
+  margin: 0 auto 18px;
   max-width: 900px;
-  font-size: clamp(2.2rem, 6vw, 4.4rem);
-  line-height: 1;
+  font-size: clamp(2.5rem, 6vw, 4.8rem);
+  line-height: 0.98;
   color: #ffffff;
 }
 
@@ -61,10 +75,10 @@ body.coa-page-body {
   justify-content: space-between;
   flex-wrap: wrap;
   margin: 34px auto 0;
-  max-width: 900px;
+  max-width: 920px;
   padding: 18px;
   border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 22px;
+  border-radius: 24px;
   background: rgba(255, 255, 255, 0.10);
   backdrop-filter: blur(12px);
 }
@@ -74,16 +88,16 @@ body.coa-page-body {
   align-items: center;
   gap: 12px;
   min-width: min(100%, 420px);
-  padding: 14px 16px;
+  padding: 15px 18px;
   border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: 14px;
+  border-radius: 16px;
   background: rgba(255, 255, 255, 0.12);
 }
 
 .coa-search-wrap i,
 .coa-search-wrap input::placeholder,
 .coa-stats {
-  color: rgba(255, 255, 255, 0.82);
+  color: rgba(255, 255, 255, 0.84);
 }
 
 .coa-search-wrap input {
@@ -95,10 +109,60 @@ body.coa-page-body {
   font: inherit;
 }
 
-.coa-grid {
+.coa-proof-section {
+  background: linear-gradient(180deg, #edf7ff 0%, #f7fbff 100%);
+  padding: 34px 0 10px;
+}
+
+.coa-proof-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 22px;
+}
+
+.coa-proof-card {
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid #dce7f3;
+  border-radius: 28px;
+  padding: 28px 24px;
+  text-align: center;
+  box-shadow: 0 20px 44px rgba(15, 23, 42, 0.06);
+}
+
+.coa-proof-icon {
+  width: 82px;
+  height: 82px;
+  margin: 0 auto 18px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #e2f8eb, #d6f0ff);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #28b85c;
+  font-size: 36px;
+}
+
+.coa-proof-card h3 {
+  margin: 0 0 12px;
+  font-size: 22px;
+  color: #0f172a;
+}
+
+.coa-proof-card p {
+  margin: 0;
+  color: #5c6b80;
+  line-height: 1.7;
+  font-size: 16px;
+}
+
+.coa-section-heading {
+  margin-bottom: 38px;
+}
+
+.coa-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 26px;
 }
 
 .coa-card {
@@ -107,7 +171,7 @@ body.coa-page-body {
   overflow: hidden;
   background: linear-gradient(180deg, rgba(255,255,255,0.98), rgba(247,250,255,0.96));
   border: 1px solid #d9e2ee;
-  border-radius: 28px;
+  border-radius: 32px;
   box-shadow:
     0 18px 40px rgba(15, 23, 42, 0.06),
     inset 0 1px 0 rgba(255,255,255,0.75);
@@ -125,48 +189,42 @@ body.coa-page-body {
 .coa-card-media {
   position: relative;
   aspect-ratio: 1 / 1;
-  background: #edf4fb;
+  background: #f8fbff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 28px;
 }
 
 .coa-card-media img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
   display: block;
-  background: #edf4fb;
 }
 
 .coa-card-body {
   display: flex;
   flex: 1;
   flex-direction: column;
-  gap: 14px;
-  padding: 20px;
+  gap: 18px;
+  padding: 24px 24px 26px;
 }
 
 .coa-card-title-row {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 14px;
 }
 
 .coa-card-title {
   margin: 0;
   color: #0f172a;
-  font-size: 24px;
-  line-height: 1.12;
+  font-size: 30px;
+  line-height: 1.08;
   letter-spacing: -0.02em;
   font-weight: 900;
-}
-
-.coa-card-slug {
-  margin: 8px 0 0;
-  color: #5d6a7c;
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
 }
 
 .coa-pill,
@@ -174,10 +232,10 @@ body.coa-page-body {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  min-height: 40px;
-  padding: 8px 12px;
+  min-height: 44px;
+  padding: 10px 16px;
   border-radius: 999px;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 800;
   white-space: nowrap;
 }
@@ -197,7 +255,7 @@ body.coa-page-body {
 .coa-variant-list {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 12px;
 }
 
 .coa-variant-btn,
@@ -205,14 +263,14 @@ body.coa-page-body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 48px;
-  padding: 12px 16px;
+  min-height: 52px;
+  padding: 12px 20px;
   border-radius: 999px;
   border: 1px solid #dbe3ee;
   background: #ffffff;
   color: #111827;
   font: inherit;
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 800;
   cursor: pointer;
   text-decoration: none;
@@ -235,16 +293,19 @@ body.coa-page-body {
 .coa-card-footer {
   margin-top: auto;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
   gap: 14px;
 }
 
 .coa-helper-text {
   margin: 0;
   color: #5d6a7c;
-  font-size: 15px;
-  line-height: 1.7;
+  font-size: 16px;
+  line-height: 1.75;
+}
+
+.coa-product-link {
+  width: 100%;
 }
 
 .coa-loading-state,
@@ -295,7 +356,7 @@ body.coa-page-body {
   overflow: auto;
   background: #ffffff;
   border: 1px solid #dbe3ee;
-  border-radius: 28px;
+  border-radius: 30px;
   box-shadow: 0 28px 60px rgba(15, 23, 42, 0.20);
 }
 
@@ -424,7 +485,8 @@ body.coa-page-body {
   color: #ffffff;
 }
 
-@media (max-width: 980px) {
+@media (max-width: 1100px) {
+  .coa-proof-grid,
   .coa-grid {
     grid-template-columns: 1fr;
   }
@@ -440,17 +502,26 @@ body.coa-page-body {
   }
 
   .coa-card-body {
-    padding: 18px;
+    padding: 20px 18px 22px;
   }
 
-  .coa-card-footer,
+  .coa-card-title-row,
   .coa-modal-head {
     flex-direction: column;
     align-items: stretch;
   }
 
+  .coa-card-title {
+    font-size: 26px;
+  }
+
   .coa-open-image-link,
   .coa-product-link {
     width: 100%;
+  }
+
+  .coa-proof-card {
+    padding: 24px 18px;
+    border-radius: 24px;
   }
 }
