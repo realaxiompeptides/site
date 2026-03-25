@@ -1,6 +1,5 @@
 (function () {
   const CART_STORAGE_KEY = "axiom_cart";
-  const COA_BUCKET = "coa-images";
 
   const modal = document.getElementById("coaModal");
   const modalTitle = document.getElementById("coaModalTitle");
@@ -53,6 +52,25 @@
     return String(value || "").trim();
   }
 
+  function normalizeImagePath(path) {
+    const clean = safeString(path);
+    if (!clean) return "";
+
+    if (
+      clean.startsWith("http://") ||
+      clean.startsWith("https://") ||
+      clean.startsWith("//")
+    ) {
+      return clean;
+    }
+
+    if (clean.startsWith("../") || clean.startsWith("./") || clean.startsWith("/")) {
+      return clean;
+    }
+
+    return "../" + clean.replace(/^\/+/, "");
+  }
+
   function getLocalCart() {
     try {
       const cart = JSON.parse(localStorage.getItem(CART_STORAGE_KEY) || "[]");
@@ -71,46 +89,6 @@
     }, 0);
 
     cartCount.textContent = String(total);
-  }
-
-  function normalizeProductImage(path) {
-    const clean = safeString(path);
-    if (!clean) return "../images/placeholder.PNG";
-
-    if (
-      clean.startsWith("http://") ||
-      clean.startsWith("https://") ||
-      clean.startsWith("//") ||
-      clean.startsWith("../") ||
-      clean.startsWith("./") ||
-      clean.startsWith("/")
-    ) {
-      return clean;
-    }
-
-    return "../" + clean.replace(/^\/+/, "");
-  }
-
-  function getCoaPublicUrl(value) {
-    const supabase = getSupabase();
-    const clean = safeString(value);
-
-    if (!clean) return "";
-
-    if (
-      clean.startsWith("http://") ||
-      clean.startsWith("https://") ||
-      clean.startsWith("//")
-    ) {
-      return clean;
-    }
-
-    if (!supabase || !supabase.storage) {
-      return "";
-    }
-
-    const result = supabase.storage.from(COA_BUCKET).getPublicUrl(clean);
-    return result && result.data && result.data.publicUrl ? result.data.publicUrl : "";
   }
 
   function renderLoadingState() {
@@ -142,7 +120,6 @@
       image: safeString(variant && variant.image),
       is_active: variant && variant.is_active === false ? false : true,
       sort_order: Number((variant && variant.sort_order) || 0),
-
       coa_image_url: safeString(variant && variant.coa_image_url),
       coa_title: safeString(variant && variant.coa_title),
       coa_lot_number: safeString(variant && variant.coa_lot_number),
@@ -168,6 +145,7 @@
       category: safeString(product && product.category),
       description: safeString(product && product.description),
       main_image: safeString(product && product.main_image),
+      main_coa_image: safeString(product && product.main_coa_image),
       is_active: product && product.is_active === false ? false : true,
       product_variants: variants
     };
@@ -188,6 +166,7 @@
         category,
         description,
         main_image,
+        main_coa_image,
         is_active,
         sort_order,
         created_at,
@@ -224,6 +203,8 @@
   }
 
   function productHasAtLeastOneCoa(product) {
+    if (safeString(product.main_coa_image)) return true;
+
     return safeArray(product.product_variants).some(function (variant) {
       return !!safeString(variant.coa_image_url);
     });
@@ -245,7 +226,10 @@
       );
     });
 
-    return { product: product || null, variant: variant || null };
+    return {
+      product: product || null,
+      variant: variant || null
+    };
   }
 
   async function trackCoaOpen(product, variant) {
@@ -286,6 +270,16 @@
     return parts.join(" • ");
   }
 
+  function resolveCoaPath(product, variant) {
+    const variantPath = safeString(variant && variant.coa_image_url);
+    const mainPath = safeString(product && product.main_coa_image);
+
+    if (variantPath) return normalizeImagePath(variantPath);
+    if (mainPath) return normalizeImagePath(mainPath);
+
+    return "";
+  }
+
   function openCoaModal(product, variant) {
     const productName = safeString(product && product.name) || "Product";
     const variantLabel = safeString(variant && variant.label) || "Variant";
@@ -293,7 +287,7 @@
       safeString(variant && variant.coa_title) ||
       (productName + " — " + variantLabel + " COA");
 
-    const coaImageUrl = getCoaPublicUrl(variant && variant.coa_image_url);
+    const coaImageUrl = resolveCoaPath(product, variant);
 
     modalTitle.textContent = title;
     modalMeta.textContent = buildModalMeta(variant);
@@ -338,12 +332,13 @@
         <div class="coa-empty-state">
           <h3>COA not uploaded yet</h3>
           <p>
-            This variant exists in Supabase, but no COA image is assigned yet for
+            No local COA image path is assigned yet for
             <strong>${escapeHtml(productName)} ${escapeHtml(variantLabel)}</strong>.
           </p>
           <p>
-            Upload the image to the <code>${escapeHtml(COA_BUCKET)}</code> bucket and save the path in
-            <code>product_variants.coa_image_url</code>.
+            Add a path like <code>coa-page/images/mt2-10mg-coa.PNG</code> into
+            <code>product_variants.coa_image_url</code> or use
+            <code>products.main_coa_image</code> as a fallback.
           </p>
         </div>
       `;
@@ -361,7 +356,7 @@
 
   function buildVariantButtonHtml(product, variant, isSelected) {
     const variantKey = safeString(variant.variant_id || variant.id);
-    const hasCoa = !!safeString(variant.coa_image_url);
+    const hasCoa = !!resolveCoaPath(product, variant);
 
     return `
       <button
@@ -385,15 +380,13 @@
     const withCoas = products.filter(productHasAtLeastOneCoa).length;
     coaStats.textContent =
       products.length +
-      " product" +
-      (products.length === 1 ? "" : "s") +
-      " • " +
+      " products • " +
       withCoas +
       " with COAs assigned";
 
     coaGrid.innerHTML = products
       .map(function (product) {
-        const cardImage = normalizeProductImage(product.main_image);
+        const cardImage = normalizeImagePath(product.main_image) || "../images/placeholder.PNG";
         const variants = safeArray(product.product_variants);
         const hasAnyCoa = productHasAtLeastOneCoa(product);
 
@@ -443,7 +436,7 @@
 
               <div class="coa-card-footer">
                 <p class="coa-helper-text">
-                  ${variants.length} variant${variants.length === 1 ? "" : "s"} from your live Supabase catalog.
+                  ${variants.length} variant${variants.length === 1 ? "" : "s"} from your live product catalog.
                 </p>
 
                 <a
