@@ -1,5 +1,6 @@
 (function () {
   const CART_STORAGE_KEY = "axiom_cart";
+  const COA_BUCKET = "coa-images";
 
   const modal = document.getElementById("coaModal");
   const modalTitle = document.getElementById("coaModalTitle");
@@ -19,12 +20,7 @@
   let selectedVariantButton = null;
 
   function getSupabase() {
-    return (
-      window.axiomSupabase ||
-      window.AXIOM_SUPABASE ||
-      window.supabaseClient ||
-      null
-    );
+    return window.axiomSupabase || window.AXIOM_SUPABASE || window.supabaseClient || null;
   }
 
   async function waitForSupabase(maxAttempts, delayMs) {
@@ -57,24 +53,6 @@
     return String(value || "").trim();
   }
 
-  function normalizeImagePath(path) {
-    const clean = safeString(path);
-    if (!clean) return "../images/placeholder.PNG";
-
-    if (
-      clean.startsWith("http://") ||
-      clean.startsWith("https://") ||
-      clean.startsWith("//") ||
-      clean.startsWith("../") ||
-      clean.startsWith("./") ||
-      clean.startsWith("/")
-    ) {
-      return clean;
-    }
-
-    return "../" + clean.replace(/^\/+/, "");
-  }
-
   function getLocalCart() {
     try {
       const cart = JSON.parse(localStorage.getItem(CART_STORAGE_KEY) || "[]");
@@ -93,6 +71,46 @@
     }, 0);
 
     cartCount.textContent = String(total);
+  }
+
+  function normalizeProductImage(path) {
+    const clean = safeString(path);
+    if (!clean) return "../images/placeholder.PNG";
+
+    if (
+      clean.startsWith("http://") ||
+      clean.startsWith("https://") ||
+      clean.startsWith("//") ||
+      clean.startsWith("../") ||
+      clean.startsWith("./") ||
+      clean.startsWith("/")
+    ) {
+      return clean;
+    }
+
+    return "../" + clean.replace(/^\/+/, "");
+  }
+
+  function getCoaPublicUrl(value) {
+    const supabase = getSupabase();
+    const clean = safeString(value);
+
+    if (!clean) return "";
+
+    if (
+      clean.startsWith("http://") ||
+      clean.startsWith("https://") ||
+      clean.startsWith("//")
+    ) {
+      return clean;
+    }
+
+    if (!supabase || !supabase.storage) {
+      return "";
+    }
+
+    const result = supabase.storage.from(COA_BUCKET).getPublicUrl(clean);
+    return result && result.data && result.data.publicUrl ? result.data.publicUrl : "";
   }
 
   function renderLoadingState() {
@@ -124,6 +142,7 @@
       image: safeString(variant && variant.image),
       is_active: variant && variant.is_active === false ? false : true,
       sort_order: Number((variant && variant.sort_order) || 0),
+
       coa_image_url: safeString(variant && variant.coa_image_url),
       coa_title: safeString(variant && variant.coa_title),
       coa_lot_number: safeString(variant && variant.coa_lot_number),
@@ -226,10 +245,7 @@
       );
     });
 
-    return {
-      product: product || null,
-      variant: variant || null
-    };
+    return { product: product || null, variant: variant || null };
   }
 
   async function trackCoaOpen(product, variant) {
@@ -240,7 +256,7 @@
       const visitorId =
         window.AXIOM_HELPERS && typeof window.AXIOM_HELPERS.getVisitorId === "function"
           ? window.AXIOM_HELPERS.getVisitorId()
-          : null;
+          : "unknown";
 
       await supabase.from("page_views").insert({
         visitor_id: visitorId,
@@ -277,12 +293,12 @@
       safeString(variant && variant.coa_title) ||
       (productName + " — " + variantLabel + " COA");
 
-    const coaImageUrl = normalizeImagePath(variant && variant.coa_image_url);
+    const coaImageUrl = getCoaPublicUrl(variant && variant.coa_image_url);
 
     modalTitle.textContent = title;
     modalMeta.textContent = buildModalMeta(variant);
 
-    if (safeString(variant && variant.coa_image_url)) {
+    if (coaImageUrl) {
       modalOpenImage.hidden = false;
       modalOpenImage.href = coaImageUrl;
 
@@ -326,7 +342,8 @@
             <strong>${escapeHtml(productName)} ${escapeHtml(variantLabel)}</strong>.
           </p>
           <p>
-            Add a value to <code>coa_image_url</code> on this variant in your admin-backed product data.
+            Upload the image to the <code>${escapeHtml(COA_BUCKET)}</code> bucket and save the path in
+            <code>product_variants.coa_image_url</code>.
           </p>
         </div>
       `;
@@ -376,7 +393,7 @@
 
     coaGrid.innerHTML = products
       .map(function (product) {
-        const cardImage = normalizeImagePath(product.main_image);
+        const cardImage = normalizeProductImage(product.main_image);
         const variants = safeArray(product.product_variants);
         const hasAnyCoa = productHasAtLeastOneCoa(product);
 
