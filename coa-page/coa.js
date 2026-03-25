@@ -332,13 +332,12 @@
         <div class="coa-empty-state">
           <h3>COA not uploaded yet</h3>
           <p>
-            No local COA image path is assigned yet for
-            <strong>${escapeHtml(productName)} ${escapeHtml(variantLabel)}</strong>.
+            The certificate for <strong>${escapeHtml(productName)} ${escapeHtml(variantLabel)}</strong>
+            has not been posted yet.
           </p>
           <p>
-            Add a path like <code>coa-page/images/mt2-10mg-coa.PNG</code> into
-            <code>product_variants.coa_image_url</code> or use
-            <code>products.main_coa_image</code> as a fallback.
+            Our team is still preparing or reviewing the lab documentation.
+            Please check back soon for the completed COA.
           </p>
         </div>
       `;
@@ -394,7 +393,7 @@
       products.length +
       " products • " +
       withCoas +
-      " with COAs assigned";
+      " COAs available";
 
     coaGrid.innerHTML = products
       .map(function (product) {
