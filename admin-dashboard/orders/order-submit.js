@@ -10,8 +10,9 @@ window.AXIOM_ORDER_SUBMIT = {
         ? window.AXIOM_HELPERS.nowIso()
         : new Date().toISOString();
 
-    function toNumber(value) {
-      return Number(value || 0);
+    function toNumber(value, fallback = 0) {
+      const num = Number(value);
+      return Number.isFinite(num) ? num : fallback;
     }
 
     function normalizeCartItems(items) {
@@ -67,8 +68,13 @@ window.AXIOM_ORDER_SUBMIT = {
       return highest + 1;
     }
 
-    async function getAffiliateCommissionRate(affiliateId) {
-      if (!affiliateId) return 0;
+    async function getAffiliateCommissionConfig(affiliateId) {
+      if (!affiliateId) {
+        return {
+          commissionType: "",
+          commissionValue: 0
+        };
+      }
 
       try {
         const { data, error } = await supabase
@@ -79,31 +85,45 @@ window.AXIOM_ORDER_SUBMIT = {
 
         if (error || !data) {
           if (error) {
-            console.error("Failed to load affiliate commission rate:", error);
+            console.error("Failed to load affiliate commission config:", error);
           }
-          return 0;
+
+          return {
+            commissionType: "",
+            commissionValue: 0
+          };
         }
 
-        if (String(data.commission_type || "").toLowerCase() !== "percent") {
-          return 0;
-        }
-
-        return Number(data.commission_value || 0);
+        return {
+          commissionType: String(data.commission_type || "").toLowerCase(),
+          commissionValue: Number(data.commission_value || 0)
+        };
       } catch (error) {
         console.error("Affiliate commission lookup crashed:", error);
-        return 0;
+        return {
+          commissionType: "",
+          commissionValue: 0
+        };
       }
     }
 
-    function calculateAffiliateCommission(subtotal, discountAmount, commissionRate) {
+    function calculateAffiliateCommission(subtotal, discountAmount, commissionType, commissionValue) {
       const commissionableAmount = Math.max(
         Number(subtotal || 0) - Number(discountAmount || 0),
         0
       );
 
-      return Number(
-        ((commissionableAmount * Number(commissionRate || 0)) / 100).toFixed(2)
-      );
+      if (String(commissionType || "").toLowerCase() === "percent") {
+        return Number(
+          ((commissionableAmount * Number(commissionValue || 0)) / 100).toFixed(2)
+        );
+      }
+
+      if (String(commissionType || "").toLowerCase() === "flat") {
+        return Number(Math.max(Number(commissionValue || 0), 0).toFixed(2));
+      }
+
+      return 0;
     }
 
     function getBrowserAffiliateAttribution() {
@@ -253,11 +273,14 @@ window.AXIOM_ORDER_SUBMIT = {
         let commissionAmount = Number(orderRow.affiliate_commission_amount || 0);
 
         if (!commissionAmount) {
-          const commissionRate = await getAffiliateCommissionRate(affiliateId);
+          const commissionConfig = await getAffiliateCommissionConfig(affiliateId);
           commissionAmount = calculateAffiliateCommission(
             orderRow.subtotal !== undefined ? orderRow.subtotal : sessionRow.subtotal,
-            orderRow.discount_amount !== undefined ? orderRow.discount_amount : sessionRow.discount_amount,
-            commissionRate
+            orderRow.discount_amount !== undefined
+              ? orderRow.discount_amount
+              : sessionRow.discount_amount,
+            commissionConfig.commissionType,
+            commissionConfig.commissionValue
           );
         }
 
@@ -370,12 +393,20 @@ window.AXIOM_ORDER_SUBMIT = {
       const totalAmount = toNumber(sessionRow.total_amount);
 
       const affiliateIdForCommission = sessionRow.affiliate_id || null;
-      const affiliateCommissionRate = await getAffiliateCommissionRate(affiliateIdForCommission);
+      const commissionConfig = await getAffiliateCommissionConfig(affiliateIdForCommission);
       const affiliateCommissionAmount = affiliateIdForCommission
-        ? calculateAffiliateCommission(subtotal, discountAmount, affiliateCommissionRate)
+        ? calculateAffiliateCommission(
+            subtotal,
+            discountAmount,
+            commissionConfig.commissionType,
+            commissionConfig.commissionValue
+          )
         : 0;
 
-      if (affiliateIdForCommission && Number(sessionRow.affiliate_commission_amount || 0) !== affiliateCommissionAmount) {
+      if (
+        affiliateIdForCommission &&
+        Number(sessionRow.affiliate_commission_amount || 0) !== affiliateCommissionAmount
+      ) {
         const { error: commissionPatchError } = await supabase
           .from("checkout_sessions")
           .update({
@@ -409,7 +440,7 @@ window.AXIOM_ORDER_SUBMIT = {
       if (existingOrder) {
         const existingOrderAffiliateCommissionAmount =
           existingOrder.affiliate_id
-            ? Number(existingOrder.affiliate_commission_amount || affiliateCommissionAmount || 0)
+            ? affiliateCommissionAmount
             : 0;
 
         const { error: existingOrderCommissionUpdateError } = await supabase
@@ -421,7 +452,10 @@ window.AXIOM_ORDER_SUBMIT = {
           .eq("id", existingOrder.id);
 
         if (existingOrderCommissionUpdateError) {
-          console.error("Existing order affiliate commission update failed:", existingOrderCommissionUpdateError);
+          console.error(
+            "Existing order affiliate commission update failed:",
+            existingOrderCommissionUpdateError
+          );
         }
 
         const { error: existingCheckoutUpdateError } = await supabase
@@ -429,8 +463,12 @@ window.AXIOM_ORDER_SUBMIT = {
           .update({
             order_number: existingOrder.order_number,
             session_status: extraPayload.session_status || "converted",
-            payment_status: extraPayload.payment_status || existingOrder.payment_status || "pending",
-            fulfillment_status: extraPayload.fulfillment_status || existingOrder.fulfillment_status || "unfulfilled",
+            payment_status:
+              extraPayload.payment_status || existingOrder.payment_status || "pending",
+            fulfillment_status:
+              extraPayload.fulfillment_status ||
+              existingOrder.fulfillment_status ||
+              "unfulfilled",
             affiliate_commission_amount: affiliateCommissionAmount,
             confirmed_at: nowIso,
             updated_at: nowIso,
@@ -439,7 +477,10 @@ window.AXIOM_ORDER_SUBMIT = {
           .eq("id", sessionRow.id);
 
         if (existingCheckoutUpdateError) {
-          console.error("Existing order checkout session update failed:", existingCheckoutUpdateError);
+          console.error(
+            "Existing order checkout session update failed:",
+            existingCheckoutUpdateError
+          );
         }
 
         await insertAffiliateConversionIfNeeded({
