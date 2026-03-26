@@ -122,7 +122,10 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
   },
 
   getClaimBackupContactInput() {
-    return document.getElementById("affiliateClaimBackupContact");
+    return (
+      document.getElementById("affiliateClaimPayoutContact") ||
+      document.getElementById("affiliateClaimBackupContact")
+    );
   },
 
   getClaimSubmitButton() {
@@ -370,7 +373,7 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
         }
 
         const claimRelatedInput = event.target.closest(
-          "#affiliateClaimAmount, #affiliateClaimNote, #affiliateClaimPayoutNetwork, #affiliateClaimPayoutAddress, #affiliateClaimBackupContact"
+          "#affiliateClaimAmount, #affiliateClaimNote, #affiliateClaimPayoutNetwork, #affiliateClaimPayoutAddress, #affiliateClaimPayoutContact, #affiliateClaimBackupContact"
         );
         if (claimRelatedInput) {
           this.setMessage("", "");
@@ -397,7 +400,7 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
         }
 
         const claimInput = event.target.closest(
-          "#affiliateClaimAmount, #affiliateClaimNote, #affiliateClaimPayoutMethod, #affiliateClaimPayoutNetwork, #affiliateClaimPayoutAddress, #affiliateClaimBackupContact"
+          "#affiliateClaimAmount, #affiliateClaimNote, #affiliateClaimPayoutMethod, #affiliateClaimPayoutNetwork, #affiliateClaimPayoutAddress, #affiliateClaimPayoutContact, #affiliateClaimBackupContact"
         );
 
         if (claimInput && event.key === "Enter" && claimInput.id !== "affiliateClaimNote") {
@@ -748,7 +751,11 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
       method === "sol" ||
       method === "solana" ||
       method === "usdt" ||
-      method === "usdc";
+      method === "usdc" ||
+      method === "usdt-eth" ||
+      method === "usdc-eth" ||
+      method === "usdt-sol" ||
+      method === "usdc-sol";
 
     if (networkInput) {
       networkInput.placeholder = looksCrypto
@@ -1081,7 +1088,7 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
               '<span class="affiliate-status-badge ' + statusClass + '">' + statusLabel + "</span>" +
               '<span class="affiliate-data-note">' + methodText + (referenceText ? " · " + referenceText : "") + "</span>" +
               (notesText ? '<span class="affiliate-data-note">' + notesText + "</span>" : "") +
-            "</div>' +
+            "</div>" +
           "</div>"
         );
       })
@@ -1139,7 +1146,7 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
               (payoutNetworkText ? '<span class="affiliate-data-note">Network: ' + payoutNetworkText + "</span>" : "") +
               (payoutAddressText ? '<span class="affiliate-data-note">Address: ' + payoutAddressText + "</span>" : "") +
               (backupContactText ? '<span class="affiliate-data-note">Backup: ' + backupContactText + "</span>" : "") +
-            "</div>' +
+            "</div>" +
           "</div>"
         );
       })
@@ -1188,7 +1195,6 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
       throw new Error("Enter a valid claim amount.");
     }
 
-    // Try newest RPC shape first
     try {
       const rpcResponseExtended = await window.axiomSupabase.rpc("affiliate_submit_claim_request", {
         p_amount: amount,
@@ -1208,7 +1214,6 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
       console.error("Extended claim RPC exception:", error);
     }
 
-    // Try older RPC shape
     try {
       const rpcResponseBase = await window.axiomSupabase.rpc("affiliate_submit_claim_request", {
         p_amount: amount,
@@ -1216,7 +1221,6 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
       });
 
       if (!rpcResponseBase.error) {
-        // If RPC succeeded but does not save payout fields, try to patch newest pending claim.
         try {
           const latestClaimResult = await window.axiomSupabase
             .from("affiliate_claim_requests")
@@ -1250,7 +1254,6 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
       console.error("Base claim RPC exception:", error);
     }
 
-    // Try direct insert with payout fields
     try {
       const insertExtended = await window.axiomSupabase
         .from("affiliate_claim_requests")
@@ -1275,7 +1278,6 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
       console.error("Extended direct insert exception:", error);
     }
 
-    // Last fallback
     const insertPlain = await window.axiomSupabase
       .from("affiliate_claim_requests")
       .insert({
