@@ -16,6 +16,12 @@
     }) || null;
   }
 
+  function findClaimRequestById(claimId) {
+    return (state.payoutRequests || []).find(function (item) {
+      return String(item.id) === String(claimId);
+    }) || null;
+  }
+
   async function refreshSelectedAffiliateDetails(actionsApi) {
     if (state.selectedAffiliateId) {
       await actionsApi.openAffiliateDetails(state.selectedAffiliateId);
@@ -201,34 +207,63 @@
       }
     },
 
-    denyPayoutRequest: async function denyPayoutRequest(claimId) {
+    rejectPayoutRequest: async function rejectPayoutRequest(claimId) {
       if (!claimId) return;
 
       try {
         if (typeof dataApi.updateClaimStatus !== "function") {
-          throw new Error("Claim denial API is not available.");
+          throw new Error("Claim rejection API is not available.");
         }
 
-        await dataApi.updateClaimStatus(claimId, "denied");
+        await dataApi.updateClaimStatus(claimId, "rejected");
         await this.loadAffiliates();
         await refreshSelectedAffiliateDetails(this);
 
-        alert("Payout request denied.");
+        alert("Payout request rejected.");
       } catch (error) {
-        console.error("Failed to deny payout request:", error);
-        alert(error.message || "Failed to deny payout request.");
+        console.error("Failed to reject payout request:", error);
+        alert(error.message || "Failed to reject payout request.");
       }
+    },
+
+    denyPayoutRequest: async function denyPayoutRequest(claimId) {
+      await this.rejectPayoutRequest(claimId);
     },
 
     markPayoutRequestPaid: async function markPayoutRequestPaid(claimId) {
       if (!claimId) return;
 
       try {
-        if (typeof dataApi.markClaimPaid !== "function") {
+        const claim = findClaimRequestById(claimId);
+        const affiliateId = claim?.affiliate_id || claim?.affiliateId || "";
+
+        if (typeof dataApi.markClaimPaid === "function") {
+          await dataApi.markClaimPaid(claimId);
+        } else if (typeof dataApi.updateClaimStatus === "function") {
+          await dataApi.updateClaimStatus(claimId, "paid");
+        } else {
           throw new Error("Mark-paid payout API is not available.");
         }
 
-        await dataApi.markClaimPaid(claimId);
+        if (
+          affiliateId &&
+          typeof dataApi.recordPayout === "function" &&
+          claim &&
+          toNumber(claim.amount, 0) > 0
+        ) {
+          try {
+            await dataApi.recordPayout({
+              affiliateId: affiliateId,
+              amount: toNumber(claim.amount, 0),
+              method: claim.payout_method || claim.payoutMethod || "manual",
+              reference: claim.payout_reference || claim.payoutReference || `claim:${claimId}`,
+              notes: claim.notes || claim.message || "Recorded from affiliate claim request"
+            });
+          } catch (payoutError) {
+            console.error("Claim was marked paid, but payout record insert failed:", payoutError);
+          }
+        }
+
         await this.loadAffiliates();
         await refreshSelectedAffiliateDetails(this);
 
@@ -257,7 +292,10 @@
       }
 
       const affiliate = findAffiliateById(affiliateId);
-      const claimableAmount = toNumber(affiliate?.claimable, 0);
+      const claimableAmount = toNumber(
+        affiliate?.availableToClaim !== undefined ? affiliate.availableToClaim : affiliate?.claimable,
+        0
+      );
 
       if (claimableAmount <= 0) {
         alert("This affiliate has no claimable balance.");
@@ -265,11 +303,15 @@
       }
 
       if (amount > claimableAmount) {
-        alert("Payout amount cannot be greater than the affiliate's current claimable balance.");
+        alert("Payout amount cannot be greater than the affiliate's current available claimable balance.");
         return;
       }
 
       try {
+        if (typeof dataApi.recordPayout !== "function") {
+          throw new Error("Record payout API is not available.");
+        }
+
         await dataApi.recordPayout({
           affiliateId: affiliateId,
           amount: amount,
@@ -306,8 +348,13 @@
           return;
         }
 
+        if (nextStatus === "rejected") {
+          await this.rejectPayoutRequest(claimId);
+          return;
+        }
+
         if (nextStatus === "denied") {
-          await this.denyPayoutRequest(claimId);
+          await this.rejectPayoutRequest(claimId);
           return;
         }
 
