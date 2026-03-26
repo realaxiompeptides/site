@@ -101,6 +101,22 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
     );
   },
 
+  getClaimPayoutMethodInput() {
+    return document.getElementById("affiliateClaimPayoutMethod") || null;
+  },
+
+  getClaimPayoutNetworkInput() {
+    return document.getElementById("affiliateClaimPayoutNetwork") || null;
+  },
+
+  getClaimPayoutAddressInput() {
+    return document.getElementById("affiliateClaimPayoutAddress") || null;
+  },
+
+  getClaimPayoutContactInput() {
+    return document.getElementById("affiliateClaimPayoutContact") || null;
+  },
+
   normalizeCode(value) {
     return String(value || "")
       .trim()
@@ -169,6 +185,44 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
       .replace(/'/g, "&#039;");
   },
 
+  compactText(value) {
+    return String(value || "").trim();
+  },
+
+  getAutoNetworkForMethod(method) {
+    const value = String(method || "").trim().toUpperCase();
+
+    if (value === "BTC") return "Bitcoin";
+    if (value === "ETH" || value === "USDT-ETH" || value === "USDC-ETH") return "Ethereum";
+    if (value === "SOL" || value === "USDT-SOL" || value === "USDC-SOL") return "Solana";
+    return "";
+  },
+
+  formatPayoutMethodLabel(method) {
+    const value = String(method || "").trim();
+
+    if (!value) return "—";
+
+    const upper = value.toUpperCase();
+    if (upper === "BTC") return "Bitcoin (BTC)";
+    if (upper === "ETH") return "Ethereum (ETH)";
+    if (upper === "USDT-ETH") return "USDT (Ethereum)";
+    if (upper === "USDC-ETH") return "USDC (Ethereum)";
+    if (upper === "SOL") return "Solana (SOL)";
+    if (upper === "USDT-SOL") return "USDT (Solana)";
+    if (upper === "USDC-SOL") return "USDC (Solana)";
+    if (upper === "OTHER") return "Other";
+
+    return value;
+  },
+
+  formatAddressShort(value) {
+    const text = this.compactText(value);
+    if (!text) return "—";
+    if (text.length <= 18) return text;
+    return text.slice(0, 8) + "..." + text.slice(-6);
+  },
+
   setReferralCodeStatus(message, type) {
     const el = this.getReferralCodeStatusEl();
     if (!el) return;
@@ -203,6 +257,23 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
       generatedLinkInput.value = cleanCode
         ? origin + normalizedSiteRoot + "/?ref=" + encodeURIComponent(cleanCode)
         : "";
+    }
+  },
+
+  syncClaimPayoutUi() {
+    const methodInput = this.getClaimPayoutMethodInput();
+    const networkInput = this.getClaimPayoutNetworkInput();
+
+    if (!methodInput || !networkInput) return;
+
+    const autoNetwork = this.getAutoNetworkForMethod(methodInput.value);
+
+    if (autoNetwork && !this.compactText(networkInput.value)) {
+      networkInput.value = autoNetwork;
+    }
+
+    if (autoNetwork && methodInput.dataset.autofillNetwork === "true") {
+      networkInput.value = autoNetwork;
     }
   },
 
@@ -312,9 +383,33 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
           return;
         }
 
-        const claimInput = event.target.closest("#affiliateClaimAmount");
+        const claimInput = event.target.closest(
+          "#affiliateClaimAmount, #affiliateClaimNote, #affiliateClaimPayoutMethod, #affiliateClaimPayoutNetwork, #affiliateClaimPayoutAddress, #affiliateClaimPayoutContact"
+        );
         if (claimInput) {
           this.setMessage("", "");
+        }
+
+        const payoutMethodInput = event.target.closest("#affiliateClaimPayoutMethod");
+        if (payoutMethodInput) {
+          payoutMethodInput.dataset.autofillNetwork = "true";
+          this.syncClaimPayoutUi();
+        }
+
+        const payoutNetworkInput = event.target.closest("#affiliateClaimPayoutNetwork");
+        if (payoutNetworkInput) {
+          const methodInput = this.getClaimPayoutMethodInput();
+          if (methodInput) {
+            methodInput.dataset.autofillNetwork = "false";
+          }
+        }
+      });
+
+      document.addEventListener("change", (event) => {
+        const payoutMethodInput = event.target.closest("#affiliateClaimPayoutMethod");
+        if (payoutMethodInput) {
+          payoutMethodInput.dataset.autofillNetwork = "true";
+          this.syncClaimPayoutUi();
         }
       });
 
@@ -329,7 +424,9 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
           return;
         }
 
-        const claimInput = event.target.closest("#affiliateClaimAmount, #affiliateClaimNote");
+        const claimInput = event.target.closest(
+          "#affiliateClaimAmount, #affiliateClaimNote, #affiliateClaimPayoutMethod, #affiliateClaimPayoutNetwork, #affiliateClaimPayoutAddress, #affiliateClaimPayoutContact"
+        );
         if (claimInput && event.key === "Enter" && claimInput.id === "affiliateClaimAmount") {
           event.preventDefault();
           this.submitClaim();
@@ -713,17 +810,37 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
       claimNoteInput.disabled = this.toNumber(stats.availableToClaim, 0) <= 0;
     }
 
+    const claimPayoutMethodInput = this.getClaimPayoutMethodInput();
+    if (claimPayoutMethodInput) {
+      claimPayoutMethodInput.disabled = this.toNumber(stats.availableToClaim, 0) <= 0;
+    }
+
+    const claimPayoutNetworkInput = this.getClaimPayoutNetworkInput();
+    if (claimPayoutNetworkInput) {
+      claimPayoutNetworkInput.disabled = this.toNumber(stats.availableToClaim, 0) <= 0;
+    }
+
+    const claimPayoutAddressInput = this.getClaimPayoutAddressInput();
+    if (claimPayoutAddressInput) {
+      claimPayoutAddressInput.disabled = this.toNumber(stats.availableToClaim, 0) <= 0;
+    }
+
+    const claimPayoutContactInput = this.getClaimPayoutContactInput();
+    if (claimPayoutContactInput) {
+      claimPayoutContactInput.disabled = this.toNumber(stats.availableToClaim, 0) <= 0;
+    }
+
     const claimButton = document.getElementById("submitAffiliateClaimBtn");
     if (claimButton) {
+      if (!claimButton.dataset.defaultText) {
+        claimButton.dataset.defaultText = claimButton.textContent || "Submit Claim Request";
+      }
+
       claimButton.disabled = this.toNumber(stats.availableToClaim, 0) <= 0;
       if (this.toNumber(stats.availableToClaim, 0) <= 0) {
         claimButton.textContent = "No Claimable Balance Available";
       } else if (!claimButton.dataset.loading) {
         claimButton.textContent = claimButton.dataset.defaultText || "Submit Claim Request";
-      }
-
-      if (!claimButton.dataset.defaultText) {
-        claimButton.dataset.defaultText = claimButton.textContent || "Submit Claim Request";
       }
     }
 
@@ -761,6 +878,7 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
       generatedLinkInput.value = defaultLink;
     }
 
+    this.syncClaimPayoutUi();
     this.renderRecentCommissions(stats.recentCommissions);
     this.renderPayouts(stats.payouts);
     this.renderClaims(stats.claims);
@@ -920,19 +1038,40 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
       .map((row) => {
         const statusLabel = this.getPayoutStatusLabel(row.payout_status);
         const statusClass = this.getPayoutStatusClass(row.payout_status);
-        const method = row.payout_method ? " · " + this.escapeHtml(row.payout_method) : "";
-        const reference = row.payout_reference ? " · " + this.escapeHtml(row.payout_reference) : "";
         const dateText = this.escapeHtml(this.formatDate(row.paid_at || row.created_at));
         const amount = this.formatMoney(row.amount || 0);
+
+        const payoutMethod = this.formatPayoutMethodLabel(
+          row.payout_method || row.payment_method || row.method || ""
+        );
+        const payoutNetwork = this.compactText(
+          row.payout_network || row.network || ""
+        );
+        const payoutAddress = this.compactText(
+          row.payout_address || row.wallet_address || row.address || ""
+        );
+        const payoutReference = this.compactText(
+          row.payout_reference || row.reference || ""
+        );
+        const payoutNotes = this.compactText(
+          row.notes || row.payout_notes || ""
+        );
+
+        let metaBits = [];
+        if (payoutMethod && payoutMethod !== "—") metaBits.push(this.escapeHtml(payoutMethod));
+        if (payoutNetwork) metaBits.push(this.escapeHtml(payoutNetwork));
+        if (payoutReference) metaBits.push("Ref: " + this.escapeHtml(payoutReference));
 
         return (
           '<div class="affiliate-data-row affiliate-data-row--stacked">' +
             '<div class="affiliate-data-row-main">' +
-              "<span>" + dateText + method + reference + "</span>" +
+              "<span>" + dateText + (metaBits.length ? " · " + metaBits.join(" · ") : "") + "</span>" +
               "<strong>" + amount + "</strong>" +
             "</div>" +
             '<div class="affiliate-data-row-sub">' +
               '<span class="affiliate-status-badge ' + statusClass + '">' + statusLabel + "</span>" +
+              (payoutAddress ? '<span class="affiliate-data-note">Address: ' + this.escapeHtml(this.formatAddressShort(payoutAddress)) + "</span>" : "") +
+              (payoutNotes ? '<span class="affiliate-data-note">Note: ' + this.escapeHtml(payoutNotes) + "</span>" : "") +
             "</div>" +
           "</div>"
         );
@@ -970,8 +1109,27 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
         const statusLabel = this.getClaimStatusLabel(row.status);
         const statusClass = this.getClaimStatusClass(row.status);
         const dateText = this.escapeHtml(this.formatDate(row.created_at));
-        const noteText = row.message ? this.escapeHtml(row.message) : "";
+        const noteText = this.compactText(row.message);
         const amount = this.formatMoney(row.amount || 0);
+
+        const payoutMethod = this.formatPayoutMethodLabel(
+          row.payout_method || row.claim_payout_method || row.method || ""
+        );
+        const payoutNetwork = this.compactText(
+          row.payout_network || row.claim_payout_network || row.network || ""
+        );
+        const payoutAddress = this.compactText(
+          row.payout_address || row.claim_payout_address || row.wallet_address || row.address || ""
+        );
+        const payoutContact = this.compactText(
+          row.payout_contact || row.claim_payout_contact || row.discord_contact || row.contact || ""
+        );
+
+        const detailBits = [];
+        if (payoutMethod && payoutMethod !== "—") detailBits.push("Method: " + this.escapeHtml(payoutMethod));
+        if (payoutNetwork) detailBits.push("Network: " + this.escapeHtml(payoutNetwork));
+        if (payoutAddress) detailBits.push("Address: " + this.escapeHtml(this.formatAddressShort(payoutAddress)));
+        if (payoutContact) detailBits.push("Contact: " + this.escapeHtml(payoutContact));
 
         return (
           '<div class="affiliate-data-row affiliate-data-row--stacked">' +
@@ -981,7 +1139,8 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
             "</div>" +
             '<div class="affiliate-data-row-sub">' +
               '<span class="affiliate-status-badge ' + statusClass + '">' + statusLabel + "</span>" +
-              (noteText ? '<span class="affiliate-data-note">' + noteText + "</span>" : "") +
+              (noteText ? '<span class="affiliate-data-note">Note: ' + this.escapeHtml(noteText) + "</span>" : "") +
+              (detailBits.length ? '<span class="affiliate-data-note">' + detailBits.join(" • ") + "</span>" : "") +
             "</div>" +
           "</div>"
         );
@@ -1022,14 +1181,30 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
 
     const amount = this.toNumber(payload && payload.amount, 0);
     const note = payload && payload.note ? String(payload.note).trim() : "";
+    const payoutMethod = payload && payload.payoutMethod ? String(payload.payoutMethod).trim() : "";
+    const payoutNetwork = payload && payload.payoutNetwork ? String(payload.payoutNetwork).trim() : "";
+    const payoutAddress = payload && payload.payoutAddress ? String(payload.payoutAddress).trim() : "";
+    const payoutContact = payload && payload.payoutContact ? String(payload.payoutContact).trim() : "";
 
     if (!amount || amount <= 0) {
       throw new Error("Enter a valid claim amount.");
     }
 
+    if (!payoutMethod) {
+      throw new Error("Select a payout method.");
+    }
+
+    if (!payoutAddress) {
+      throw new Error("Enter your payout address.");
+    }
+
     const rpcPayload = {
       p_amount: amount,
-      p_message: note || null
+      p_message: note || null,
+      p_payout_method: payoutMethod || null,
+      p_payout_network: payoutNetwork || null,
+      p_payout_address: payoutAddress || null,
+      p_payout_contact: payoutContact || null
     };
 
     const rpcResponse = await window.axiomSupabase.rpc("affiliate_submit_claim_request", rpcPayload);
@@ -1046,13 +1221,31 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
 
     const amountInput = document.getElementById("affiliateClaimAmount");
     const noteInput = document.getElementById("affiliateClaimNote");
+    const payoutMethodInput = this.getClaimPayoutMethodInput();
+    const payoutNetworkInput = this.getClaimPayoutNetworkInput();
+    const payoutAddressInput = this.getClaimPayoutAddressInput();
+    const payoutContactInput = this.getClaimPayoutContactInput();
     const claimButton = document.getElementById("submitAffiliateClaimBtn");
 
     const amount = this.toNumber(amountInput ? amountInput.value : 0, 0);
     const note = noteInput ? noteInput.value.trim() : "";
+    const payoutMethod = payoutMethodInput ? payoutMethodInput.value.trim() : "";
+    const payoutNetwork = payoutNetworkInput ? payoutNetworkInput.value.trim() : "";
+    const payoutAddress = payoutAddressInput ? payoutAddressInput.value.trim() : "";
+    const payoutContact = payoutContactInput ? payoutContactInput.value.trim() : "";
 
     if (!amount || amount <= 0) {
       this.setMessage("Enter a valid claim amount.", "error");
+      return;
+    }
+
+    if (!payoutMethod) {
+      this.setMessage("Select a payout method.", "error");
+      return;
+    }
+
+    if (!payoutAddress) {
+      this.setMessage("Enter your payout address.", "error");
       return;
     }
 
@@ -1092,7 +1285,11 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
 
       await this.submitClaimRequest({
         amount: amount,
-        note: note
+        note: note,
+        payoutMethod: payoutMethod,
+        payoutNetwork: payoutNetwork,
+        payoutAddress: payoutAddress,
+        payoutContact: payoutContact
       });
 
       this.setMessage(
@@ -1102,6 +1299,10 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
 
       if (amountInput) amountInput.value = "";
       if (noteInput) noteInput.value = "";
+      if (payoutMethodInput) payoutMethodInput.value = "";
+      if (payoutNetworkInput) payoutNetworkInput.value = "";
+      if (payoutAddressInput) payoutAddressInput.value = "";
+      if (payoutContactInput) payoutContactInput.value = "";
 
       await this.loadAffiliateProfile();
       await this.renderDashboard();
@@ -1117,6 +1318,10 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
         friendlyMessage = "Your affiliate account must be approved before you can submit claims.";
       } else if (/signed in/i.test(rawMessage)) {
         friendlyMessage = "You must be signed in to submit a claim.";
+      } else if (/payout method/i.test(rawMessage)) {
+        friendlyMessage = "Select a payout method.";
+      } else if (/payout address/i.test(rawMessage) || /wallet/i.test(rawMessage)) {
+        friendlyMessage = "Enter your payout address.";
       }
 
       this.setMessage(friendlyMessage, "error");
