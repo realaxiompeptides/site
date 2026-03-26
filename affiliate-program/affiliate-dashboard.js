@@ -114,6 +114,18 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
     return Number.isFinite(num) ? num : fallback;
   },
 
+  getSafeAffiliateId() {
+    return this.affiliateProfile && this.affiliateProfile.id
+      ? String(this.affiliateProfile.id)
+      : "";
+  },
+
+  getSafeDiscordContact() {
+    return this.affiliateProfile && this.affiliateProfile.discord_username
+      ? String(this.affiliateProfile.discord_username).trim()
+      : "";
+  },
+
   setReferralCodeStatus(message, type) {
     const el = this.getReferralCodeStatusEl();
     if (!el) return;
@@ -735,7 +747,7 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
       const claimRows = Array.isArray(claimsResult.data) ? claimsResult.data : [];
 
       const claimable = conversionRows
-        .filter((item) => item.commission_status === "claimable")
+        .filter((item) => String(item.commission_status || "").toLowerCase() === "claimable")
         .reduce((sum, item) => sum + Number(item.commission_amount || 0), 0);
 
       const paid = payoutRows
@@ -868,6 +880,58 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
     output.value = origin + normalizedRoot + normalizedPath + "?ref=" + encodeURIComponent(code);
   },
 
+  async submitClaimRequest(payload) {
+    if (!window.axiomSupabase) {
+      throw new Error("Supabase is not available.");
+    }
+
+    const affiliateId = this.getSafeAffiliateId();
+    if (!affiliateId) {
+      throw new Error("Affiliate profile not found.");
+    }
+
+    const amount = this.toNumber(payload && payload.amount, 0);
+    const note = payload && payload.note ? String(payload.note).trim() : "";
+    const discordContact = this.getSafeDiscordContact() || null;
+
+    if (!amount || amount <= 0) {
+      throw new Error("Enter a valid claim amount.");
+    }
+
+    const rpcPayload = {
+      p_amount: amount,
+      p_message: note || null
+    };
+
+    try {
+      const rpcResponse = await window.axiomSupabase.rpc("affiliate_submit_claim_request", rpcPayload);
+
+      if (!rpcResponse.error) {
+        return true;
+      }
+
+      console.error("affiliate_submit_claim_request RPC failed, falling back to direct insert:", rpcResponse.error);
+    } catch (rpcError) {
+      console.error("affiliate_submit_claim_request RPC exception, falling back to direct insert:", rpcError);
+    }
+
+    const insertResponse = await window.axiomSupabase
+      .from("affiliate_claim_requests")
+      .insert({
+        affiliate_id: affiliateId,
+        amount: amount,
+        message: note || null,
+        discord_contact: discordContact,
+        status: "pending"
+      });
+
+    if (insertResponse.error) {
+      throw insertResponse.error;
+    }
+
+    return true;
+  },
+
   async submitClaim() {
     if (!this.affiliateProfile || !this.affiliateProfile.id) return;
 
@@ -910,17 +974,10 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
         return;
       }
 
-      const result = await window.axiomSupabase
-        .from("affiliate_claim_requests")
-        .insert({
-          affiliate_id: this.affiliateProfile.id,
-          amount: amount,
-          message: note || null,
-          discord_contact: this.affiliateProfile.discord_username || null,
-          status: "pending"
-        });
-
-      if (result.error) throw result.error;
+      await this.submitClaimRequest({
+        amount: amount,
+        note: note
+      });
 
       this.setMessage(
         "Claim request submitted successfully. It is now waiting in the admin dashboard for review.",
@@ -930,6 +987,7 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
       if (amountInput) amountInput.value = "";
       if (noteInput) noteInput.value = "";
 
+      await this.loadAffiliateProfile();
       await this.renderDashboard();
     } catch (error) {
       console.error(error);
