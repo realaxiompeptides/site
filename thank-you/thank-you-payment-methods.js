@@ -104,7 +104,7 @@ function thankYouGetOrderFollowupText(paymentKey, orderNumber, order) {
   }
 
   if (paymentKey === "crypto") {
-    return `After sending crypto, message your transaction ID and order #<strong>${safeOrder}</strong> using Telegram, WhatsApp, email, or Discord below so we can confirm your payment.`;
+    return `After sending crypto, message your transaction ID and order #<strong>${safeOrder}</strong> using WhatsApp, Telegram, or Discord below so we can confirm your payment.`;
   }
 
   if (paymentKey === "banktransfer") {
@@ -282,35 +282,38 @@ const THANK_YOU_PAYMENT_METHODS = {
     label: "Crypto",
     logo: "../images/payment-icons/crypto-group.jpg",
     instructions:
-      "Send the exact amount using the correct crypto and network. After sending, message your transaction ID and order number using Telegram, WhatsApp, email, or Discord below so we can confirm your payment.",
+      "Send the exact amount using the correct crypto and network. After sending, message your transaction ID and order number using WhatsApp, Telegram, or Discord below so we can confirm your payment.",
     wallets: [
       {
         label: "Bitcoin (BTC)",
-        value: "bc1qexamplebtcaddress1234567890test"
+        value: "bc1qfde75y9d8ad72sah7acf9vlc8csxeaewyk5rah"
       },
       {
         label: "Ethereum (ETH)",
-        value: "0xExampleEthereumAddress1234567890ABCDEF"
+        value: "0x57E23546A3EB31629a91dA386d4BD2F66E1Af437"
       },
       {
-        label: "USDT",
-        value: "TExampleUSDTWalletAddress123456789ABCDEFG"
+        label: "USDT (ERC-20 / ETH)",
+        value: "0x57E23546A3EB31629a91dA386d4BD2F66E1Af437"
+      },
+      {
+        label: "USDC (ERC-20 / ETH)",
+        value: "0x57E23546A3EB31629a91dA386d4BD2F66E1Af437"
       },
       {
         label: "Solana (SOL)",
-        value: "So1anaExampleWalletAddress123456789ABCDEFG"
+        value: "Fmycu2E56gAqMDDNCJJUY2iZEsQsQBUeB3B9Vf9W3QhC"
       },
       {
-        label: "USDC",
-        value: "0xExampleUSDCAddress1234567890ABCDEF"
+        label: "USDC (Solana)",
+        value: "Fmycu2E56gAqMDDNCJJUY2iZEsQsQBUeB3B9Vf9W3QhC"
+      },
+      {
+        label: "USDT (Solana)",
+        value: "Fmycu2E56gAqMDDNCJJUY2iZEsQsQBUeB3B9Vf9W3QhC"
       }
     ],
     cryptoContacts: [
-      {
-        label: "Email Us",
-        href: "mailto:realaxiompeptides@gmail.com?subject=Crypto%20Payment%20Confirmation",
-        external: false
-      },
       {
         label: "WhatsApp",
         href: "https://wa.me/15307019349",
@@ -499,7 +502,7 @@ function thankYouBuildMethodDetails(methodConfig, orderNumber, order) {
       orderNumber,
       `After sending crypto, message your transaction ID and order number ${
         orderNumber ? `#${thankYouEscapeHtml(orderNumber)}` : ""
-      } using Telegram, WhatsApp, email, or Discord.`
+      } using WhatsApp, Telegram, or Discord.`
     );
   }
 
