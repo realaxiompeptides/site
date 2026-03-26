@@ -28,7 +28,14 @@
     const { data, error } = await supabase
       .from("affiliate_claim_requests")
       .select(`
-        *,
+        id,
+        affiliate_id,
+        amount,
+        message,
+        discord_contact,
+        status,
+        created_at,
+        updated_at,
         affiliates (
           id,
           email,
@@ -49,9 +56,19 @@
   async function updateAffiliateStatus(affiliateId, status) {
     const supabase = getSupabase();
 
+    if (!affiliateId) {
+      throw new Error("Missing affiliate id.");
+    }
+
+    const normalizedStatus = String(status || "").trim().toLowerCase();
+
+    if (!normalizedStatus) {
+      throw new Error("Missing affiliate status.");
+    }
+
     const { error } = await supabase.rpc("admin_update_affiliate_status", {
       p_affiliate_id: affiliateId,
-      p_status: status
+      p_status: normalizedStatus
     });
 
     if (error) {
@@ -63,6 +80,10 @@
 
   async function fetchAffiliateDetails(affiliateId) {
     const supabase = getSupabase();
+
+    if (!affiliateId) {
+      throw new Error("Missing affiliate id.");
+    }
 
     const [conversionsResult, claimsResult, payoutsResult] = await Promise.all([
       supabase
@@ -101,11 +122,11 @@
   async function updateClaimStatus(claimId, status) {
     const supabase = getSupabase();
 
-    const normalizedStatus = String(status || "").trim().toLowerCase();
-
     if (!claimId) {
       throw new Error("Missing claim request id.");
     }
+
+    const normalizedStatus = String(status || "").trim().toLowerCase();
 
     if (!normalizedStatus) {
       throw new Error("Missing claim status.");
@@ -125,12 +146,16 @@
     return true;
   }
 
-  async function markClaimPaid(claimId) {
+  async function markClaimPaid(claimId, options = {}) {
     const supabase = getSupabase();
 
     if (!claimId) {
       throw new Error("Missing claim request id.");
     }
+
+    const payoutMethod = options.method || "manual";
+    const payoutReference = options.reference || null;
+    const payoutNotes = options.notes || null;
 
     const { data: claimRow, error: claimError } = await supabase
       .from("affiliate_claim_requests")
@@ -146,39 +171,21 @@
       throw new Error("Claim request not found.");
     }
 
-    const normalizedCurrentStatus = String(claimRow.status || "").trim().toLowerCase();
+    const currentStatus = String(claimRow.status || "").trim().toLowerCase();
 
-    if (normalizedCurrentStatus === "paid") {
+    if (currentStatus === "paid") {
       return true;
     }
 
-    if (typeof window.axiomSupabase.rpc === "function") {
-      try {
-        const { error: rpcError } = await supabase.rpc("admin_update_affiliate_claim_status", {
-          p_claim_request_id: claimId,
-          p_status: "paid"
-        });
+    const { error: rpcError } = await supabase.rpc("admin_mark_affiliate_claim_paid", {
+      p_claim_request_id: claimId,
+      p_payout_method: payoutMethod,
+      p_payout_reference: payoutReference,
+      p_notes: payoutNotes
+    });
 
-        if (!rpcError) {
-          return true;
-        }
-
-        console.error("admin_update_affiliate_claim_status paid RPC failed, falling back to direct update:", rpcError);
-      } catch (rpcFallbackError) {
-        console.error("markClaimPaid RPC fallback error:", rpcFallbackError);
-      }
-    }
-
-    const { error: updateError } = await supabase
-      .from("affiliate_claim_requests")
-      .update({
-        status: "paid",
-        updated_at: new Date().toISOString()
-      })
-      .eq("id", claimId);
-
-    if (updateError) {
-      throw updateError;
+    if (rpcError) {
+      throw rpcError;
     }
 
     return true;
