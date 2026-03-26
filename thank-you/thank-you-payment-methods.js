@@ -29,7 +29,27 @@ function thankYouEscapeHtml(value) {
     .replace(/'/g, "&#039;");
 }
 
-function thankYouGetOrderFollowupText(paymentKey, orderNumber) {
+function thankYouGetOrderCountry(order) {
+  return String(
+    order?.shipping_country ||
+    order?.shippingCountry ||
+    order?.country ||
+    order?.billing_country ||
+    order?.billingCountry ||
+    ""
+  )
+    .trim()
+    .toUpperCase();
+}
+
+function thankYouIsInternationalOrder(order) {
+  const country = thankYouGetOrderCountry(order);
+  if (!country) return false;
+
+  return !["US", "USA", "UNITED STATES", "UNITED STATES OF AMERICA"].includes(country);
+}
+
+function thankYouGetOrderFollowupText(paymentKey, orderNumber, order) {
   const safeOrder = thankYouEscapeHtml(orderNumber);
 
   if (paymentKey === "applepay" || paymentKey === "zelle") {
@@ -41,7 +61,11 @@ function thankYouGetOrderFollowupText(paymentKey, orderNumber) {
   }
 
   if (paymentKey === "banktransfer") {
-    return `Use order #<strong>${safeOrder}</strong> as the payment reference when possible, then message us after sending the transfer so we can match it to your order.`;
+    if (thankYouIsInternationalOrder(order)) {
+      return `Use order #<strong>${safeOrder}</strong> as the payment reference when possible, then message us after sending the international wire so we can match it to your order.`;
+    }
+
+    return `Use order #<strong>${safeOrder}</strong> as the payment reference when possible, then message us after sending the domestic transfer so we can match it to your order.`;
   }
 
   return `Include order #<strong>${safeOrder}</strong> in the note.`;
@@ -79,9 +103,12 @@ const THANK_YOU_PAYMENT_METHODS = {
     label: "Bank Transfer",
     logo: "",
     iconClass: "fa-solid fa-building-columns",
-    instructions:
-      "Send payment by domestic or international bank transfer using the exact details below. Use your order number as the payment reference when possible, then message us after sending so we can match your payment.",
-    details: [
+    domesticInstructions:
+      "Send payment by domestic bank transfer using the exact details below. Use your order number as the payment reference when possible, then message us after sending so we can match your payment.",
+    internationalInstructions:
+      "Send payment by international wire using the exact details below. Use your order number as the payment reference when possible, then message us after sending so we can match your payment.",
+
+    domesticDetails: [
       {
         label: "Bank Name",
         value: "Mercury"
@@ -91,7 +118,7 @@ const THANK_YOU_PAYMENT_METHODS = {
         value: "Column N.A."
       },
       {
-        label: "Routing Number (Domestic)",
+        label: "Routing Number",
         value: "121145433"
       },
       {
@@ -107,8 +134,35 @@ const THANK_YOU_PAYMENT_METHODS = {
         value: "1 Letterman Drive, Building A, Suite A4-700, San Francisco, CA 94129 USA"
       },
       {
-        label: "SWIFT / BIC (International)",
+        label: "Beneficiary Name",
+        value: "Axiom Peptides LLC"
+      },
+      {
+        label: "Beneficiary Address",
+        value: "30 North Gould Street, Sheridan, WY 82801 USA"
+      },
+      {
+        label: "Reference",
+        value: "Use your order number as the payment reference"
+      }
+    ],
+
+    internationalDetails: [
+      {
+        label: "Bank Name",
+        value: "Mercury"
+      },
+      {
+        label: "Receiving Bank",
+        value: "Column N.A."
+      },
+      {
+        label: "SWIFT / BIC",
         value: "CLNOUS66MER"
+      },
+      {
+        label: "ABA Routing Number",
+        value: "121145433"
       },
       {
         label: "ABA Routing Number (Alternate)",
@@ -123,14 +177,23 @@ const THANK_YOU_PAYMENT_METHODS = {
         value: "Axiom Peptides LLC"
       },
       {
+        label: "IBAN / Account Number",
+        value: "621956274808088"
+      },
+      {
         label: "Beneficiary Address",
         value: "30 North Gould Street, Sheridan, WY 82801 USA"
+      },
+      {
+        label: "Bank Address",
+        value: "1 Letterman Drive, Building A, Suite A4-700, San Francisco, CA 94129 USA"
       },
       {
         label: "Reference",
         value: "Use your order number as the payment reference"
       }
     ],
+
     bankContacts: [
       {
         label: "Email Us",
@@ -279,7 +342,7 @@ function thankYouCreateActionButtons(buttons, orderNumber, headingText) {
 
   const safeOrder = thankYouEscapeHtml(orderNumber ? `#${orderNumber}` : "");
   const title = headingText
-    ? thankYouEscapeHtml(headingText)
+    ? headingText
     : `Send your transaction ID and ${safeOrder ? `order number ${safeOrder}` : "order number"}`;
 
   return `
@@ -309,7 +372,24 @@ function thankYouCreateActionButtons(buttons, orderNumber, headingText) {
   `;
 }
 
-function thankYouBuildMethodDetails(methodConfig, orderNumber) {
+function thankYouGetBankTransferDetails(methodConfig, order) {
+  if (!methodConfig || methodConfig.key !== "banktransfer") return [];
+  return thankYouIsInternationalOrder(order)
+    ? methodConfig.internationalDetails || []
+    : methodConfig.domesticDetails || [];
+}
+
+function thankYouGetBankTransferInstructions(methodConfig, order) {
+  if (!methodConfig || methodConfig.key !== "banktransfer") {
+    return methodConfig?.instructions || "";
+  }
+
+  return thankYouIsInternationalOrder(order)
+    ? methodConfig.internationalInstructions || ""
+    : methodConfig.domesticInstructions || "";
+}
+
+function thankYouBuildMethodDetails(methodConfig, orderNumber, order) {
   if (!methodConfig) return "";
 
   let detailsHtml = "";
@@ -335,10 +415,12 @@ function thankYouBuildMethodDetails(methodConfig, orderNumber) {
     );
   }
 
-  if (Array.isArray(methodConfig.details) && methodConfig.details.length) {
+  const bankDetails = thankYouGetBankTransferDetails(methodConfig, order);
+
+  if (Array.isArray(bankDetails) && bankDetails.length) {
     detailsHtml += `
       <div class="thank-you-payment-bank-grid">
-        ${methodConfig.details
+        ${bankDetails
           .map((item) => {
             return thankYouCreateCopyButton(item.label, item.value);
           })
@@ -367,7 +449,9 @@ function thankYouBuildMethodDetails(methodConfig, orderNumber) {
     detailsHtml += thankYouCreateActionButtons(
       methodConfig.cryptoContacts,
       orderNumber,
-      `After sending crypto, message your transaction ID and order number ${orderNumber ? `#${thankYouEscapeHtml(orderNumber)}` : ""}`.trim()
+      `After sending crypto, message your transaction ID and order number ${
+        orderNumber ? `#${thankYouEscapeHtml(orderNumber)}` : ""
+      } using Telegram, WhatsApp, email, or Discord.`
     );
   }
 
@@ -375,7 +459,11 @@ function thankYouBuildMethodDetails(methodConfig, orderNumber) {
     detailsHtml += thankYouCreateActionButtons(
       methodConfig.bankContacts,
       orderNumber,
-      `After sending the bank transfer, message your order number ${orderNumber ? `#${thankYouEscapeHtml(orderNumber)}` : ""} and payment confirmation`.trim()
+      `After sending the ${
+        thankYouIsInternationalOrder(order) ? "international wire" : "domestic transfer"
+      }, message your order number ${
+        orderNumber ? `#${thankYouEscapeHtml(orderNumber)}` : ""
+      } and payment confirmation.`
     );
   }
 
@@ -398,7 +486,7 @@ function thankYouBuildPaymentLogo(methodConfig) {
           src="${safeLogo}"
           alt="${safeLabel} logo"
           class="thank-you-payment-method-logo"
-          onerror="this.style.display='none'; this.closest('.thank-you-payment-method-logo-wrap').insertAdjacentHTML('beforeend', '<span class=&quot;thank-you-payment-method-fallback-icon&quot;><i class=&quot;${safeIconClass}&quot;></i></span>');"
+          onerror="this.style.display='none';"
         />
       </div>
     `;
@@ -413,11 +501,13 @@ function thankYouBuildPaymentLogo(methodConfig) {
   `;
 }
 
-function thankYouBuildPrimaryMethodCard(methodConfig, orderNumber) {
+function thankYouBuildPrimaryMethodCard(methodConfig, orderNumber, order) {
   if (!methodConfig) return "";
 
   const safeLabel = thankYouEscapeHtml(methodConfig.label);
-  const safeInstructions = thankYouEscapeHtml(methodConfig.instructions || "");
+  const safeInstructions = thankYouEscapeHtml(
+    thankYouGetBankTransferInstructions(methodConfig, order) || methodConfig.instructions || ""
+  );
 
   return `
     <div class="thank-you-payment-method-card is-primary">
@@ -430,7 +520,7 @@ function thankYouBuildPrimaryMethodCard(methodConfig, orderNumber) {
             <p class="thank-you-payment-method-instructions">${safeInstructions}</p>
             ${
               orderNumber
-                ? `<p class="thank-you-payment-order-note">${thankYouGetOrderFollowupText(methodConfig.key, orderNumber)}</p>`
+                ? `<p class="thank-you-payment-order-note">${thankYouGetOrderFollowupText(methodConfig.key, orderNumber, order)}</p>`
                 : ""
             }
           </div>
@@ -438,17 +528,19 @@ function thankYouBuildPrimaryMethodCard(methodConfig, orderNumber) {
       </div>
 
       <div class="thank-you-payment-method-details">
-        ${thankYouBuildMethodDetails(methodConfig, orderNumber)}
+        ${thankYouBuildMethodDetails(methodConfig, orderNumber, order)}
       </div>
     </div>
   `;
 }
 
-function thankYouBuildAccordionItem(methodConfig, orderNumber, index) {
+function thankYouBuildAccordionItem(methodConfig, orderNumber, index, order) {
   if (!methodConfig) return "";
 
   const safeLabel = thankYouEscapeHtml(methodConfig.label);
-  const safeInstructions = thankYouEscapeHtml(methodConfig.instructions || "");
+  const safeInstructions = thankYouEscapeHtml(
+    thankYouGetBankTransferInstructions(methodConfig, order) || methodConfig.instructions || ""
+  );
   const panelId = `thankYouPaymentAccordionPanel${index}`;
 
   return `
@@ -482,12 +574,12 @@ function thankYouBuildAccordionItem(methodConfig, orderNumber, index) {
           <p class="thank-you-payment-method-instructions">${safeInstructions}</p>
           ${
             orderNumber
-              ? `<p class="thank-you-payment-order-note">${thankYouGetOrderFollowupText(methodConfig.key, orderNumber)}</p>`
+              ? `<p class="thank-you-payment-order-note">${thankYouGetOrderFollowupText(methodConfig.key, orderNumber, order)}</p>`
               : ""
           }
 
           <div class="thank-you-payment-method-details">
-            ${thankYouBuildMethodDetails(methodConfig, orderNumber)}
+            ${thankYouBuildMethodDetails(methodConfig, orderNumber, order)}
           </div>
         </div>
       </div>
@@ -599,7 +691,7 @@ function renderThankYouPaymentMethods(order) {
       <h2 class="thank-you-payment-section-title">Complete Your Payment</h2>
       ${
         selectedMethod
-          ? thankYouBuildPrimaryMethodCard(selectedMethod, orderNumber)
+          ? thankYouBuildPrimaryMethodCard(selectedMethod, orderNumber, order)
           : `
             <div class="thank-you-payment-method-card is-primary">
               <p class="thank-you-payment-empty-text">
@@ -619,7 +711,7 @@ function renderThankYouPaymentMethods(order) {
       </p>
 
       <div class="thank-you-payment-accordion">
-        ${otherMethods.map((method, index) => thankYouBuildAccordionItem(method, orderNumber, index)).join("")}
+        ${otherMethods.map((method, index) => thankYouBuildAccordionItem(method, orderNumber, index, order)).join("")}
       </div>
     </section>
   `;
