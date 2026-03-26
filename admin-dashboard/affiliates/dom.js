@@ -32,7 +32,21 @@
       getById("affiliatesAdminTableBody") ||
       getById("affiliateTableBody") ||
       getById("affiliatesTableBody") ||
-      getFirst(["[data-affiliate-table-body]", "tbody"]);
+      getFirst([
+        "[data-affiliate-table-body]",
+        "table[data-affiliate-table] tbody"
+      ]);
+
+    const payoutRequestsTableBody =
+      getById("affiliatePayoutRequestsTableBody") ||
+      getById("affiliatePayoutRequestsBody") ||
+      getById("payoutRequestsTableBody") ||
+      getById("payoutRequestsBody") ||
+      getFirst([
+        "[data-affiliate-payout-requests-body]",
+        "[data-payout-requests-body]",
+        "table[data-affiliate-payout-requests] tbody"
+      ]);
 
     const searchInput =
       getById("affiliateSearchInput") ||
@@ -68,6 +82,9 @@
       refreshSidebarBtn: getById("refreshAffiliatesSidebarBtn"),
 
       tableBody: tableBody,
+      payoutRequestsTableBody: payoutRequestsTableBody,
+      payoutRequestsBody: payoutRequestsTableBody,
+
       searchInput: searchInput,
       statusFilter: statusFilter,
 
