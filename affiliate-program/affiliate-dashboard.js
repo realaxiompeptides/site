@@ -831,7 +831,6 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
     this.setText("affiliateConversionsCount", String(stats.conversions));
     this.setText("affiliateClaimableAmount", this.formatMoney(stats.availableToClaim));
     this.setText("affiliatePaidAmount", this.formatMoney(stats.paid));
-
     this.setText("affiliatePendingClaimsAmount", this.formatMoney(stats.pendingClaims));
     this.setText("affiliateApprovedClaimsAmount", this.formatMoney(stats.approvedClaims));
     this.setText("affiliateRejectedClaimsAmount", this.formatMoney(stats.rejectedClaims));
@@ -844,6 +843,7 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
           ? this.toNumber(stats.availableToClaim, 0).toFixed(2)
           : "0.00";
       claimAmountInput.disabled = this.toNumber(stats.availableToClaim, 0) <= 0;
+
       if (this.toNumber(stats.availableToClaim, 0) > 0 && !claimAmountInput.value) {
         claimAmountInput.value = this.toNumber(stats.availableToClaim, 0).toFixed(2);
       }
@@ -1131,7 +1131,9 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
         const payoutMethodText = row.payout_method ? this.escapeHtml(row.payout_method) : "";
         const payoutNetworkText = row.payout_network ? this.escapeHtml(row.payout_network) : "";
         const payoutAddressText = row.payout_address ? this.escapeHtml(row.payout_address) : "";
-        const backupContactText = row.backup_contact ? this.escapeHtml(row.backup_contact) : "";
+        const backupContactText =
+          (row.backup_contact ? this.escapeHtml(row.backup_contact) : "") ||
+          (row.payout_contact ? this.escapeHtml(row.payout_contact) : "");
 
         return (
           '<div class="affiliate-data-row affiliate-data-row--stacked">' +
