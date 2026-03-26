@@ -29,21 +29,68 @@ function thankYouEscapeHtml(value) {
     .replace(/'/g, "&#039;");
 }
 
+function thankYouGetFirstNonEmptyValue(values) {
+  for (const value of values) {
+    if (value !== undefined && value !== null && String(value).trim() !== "") {
+      return String(value).trim();
+    }
+  }
+  return "";
+}
+
+function thankYouNormalizeCountryValue(country) {
+  return String(country || "").trim().toUpperCase();
+}
+
 function thankYouGetOrderCountry(order) {
-  return String(
-    order?.shipping_country ||
-    order?.shippingCountry ||
-    order?.country ||
-    order?.billing_country ||
-    order?.billingCountry ||
-    ""
-  )
-    .trim()
-    .toUpperCase();
+  const directCountry = thankYouGetFirstNonEmptyValue([
+    order?.shipping_country,
+    order?.shippingCountry,
+    order?.country,
+    order?.billing_country,
+    order?.billingCountry,
+    order?.customer_country,
+    order?.customerCountry,
+    order?.shipping_country_code,
+    order?.shippingCountryCode,
+    order?.billing_country_code,
+    order?.billingCountryCode
+  ]);
+
+  if (directCountry) {
+    return thankYouNormalizeCountryValue(directCountry);
+  }
+
+  const nestedCountry = thankYouGetFirstNonEmptyValue([
+    order?.shipping?.country,
+    order?.shipping?.countryCode,
+    order?.shipping?.country_code,
+    order?.shipping_address?.country,
+    order?.shipping_address?.countryCode,
+    order?.shipping_address?.country_code,
+    order?.shippingAddress?.country,
+    order?.shippingAddress?.countryCode,
+    order?.shippingAddress?.country_code,
+    order?.billing?.country,
+    order?.billing?.countryCode,
+    order?.billing?.country_code,
+    order?.billing_address?.country,
+    order?.billing_address?.countryCode,
+    order?.billing_address?.country_code,
+    order?.billingAddress?.country,
+    order?.billingAddress?.countryCode,
+    order?.billingAddress?.country_code,
+    order?.customer?.country,
+    order?.customer?.countryCode,
+    order?.customer?.country_code
+  ]);
+
+  return thankYouNormalizeCountryValue(nestedCountry);
 }
 
 function thankYouIsInternationalOrder(order) {
   const country = thankYouGetOrderCountry(order);
+
   if (!country) return false;
 
   return !["US", "USA", "UNITED STATES", "UNITED STATES OF AMERICA"].includes(country);
@@ -374,6 +421,7 @@ function thankYouCreateActionButtons(buttons, orderNumber, headingText) {
 
 function thankYouGetBankTransferDetails(methodConfig, order) {
   if (!methodConfig || methodConfig.key !== "banktransfer") return [];
+
   return thankYouIsInternationalOrder(order)
     ? methodConfig.internationalDetails || []
     : methodConfig.domesticDetails || [];
