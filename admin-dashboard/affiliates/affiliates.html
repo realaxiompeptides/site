@@ -45,7 +45,7 @@
       <span class="affiliates-admin-stat-label">Pending Payout Requests</span>
       <strong
         class="affiliates-admin-stat-value"
-        id="affiliateStatPendingClaims"
+        id="affiliateStatPending"
         data-summary="pending-claims"
       >0</strong>
     </div>
@@ -95,7 +95,6 @@
     hidden
   ></div>
 
-  <!-- PAYOUT REQUESTS -->
   <div class="affiliates-admin-payout-requests-card">
     <div class="affiliates-admin-section-header">
       <div>
@@ -105,7 +104,7 @@
     </div>
 
     <div class="affiliates-admin-table-wrap affiliates-admin-table-wrap-claims">
-      <table class="affiliates-admin-table affiliates-admin-claims-table">
+      <table class="affiliates-admin-table affiliates-admin-claims-table" data-affiliate-payout-requests>
         <thead>
           <tr>
             <th>Affiliate</th>
@@ -117,7 +116,10 @@
           </tr>
         </thead>
 
-        <tbody id="affiliatePayoutRequestsTableBody">
+        <tbody
+          id="affiliatePayoutRequestsTableBody"
+          data-affiliate-payout-requests-body
+        >
           <tr>
             <td colspan="6">Loading payout requests...</td>
           </tr>
@@ -134,7 +136,6 @@
     </div>
   </div>
 
-  <!-- AFFILIATES TABLE -->
   <div class="affiliates-admin-table-wrap">
     <table class="affiliates-admin-table">
       <thead>
@@ -255,8 +256,16 @@
               <strong id="affiliateDetailConversions">0</strong>
             </div>
             <div class="affiliates-admin-detail-row">
-              <span>Claimable</span>
+              <span>Available to Claim</span>
               <strong id="affiliateDetailClaimable">$0.00</strong>
+            </div>
+            <div class="affiliates-admin-detail-row">
+              <span>Reserved in Claims</span>
+              <strong id="affiliateDetailReserved">$0.00</strong>
+            </div>
+            <div class="affiliates-admin-detail-row">
+              <span>Total Earned</span>
+              <strong id="affiliateDetailEarned">$0.00</strong>
             </div>
             <div class="affiliates-admin-detail-row">
               <span>Paid Out</span>
