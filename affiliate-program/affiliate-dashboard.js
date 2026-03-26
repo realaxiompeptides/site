@@ -187,6 +187,15 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
     return "is-pending";
   },
 
+  getCommissionStatusLabel(status) {
+    const value = String(status || "").trim().toLowerCase();
+    if (value === "claimable") return "Claimable";
+    if (value === "claimed") return "Claimed";
+    if (value === "paid") return "Paid";
+    if (value === "voided") return "Voided";
+    return "Pending";
+  },
+
   escapeHtml(value) {
     return String(value == null ? "" : value)
       .replace(/&/g, "&amp;")
@@ -798,6 +807,56 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
     return "";
   },
 
+  getDisplayCommissionRows(conversionRows, claimRows) {
+    const rows = Array.isArray(conversionRows)
+      ? conversionRows.map((row) => ({ ...row }))
+      : [];
+
+    const reservingClaims = (Array.isArray(claimRows) ? claimRows : [])
+      .filter((claim) => {
+        const status = String(claim.status || "").toLowerCase();
+        return status === "pending" || status === "approved" || status === "paid";
+      })
+      .sort((a, b) => {
+        const aTime = new Date(a.created_at || 0).getTime();
+        const bTime = new Date(b.created_at || 0).getTime();
+        return aTime - bTime;
+      });
+
+    let reservedAmount = reservingClaims.reduce((sum, claim) => {
+      return sum + Number(claim.amount || 0);
+    }, 0);
+
+    const claimableRowsOrdered = rows
+      .filter((row) => String(row.commission_status || "").toLowerCase() === "claimable")
+      .sort((a, b) => {
+        const aTime = new Date(a.claimable_at || a.created_at || 0).getTime();
+        const bTime = new Date(b.claimable_at || b.created_at || 0).getTime();
+        return aTime - bTime;
+      });
+
+    claimableRowsOrdered.forEach((row) => {
+      row.display_status = String(row.commission_status || "").toLowerCase();
+
+      if (reservedAmount > 0) {
+        row.display_status = "claimed";
+        reservedAmount -= Number(row.commission_amount || 0);
+      }
+    });
+
+    rows.forEach((row) => {
+      if (!row.display_status) {
+        row.display_status = String(row.commission_status || "").toLowerCase();
+      }
+    });
+
+    return rows.sort((a, b) => {
+      const aTime = new Date(a.created_at || 0).getTime();
+      const bTime = new Date(b.created_at || 0).getTime();
+      return bTime - aTime;
+    });
+  },
+
   async renderDashboard() {
     const profile = this.affiliateProfile;
     const email = (this.currentUser && this.currentUser.email) || "—";
@@ -982,14 +1041,6 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
       const payoutRows = Array.isArray(payoutsResult.data) ? payoutsResult.data : [];
       const claimRows = Array.isArray(claimsResult.data) ? claimsResult.data : [];
 
-      const claimable = conversionRows
-        .filter((item) => String(item.commission_status || "").toLowerCase() === "claimable")
-        .reduce((sum, item) => sum + Number(item.commission_amount || 0), 0);
-
-      const paid = payoutRows
-        .filter((item) => String(item.payout_status || "").toLowerCase() === "paid")
-        .reduce((sum, item) => sum + Number(item.amount || 0), 0);
-
       const pendingClaims = claimRows
         .filter((item) => {
           const status = String(item.status || "").toLowerCase();
@@ -1005,18 +1056,26 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
         .filter((item) => String(item.status || "").toLowerCase() === "rejected")
         .reduce((sum, item) => sum + Number(item.amount || 0), 0);
 
-      const availableToClaim = Math.max(claimable - pendingClaims, 0);
+      const paid = payoutRows
+        .filter((item) => String(item.payout_status || "").toLowerCase() === "paid")
+        .reduce((sum, item) => sum + Number(item.amount || 0), 0);
+
+      const displayConversionRows = this.getDisplayCommissionRows(conversionRows, claimRows);
+
+      const availableToClaim = displayConversionRows
+        .filter((item) => String(item.display_status || item.commission_status || "").toLowerCase() === "claimable")
+        .reduce((sum, item) => sum + Number(item.commission_amount || 0), 0);
 
       return {
         clicks: clicks,
         conversions: conversionRows.length,
-        claimable: claimable,
+        claimable: availableToClaim,
         pendingClaims: pendingClaims,
         approvedClaims: approvedClaims,
         rejectedClaims: rejectedClaims,
         availableToClaim: availableToClaim,
         paid: paid,
-        recentCommissions: conversionRows.slice(0, 6),
+        recentCommissions: displayConversionRows.slice(0, 6),
         payouts: payoutRows.slice(0, 20),
         claims: claimRows.slice(0, 20)
       };
@@ -1049,9 +1108,11 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
 
     mount.innerHTML = rows
       .map((row) => {
+        const statusText = this.getCommissionStatusLabel(row.display_status || row.commission_status || "pending");
+
         return (
           '<div class="affiliate-data-row">' +
-            "<span>Order #" + (row.order_number || "—") + " · " + (row.commission_status || "pending") + "</span>" +
+            "<span>Order #" + (row.order_number || "—") + " · " + statusText + "</span>" +
             "<strong>" + this.formatMoney(row.commission_amount || 0) + "</strong>" +
           "</div>"
         );
