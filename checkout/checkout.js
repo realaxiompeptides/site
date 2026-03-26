@@ -1678,3 +1678,87 @@ document.addEventListener("submit", async function (e) {
     window.AXIOM_CHECKOUT_SESSION.saveSession(session);
   }
 });
+
+// EXISTING CODE ABOVE...
+
+// ================================
+// AXIOM – Bank Transfer Country Logic
+// ================================
+
+function axiomGetCheckoutCountryElement() {
+  const selectors = [
+    '#shippingCountry',
+    '#shipping_country',
+    '#country',
+    '#billingCountry',
+    '#billing_country',
+    'select[name="shippingCountry"]',
+    'select[name="shipping_country"]',
+    'select[name="country"]',
+    'select[name="billingCountry"]',
+    'select[name="billing_country"]'
+  ];
+
+  for (const selector of selectors) {
+    const el = document.querySelector(selector);
+    if (el) return el;
+  }
+
+  return null;
+}
+
+function axiomGetCheckoutCountryValue() {
+  const el = axiomGetCheckoutCountryElement();
+  return el ? String(el.value || "").trim().toUpperCase() : "";
+}
+
+function axiomIsInternationalCountry(country) {
+  if (!country) return false;
+
+  return !["US", "USA", "UNITED STATES", "UNITED STATES OF AMERICA"].includes(country);
+}
+
+function axiomUpdateBankTransferCheckoutCopy() {
+  const country = axiomGetCheckoutCountryValue();
+  const titleEl = document.getElementById("bankTransferTitle");
+  const descEl = document.getElementById("bankTransferDescription");
+  const optionEl = document.getElementById("bankTransferOption");
+
+  if (!titleEl || !descEl || !optionEl) return;
+
+  const isInternational = axiomIsInternationalCountry(country);
+
+  if (isInternational) {
+    titleEl.textContent = "International Bank Transfer";
+    descEl.textContent =
+      "For international customers, place your order and follow the order confirmation page instructions to complete payment by international wire transfer.";
+    optionEl.setAttribute("data-bank-transfer-type", "international");
+  } else {
+    titleEl.textContent = "Domestic Bank Transfer";
+    descEl.textContent =
+      "For U.S. customers, place your order and follow the order confirmation page instructions to complete payment by domestic bank transfer.";
+    optionEl.setAttribute("data-bank-transfer-type", "domestic");
+  }
+}
+
+function axiomBindBankTransferCheckoutCountryWatcher() {
+  const countryEl = axiomGetCheckoutCountryElement();
+  if (!countryEl) return false;
+
+  if (countryEl.dataset.bankTransferBound !== "true") {
+    countryEl.dataset.bankTransferBound = "true";
+    countryEl.addEventListener("change", axiomUpdateBankTransferCheckoutCopy);
+    countryEl.addEventListener("input", axiomUpdateBankTransferCheckoutCopy);
+  }
+
+  axiomUpdateBankTransferCheckoutCopy();
+  return true;
+}
+
+document.addEventListener("DOMContentLoaded", function () {
+  axiomBindBankTransferCheckoutCountryWatcher();
+
+  setTimeout(axiomBindBankTransferCheckoutCountryWatcher, 200);
+  setTimeout(axiomBindBankTransferCheckoutCountryWatcher, 700);
+  setTimeout(axiomBindBankTransferCheckoutCountryWatcher, 1500);
+});
