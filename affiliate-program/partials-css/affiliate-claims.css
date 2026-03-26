@@ -1,10 +1,177 @@
+/* =========================================
+   AXIOM – Affiliate Claims Section
+   ========================================= */
+
+/* Header */
 .affiliate-claims-header {
   display: grid;
   gap: 8px;
   margin-bottom: 16px;
 }
 
-.affiliate-claims-form {
+/* Form */
+.affiliate-claim-form {
   display: grid;
-  gap: 16px;
+  gap: 18px;
+  margin-top: 12px;
+}
+
+.affiliate-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.affiliate-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.affiliate-field label {
+  font-size: 14px;
+  font-weight: 800;
+  color: #0f1f52;
+}
+
+/* Inputs */
+#affiliateClaimAmount,
+#affiliateClaimNote {
+  height: 54px;
+  border-radius: 16px;
+  border: 1.5px solid #dbe4f0;
+  padding: 0 16px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #0f1f52;
+  background: #fff;
+}
+
+#affiliateClaimAmount:focus,
+#affiliateClaimNote:focus {
+  border-color: #4aa3df;
+  box-shadow: 0 0 0 3px rgba(74, 163, 223, 0.12);
+  outline: none;
+}
+
+/* Meta (Available / Reserved) */
+.affiliate-claim-meta {
+  display: grid;
+  gap: 6px;
+}
+
+.affiliate-claim-meta-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+}
+
+.affiliate-claim-meta-row strong {
+  font-size: 16px;
+  font-weight: 900;
+  color: #0f1f52;
+}
+
+.affiliate-claim-helper {
+  font-size: 13px;
+  color: #6f7f9a;
+}
+
+/* =========================================
+   SENT CLAIMS (THIS FIXES YOUR UI ISSUE)
+   ========================================= */
+
+.affiliate-claims-history-header {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+#affiliateClaimsList {
+  display: grid;
+}
+
+/* Each claim row */
+.affiliate-data-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 16px; /* 🔥 THIS FIXES "TOUCHING" ISSUE */
+  padding: 16px 0;
+  border-top: 1px solid #e6edf7;
+}
+
+.affiliate-data-row:first-child {
+  border-top: none;
+}
+
+/* Date */
+.affiliate-data-row span {
+  font-size: 15px;
+  color: #6f7f9a;
+  font-weight: 600;
+}
+
+/* Amount */
+.affiliate-data-row strong {
+  font-size: 16px;
+  font-weight: 900;
+  color: #0f1f52;
+  white-space: nowrap;
+}
+
+/* Status */
+.affiliate-data-row em,
+.affiliate-data-row .status {
+  font-size: 14px;
+  font-weight: 800;
+  color: #6f7f9a;
+  white-space: nowrap;
+}
+
+/* Status colors */
+.affiliate-data-row .pending {
+  color: #8a6500;
+}
+
+.affiliate-data-row .approved {
+  color: #1d7a38;
+}
+
+.affiliate-data-row .paid {
+  color: #1f5fbf;
+}
+
+.affiliate-data-row .rejected {
+  color: #b42318;
+}
+
+/* Empty */
+.affiliate-empty-state {
+  padding: 18px;
+  border-radius: 16px;
+  border: 1px dashed #dbe4f0;
+  text-align: center;
+  color: #6f7f9a;
+}
+
+/* =========================================
+   MOBILE FIX
+   ========================================= */
+
+@media (max-width: 768px) {
+  .affiliate-grid-2 {
+    grid-template-columns: 1fr;
+  }
+
+  .affiliate-data-row {
+    grid-template-columns: 1fr;
+    gap: 6px;
+  }
+
+  .affiliate-data-row strong,
+  .affiliate-data-row em {
+    text-align: left;
+  }
 }
