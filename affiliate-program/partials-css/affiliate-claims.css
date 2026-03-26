@@ -1,6 +1,6 @@
-/* =========================================
+/* =======================================
    AXIOM – Affiliate Claims Section
-   ========================================= */
+   ======================================= */
 
 /* Header */
 .affiliate-claims-header {
@@ -79,7 +79,7 @@
 }
 
 /* =========================================
-   SENT CLAIMS (THIS FIXES YOUR UI ISSUE)
+   SENT CLAIMS
    ========================================= */
 
 .affiliate-claims-history-header {
@@ -95,10 +95,9 @@
 /* Each claim row */
 .affiliate-data-row {
   display: grid;
-  grid-template-columns: 1fr auto auto;
-  align-items: center;
-  gap: 16px; /* 🔥 THIS FIXES "TOUCHING" ISSUE */
-  padding: 16px 0;
+  grid-template-columns: 1fr;
+  gap: 8px;
+  padding: 18px 0;
   border-top: 1px solid #e6edf7;
 }
 
@@ -106,31 +105,41 @@
   border-top: none;
 }
 
-/* Date */
+/* Top line = status + date */
 .affiliate-data-row span {
+  display: block;
   font-size: 15px;
   color: #6f7f9a;
-  font-weight: 600;
+  font-weight: 700;
+  line-height: 1.4;
+  white-space: normal;
 }
 
-/* Amount */
+/* Amount under it */
 .affiliate-data-row strong {
+  display: block;
   font-size: 16px;
   font-weight: 900;
   color: #0f1f52;
   white-space: nowrap;
+  line-height: 1.2;
 }
 
-/* Status */
+/* Hide old separate status line if your JS still outputs it */
 .affiliate-data-row em,
 .affiliate-data-row .status {
-  font-size: 14px;
-  font-weight: 800;
-  color: #6f7f9a;
-  white-space: nowrap;
+  display: none;
 }
 
-/* Status colors */
+/* Optional note */
+.affiliate-data-row p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.55;
+  color: #6f7f9a;
+}
+
+/* Status colors when included inside the top line with classes */
 .affiliate-data-row .pending {
   color: #8a6500;
 }
