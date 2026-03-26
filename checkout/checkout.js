@@ -587,50 +587,71 @@ function getShippingRateContext(itemsOverride) {
 function calculateEstimatedRates(items) {
   const context = getShippingRateContext(items);
 
+  const orderSubtotal = calculateCartSubtotal(Array.isArray(items) ? items : []);
+
   if (window.AXIOM_SHIPPING_RATES && typeof window.AXIOM_SHIPPING_RATES.getRates === "function") {
     return window.AXIOM_SHIPPING_RATES.getRates({
       countryCode: context.countryCode,
       postalCode: context.postalCode,
       weightOz: context.weightOz,
-      itemCount: context.itemCount
+      itemCount: context.itemCount,
+      orderSubtotal: orderSubtotal
     });
   }
 
-  const totalWeightOz = context.weightOz;
-  let ground = 5.95;
-  let priority = 9.95;
+  const isDomestic = context.countryCode === "US";
+  const methods = [];
 
-  if (totalWeightOz <= 4) {
-    ground = 4.95;
-    priority = 8.95;
-  } else if (totalWeightOz <= 8) {
-    ground = 5.95;
-    priority = 9.95;
-  } else if (totalWeightOz <= 16) {
-    ground = 7.95;
-    priority = 11.95;
-  } else if (totalWeightOz <= 32) {
-    ground = 9.95;
-    priority = 14.95;
-  } else if (totalWeightOz <= 64) {
-    ground = 13.95;
-    priority = 19.95;
+  if (orderSubtotal >= 250) {
+    methods.push({
+      id: "free_worldwide_shipping",
+      label: "Free Worldwide Shipping",
+      amount: 0,
+      eta: isDomestic ? "3–7 business days" : "7–14 business days"
+    });
+  }
+
+  if (isDomestic) {
+    methods.push(
+      {
+        id: "usps_ground_advantage",
+        label: "USPS Ground Advantage",
+        amount: 14.95,
+        eta: "2–5 business days"
+      },
+      {
+        id: "usps_priority_mail",
+        label: "USPS Priority Mail",
+        amount: 34.95,
+        eta: "1–3 business days"
+      }
+    );
   } else {
-    ground = 17.95;
-    priority = 24.95;
+    methods.push(
+      {
+        id: "intl_standard",
+        label: "Standard International",
+        amount: 32.95,
+        eta: "7–14 business days"
+      },
+      {
+        id: "intl_express",
+        label: "Express International",
+        amount: 69.95,
+        eta: "4–8 business days"
+      }
+    );
   }
 
   return {
     countryCode: context.countryCode,
     postalCode: context.postalCode,
     itemCount: context.itemCount,
-    weightOz: totalWeightOz,
-    weightLbs: totalWeightOz / 16,
-    isDomestic: context.countryCode === "US",
-    methods: [
-      { id: "usps_ground_advantage", label: "USPS Ground Advantage", amount: ground, eta: "2–5 business days" },
-      { id: "usps_priority_mail", label: "USPS Priority Mail", amount: priority, eta: "1–3 business days" }
-    ]
+    weightOz: context.weightOz,
+    weightLbs: context.weightOz / 16,
+    orderSubtotal: orderSubtotal,
+    isDomestic: isDomestic,
+    methods: methods
   };
 }
 
@@ -1679,19 +1700,17 @@ document.addEventListener("submit", async function (e) {
   }
 });
 
-// EXISTING CODE ABOVE...
-
 // ================================
 // AXIOM – Bank Transfer Country Logic
 // ================================
 
 function axiomGetCheckoutCountryElement() {
   const selectors = [
-    '#shippingCountry',
-    '#shipping_country',
-    '#country',
-    '#billingCountry',
-    '#billing_country',
+    "#shippingCountry",
+    "#shipping_country",
+    "#country",
+    "#billingCountry",
+    "#billing_country",
     'select[name="shippingCountry"]',
     'select[name="shipping_country"]',
     'select[name="country"]',
