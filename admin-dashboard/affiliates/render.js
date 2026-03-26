@@ -92,6 +92,7 @@
     }
 
     const payoutRequests = safeArray(state.payoutRequests);
+
     return payoutRequests.filter(function (row) {
       const rowAffiliateId =
         row?.affiliate_id ||
@@ -106,6 +107,15 @@
     }).length;
   }
 
+  function getPendingPayoutRequestsTotal() {
+    const rows = safeArray(state.payoutRequests);
+
+    return rows.filter(function (row) {
+      const status = String(row?.status || "").trim().toLowerCase();
+      return status === "pending";
+    }).length;
+  }
+
   function renderStats() {
     const dom = domApi.get();
     const summary = state.summary || {
@@ -116,7 +126,6 @@
     };
 
     const totalValue = getSummaryValue(summary, ["total", "total_affiliates"], 0);
-    const pendingValue = getSummaryValue(summary, ["pending", "pending_affiliates"], 0);
     const approvedValue = getSummaryValue(summary, ["approved", "approved_affiliates"], 0);
     const claimableValue = getSummaryValue(
       summary,
@@ -124,27 +133,46 @@
       0
     );
 
+    const pendingPayoutRequests = getPendingPayoutRequestsTotal();
+
     domApi.setText(dom.statTotal, String(Number(totalValue) || 0));
-    domApi.setText(dom.statPending, String(Number(pendingValue) || 0));
+    domApi.setText(dom.statPending, String(Number(pendingPayoutRequests) || 0));
     domApi.setText(dom.statApproved, String(Number(approvedValue) || 0));
     domApi.setText(dom.statClaimable, utils.formatCurrency(Number(claimableValue) || 0));
   }
 
   function renderLoading() {
     const dom = domApi.get();
-    if (!dom.tableBody) return;
-    domApi.setHTML(dom.tableBody, '<tr><td colspan="10">Loading affiliates...</td></tr>');
+
+    if (dom.tableBody) {
+      domApi.setHTML(dom.tableBody, '<tr><td colspan="10">Loading affiliates...</td></tr>');
+    }
+
+    if (dom.payoutRequestsTableBody) {
+      domApi.setHTML(dom.payoutRequestsTableBody, '<tr><td colspan="6">Loading payout requests...</td></tr>');
+    }
   }
 
   function renderError(message) {
     const dom = domApi.get();
-    if (!dom.tableBody) return;
-    domApi.setHTML(
-      dom.tableBody,
-      '<tr><td colspan="10">Failed to load affiliates: ' +
-        utils.escapeHtml(message || "Unknown error") +
-        "</td></tr>"
-    );
+
+    if (dom.tableBody) {
+      domApi.setHTML(
+        dom.tableBody,
+        '<tr><td colspan="10">Failed to load affiliates: ' +
+          utils.escapeHtml(message || "Unknown error") +
+          "</td></tr>"
+      );
+    }
+
+    if (dom.payoutRequestsTableBody) {
+      domApi.setHTML(
+        dom.payoutRequestsTableBody,
+        '<tr><td colspan="6">Failed to load payout requests: ' +
+          utils.escapeHtml(message || "Unknown error") +
+          "</td></tr>"
+      );
+    }
   }
 
   function renderEmpty() {
@@ -176,7 +204,7 @@
           const pendingClaimRequests = getPendingClaimRequestCount(item);
 
           return (
-            '<tr>' +
+            "<tr>" +
               "<td>" + utils.escapeHtml(item.full_name || "—") + "</td>" +
               "<td>" + utils.escapeHtml(item.email || "—") + "</td>" +
               "<td>" + utils.escapeHtml(item.discord_username || "—") + "</td>" +
@@ -186,7 +214,7 @@
               "<td>" + conversions + "</td>" +
               "<td>" + utils.formatCurrency(claimable) + "</td>" +
               "<td>" + pendingClaimRequests + "</td>" +
-              '<td>' +
+              "<td>" +
                 '<div class="affiliates-admin-actions">' +
                   '<button type="button" class="affiliates-admin-action-btn" data-action="view" data-affiliate-id="' + utils.escapeHtml(item.id) + '">View</button>' +
                   '<button type="button" class="affiliates-admin-action-btn affiliates-admin-action-btn-approve" data-action="approve" data-affiliate-id="' + utils.escapeHtml(item.id) + '">Approve</button>' +
@@ -211,11 +239,7 @@
     const tableBody =
       dom.payoutRequestsTableBody ||
       dom.payoutRequestsBody ||
-      dom.payoutTableBody ||
-      document.getElementById("affiliatePayoutRequestsTableBody") ||
-      document.getElementById("affiliatePayoutRequestsBody") ||
-      document.getElementById("payoutRequestsTableBody") ||
-      document.getElementById("payoutRequestsBody");
+      document.getElementById("affiliatePayoutRequestsTableBody");
 
     if (!tableBody) return;
 
@@ -358,7 +382,7 @@
                   '<div class="affiliates-admin-detail-row"><span>Discord</span><strong>' + utils.escapeHtml(row.discord_contact || "—") + "</strong></div>" +
                   '<div class="affiliates-admin-detail-row"><span>Created</span><strong>' + utils.formatDate(row.created_at) + "</strong></div>" +
                   '<div class="affiliates-admin-detail-row"><span>Updated</span><strong>' + utils.formatDate(row.updated_at) + "</strong></div>" +
-                  '<div class="affiliates-admin-detail-row"><span>Message</span><strong>' + utils.escapeHtml(row.message || "—") + "</strong></div>' +
+                  '<div class="affiliates-admin-detail-row"><span>Message</span><strong>' + utils.escapeHtml(row.message || "—") + "</strong></div>" +
                 "</div>" +
                 buttons +
               "</div>"
