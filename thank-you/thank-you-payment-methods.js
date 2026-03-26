@@ -3,7 +3,9 @@ function thankYouNormalizePaymentMethod(method) {
 
   if (!value) return "";
 
-  if (value.includes("cash")) return "cashapp";
+  if (value.includes("bank")) return "banktransfer";
+  if (value.includes("wire")) return "banktransfer";
+  if (value.includes("transfer")) return "banktransfer";
   if (value.includes("apple")) return "applepay";
   if (value.includes("zelle")) return "zelle";
   if (value.includes("venmo")) return "venmo";
@@ -35,7 +37,11 @@ function thankYouGetOrderFollowupText(paymentKey, orderNumber) {
   }
 
   if (paymentKey === "crypto") {
-    return `Send your transaction ID and order #<strong>${safeOrder}</strong> using one of the contact options below.`;
+    return `After sending crypto, message your transaction ID and order #<strong>${safeOrder}</strong> using Telegram, WhatsApp, email, or Discord below so we can confirm your payment.`;
+  }
+
+  if (paymentKey === "banktransfer") {
+    return `Use order #<strong>${safeOrder}</strong> as the payment reference when possible, then message us after sending the transfer so we can match it to your order.`;
   }
 
   return `Include order #<strong>${safeOrder}</strong> in the note.`;
@@ -68,16 +74,85 @@ const THANK_YOU_PAYMENT_METHODS = {
       "Send payment through Zelle, then message the phone number with your order number so we can match your payment."
   },
 
-  cashapp: {
-    key: "cashapp",
-    label: "Cash App",
-    logo: "../images/payment-icons/cashapp.PNG",
-    handleLabel: "Cash App Username",
-    handle: "$axiompeptides",
-    linkLabel: "Cash App Link",
-    link: "https://cash.app/$axiompeptides",
+  banktransfer: {
+    key: "banktransfer",
+    label: "Bank Transfer",
+    logo: "",
+    iconClass: "fa-solid fa-building-columns",
     instructions:
-      "Send payment through Cash App and include only your order number in the note."
+      "Send payment by domestic or international bank transfer using the exact details below. Use your order number as the payment reference when possible, then message us after sending so we can match your payment.",
+    details: [
+      {
+        label: "Bank Name",
+        value: "Mercury"
+      },
+      {
+        label: "Receiving Bank",
+        value: "Column N.A."
+      },
+      {
+        label: "Routing Number (Domestic)",
+        value: "121145433"
+      },
+      {
+        label: "Account Number",
+        value: "621956274808088"
+      },
+      {
+        label: "Account Type",
+        value: "Checking"
+      },
+      {
+        label: "Bank Address",
+        value: "1 Letterman Drive, Building A, Suite A4-700, San Francisco, CA 94129 USA"
+      },
+      {
+        label: "SWIFT / BIC (International)",
+        value: "CLNOUS66MER"
+      },
+      {
+        label: "ABA Routing Number (Alternate)",
+        value: "121145307"
+      },
+      {
+        label: "Intermediary Bank SWIFT / BIC",
+        value: "CHASUS33XXX"
+      },
+      {
+        label: "Beneficiary Name",
+        value: "Axiom Peptides LLC"
+      },
+      {
+        label: "Beneficiary Address",
+        value: "30 North Gould Street, Sheridan, WY 82801 USA"
+      },
+      {
+        label: "Reference",
+        value: "Use your order number as the payment reference"
+      }
+    ],
+    bankContacts: [
+      {
+        label: "Email Us",
+        href: "mailto:realaxiompeptides@gmail.com?subject=Bank%20Transfer%20Confirmation",
+        external: false
+      },
+      {
+        label: "WhatsApp",
+        href: "https://wa.me/15307019349",
+        external: true
+      },
+      {
+        label: "Telegram",
+        href: "https://t.me/+2hr9SQknvslkZDg5",
+        external: true
+      },
+      {
+        label: "Discord",
+        href: "https://discord.gg/Wz9C39ERe",
+        external: true
+      }
+    ]
   },
 
   applepay: {
@@ -97,7 +172,7 @@ const THANK_YOU_PAYMENT_METHODS = {
     label: "Crypto",
     logo: "../images/payment-icons/crypto-group.jpg",
     instructions:
-      "Send the exact amount using the correct crypto and network. After sending, send your transaction ID and order number using one of the contact options below so we can confirm your payment.",
+      "Send the exact amount using the correct crypto and network. After sending, message your transaction ID and order number using Telegram, WhatsApp, email, or Discord below so we can confirm your payment.",
     wallets: [
       {
         label: "Bitcoin (BTC)",
@@ -199,15 +274,18 @@ function thankYouCreateLinkBlock(label, url) {
   `;
 }
 
-function thankYouCreateActionButtons(buttons, orderNumber) {
+function thankYouCreateActionButtons(buttons, orderNumber, headingText) {
   if (!Array.isArray(buttons) || !buttons.length) return "";
 
   const safeOrder = thankYouEscapeHtml(orderNumber ? `#${orderNumber}` : "");
+  const title = headingText
+    ? thankYouEscapeHtml(headingText)
+    : `Send your transaction ID and ${safeOrder ? `order number ${safeOrder}` : "order number"}`;
 
   return `
     <div class="thank-you-payment-contact-section">
       <div class="thank-you-payment-copy-header">
-        Send your transaction ID and ${safeOrder ? `order number ${safeOrder}` : "order number"}
+        ${title}
       </div>
       <div class="thank-you-payment-action-grid">
         ${buttons
@@ -257,22 +335,48 @@ function thankYouBuildMethodDetails(methodConfig, orderNumber) {
     );
   }
 
+  if (Array.isArray(methodConfig.details) && methodConfig.details.length) {
+    detailsHtml += `
+      <div class="thank-you-payment-bank-grid">
+        ${methodConfig.details
+          .map((item) => {
+            return thankYouCreateCopyButton(item.label, item.value);
+          })
+          .join("")}
+      </div>
+    `;
+  }
+
   if (Array.isArray(methodConfig.wallets) && methodConfig.wallets.length) {
     detailsHtml += `
       <div class="thank-you-payment-crypto-grid">
-        ${methodConfig.wallets.map((wallet) => {
-          return `
-            <div class="thank-you-payment-crypto-card">
-              ${thankYouCreateCopyButton(wallet.label, wallet.value)}
-            </div>
-          `;
-        }).join("")}
+        ${methodConfig.wallets
+          .map((wallet) => {
+            return `
+              <div class="thank-you-payment-crypto-card">
+                ${thankYouCreateCopyButton(wallet.label, wallet.value)}
+              </div>
+            `;
+          })
+          .join("")}
       </div>
     `;
   }
 
   if (Array.isArray(methodConfig.cryptoContacts) && methodConfig.cryptoContacts.length) {
-    detailsHtml += thankYouCreateActionButtons(methodConfig.cryptoContacts, orderNumber);
+    detailsHtml += thankYouCreateActionButtons(
+      methodConfig.cryptoContacts,
+      orderNumber,
+      `After sending crypto, message your transaction ID and order number ${orderNumber ? `#${thankYouEscapeHtml(orderNumber)}` : ""}`.trim()
+    );
+  }
+
+  if (Array.isArray(methodConfig.bankContacts) && methodConfig.bankContacts.length) {
+    detailsHtml += thankYouCreateActionButtons(
+      methodConfig.bankContacts,
+      orderNumber,
+      `After sending the bank transfer, message your order number ${orderNumber ? `#${thankYouEscapeHtml(orderNumber)}` : ""} and payment confirmation`.trim()
+    );
   }
 
   if (orderNumber) {
@@ -282,25 +386,44 @@ function thankYouBuildMethodDetails(methodConfig, orderNumber) {
   return detailsHtml;
 }
 
+function thankYouBuildPaymentLogo(methodConfig) {
+  const safeLabel = thankYouEscapeHtml(methodConfig.label);
+  const safeLogo = thankYouEscapeHtml(methodConfig.logo || "");
+  const safeIconClass = thankYouEscapeHtml(methodConfig.iconClass || "fa-solid fa-money-check-dollar");
+
+  if (methodConfig.logo) {
+    return `
+      <div class="thank-you-payment-method-logo-wrap">
+        <img
+          src="${safeLogo}"
+          alt="${safeLabel} logo"
+          class="thank-you-payment-method-logo"
+          onerror="this.style.display='none'; this.closest('.thank-you-payment-method-logo-wrap').insertAdjacentHTML('beforeend', '<span class=&quot;thank-you-payment-method-fallback-icon&quot;><i class=&quot;${safeIconClass}&quot;></i></span>');"
+        />
+      </div>
+    `;
+  }
+
+  return `
+    <div class="thank-you-payment-method-logo-wrap is-icon-only">
+      <span class="thank-you-payment-method-fallback-icon">
+        <i class="${safeIconClass}"></i>
+      </span>
+    </div>
+  `;
+}
+
 function thankYouBuildPrimaryMethodCard(methodConfig, orderNumber) {
   if (!methodConfig) return "";
 
   const safeLabel = thankYouEscapeHtml(methodConfig.label);
   const safeInstructions = thankYouEscapeHtml(methodConfig.instructions || "");
-  const safeLogo = thankYouEscapeHtml(methodConfig.logo || "");
 
   return `
     <div class="thank-you-payment-method-card is-primary">
       <div class="thank-you-payment-method-top">
         <div class="thank-you-payment-method-heading-row inline-header">
-          <div class="thank-you-payment-method-logo-wrap">
-            <img
-              src="${safeLogo}"
-              alt="${safeLabel} logo"
-              class="thank-you-payment-method-logo"
-              onerror="this.style.display='none';"
-            />
-          </div>
+          ${thankYouBuildPaymentLogo(methodConfig)}
 
           <div class="thank-you-payment-method-heading-copy">
             <h3 class="thank-you-payment-method-name">${safeLabel}</h3>
@@ -326,7 +449,6 @@ function thankYouBuildAccordionItem(methodConfig, orderNumber, index) {
 
   const safeLabel = thankYouEscapeHtml(methodConfig.label);
   const safeInstructions = thankYouEscapeHtml(methodConfig.instructions || "");
-  const safeLogo = thankYouEscapeHtml(methodConfig.logo || "");
   const panelId = `thankYouPaymentAccordionPanel${index}`;
 
   return `
@@ -338,14 +460,7 @@ function thankYouBuildAccordionItem(methodConfig, orderNumber, index) {
         aria-controls="${panelId}"
       >
         <span class="thank-you-payment-accordion-left">
-          <span class="thank-you-payment-method-logo-wrap">
-            <img
-              src="${safeLogo}"
-              alt="${safeLabel} logo"
-              class="thank-you-payment-method-logo"
-              onerror="this.style.display='none';"
-            />
-          </span>
+          ${thankYouBuildPaymentLogo(methodConfig)}
 
           <span class="thank-you-payment-accordion-title-wrap">
             <span class="thank-you-payment-accordion-title">${safeLabel}</span>
