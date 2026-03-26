@@ -1,230 +1,177 @@
+/* =========================================
+   AXIOM – Affiliate Claims Section
+   ========================================= */
+
+/* Header */
 .affiliate-claims-header {
   display: grid;
-  gap: 10px;
-  margin-bottom: 18px;
+  gap: 8px;
+  margin-bottom: 16px;
 }
 
-.affiliate-claims-form {
+/* Form */
+.affiliate-claim-form {
   display: grid;
   gap: 18px;
+  margin-top: 12px;
 }
 
-.affiliate-claims-balance {
+.affiliate-grid-2 {
   display: grid;
-  gap: 10px;
-  padding: 16px 18px;
-  border: 1px solid #dbe7f5;
-  border-radius: 18px;
-  background: linear-gradient(180deg, #f8fbff 0%, #f2f7fd 100%);
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
 }
 
-.affiliate-claims-balance-row {
+.affiliate-field {
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.affiliate-field label {
+  font-size: 14px;
+  font-weight: 800;
+  color: #0f1f52;
+}
+
+/* Inputs */
+#affiliateClaimAmount,
+#affiliateClaimNote {
+  height: 54px;
+  border-radius: 16px;
+  border: 1.5px solid #dbe4f0;
+  padding: 0 16px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #0f1f52;
+  background: #fff;
+}
+
+#affiliateClaimAmount:focus,
+#affiliateClaimNote:focus {
+  border-color: #4aa3df;
+  box-shadow: 0 0 0 3px rgba(74, 163, 223, 0.12);
+  outline: none;
+}
+
+/* Meta (Available / Reserved) */
+.affiliate-claim-meta {
+  display: grid;
+  gap: 6px;
+}
+
+.affiliate-claim-meta-row {
+  display: flex;
   justify-content: space-between;
-  gap: 16px;
-  font-size: 17px;
-  color: #667892;
-  line-height: 1.35;
-}
-
-.affiliate-claims-balance-row strong {
-  font-size: 19px;
-  font-weight: 900;
-  color: #0f1f52;
-  white-space: nowrap;
-}
-
-.affiliate-claims-help {
-  margin: 2px 0 0;
+  align-items: center;
   font-size: 14px;
-  line-height: 1.6;
-  color: #6e7f98;
 }
 
-.affiliate-claim-submit-wrap {
-  display: grid;
-  gap: 10px;
-}
-
-.affiliate-claim-submit-wrap .affiliate-btn[disabled] {
-  opacity: 1;
-  cursor: not-allowed;
-  filter: grayscale(0.05);
-}
-
-.affiliate-claims-history-card {
-  margin-top: 18px;
-  padding-top: 6px;
-  border-top: 1px solid #e8eef7;
-}
-
-.affiliate-claims-history-title {
-  margin: 0;
-  font-size: 17px;
-  font-weight: 900;
-  color: #0f1f52;
-}
-
-.affiliate-claims-history-subtext {
-  margin: 8px 0 0;
-  font-size: 14px;
-  line-height: 1.7;
-  color: #70819a;
-}
-
-.affiliate-claims-list {
-  margin-top: 16px;
-  display: grid;
-  gap: 0;
-}
-
-.affiliate-claims-list .affiliate-empty-state {
-  padding: 18px;
-  border: 1px dashed #cfdced;
-  border-radius: 18px;
-  background: #f8fbff;
-  text-align: center;
+.affiliate-claim-meta-row strong {
   font-size: 16px;
-  color: #73849d;
+  font-weight: 900;
+  color: #0f1f52;
 }
 
+.affiliate-claim-helper {
+  font-size: 13px;
+  color: #6f7f9a;
+}
+
+/* =========================================
+   SENT CLAIMS (THIS FIXES YOUR UI ISSUE)
+   ========================================= */
+
+.affiliate-claims-history-header {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+#affiliateClaimsList {
+  display: grid;
+}
+
+/* Each claim row */
 .affiliate-data-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  grid-template-rows: auto auto auto;
-  column-gap: 18px;
-  row-gap: 6px;
-  padding: 18px 0;
-  border-top: 1px solid #e7eef8;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 16px; /* 🔥 THIS FIXES "TOUCHING" ISSUE */
+  padding: 16px 0;
+  border-top: 1px solid #e6edf7;
 }
 
 .affiliate-data-row:first-child {
   border-top: none;
-  padding-top: 8px;
 }
 
-.affiliate-data-row:last-child {
-  padding-bottom: 4px;
+/* Date */
+.affiliate-data-row span {
+  font-size: 15px;
+  color: #6f7f9a;
+  font-weight: 600;
 }
 
+/* Amount */
 .affiliate-data-row strong {
-  grid-column: 1;
-  grid-row: 1;
-  align-self: start;
-  font-size: 24px;
-  line-height: 1.1;
+  font-size: 16px;
   font-weight: 900;
   color: #0f1f52;
-  letter-spacing: -0.02em;
-}
-
-.affiliate-data-row span {
-  grid-column: 2;
-  grid-row: 1;
-  align-self: center;
-  justify-self: end;
-  text-align: right;
-  font-size: 14px;
-  line-height: 1.3;
-  font-weight: 700;
-  color: #71829b;
   white-space: nowrap;
-  padding-left: 18px;
 }
 
+/* Status */
 .affiliate-data-row em,
 .affiliate-data-row .status {
-  grid-column: 1 / -1;
-  grid-row: 2;
-  justify-self: start;
-  display: inline-flex;
-  align-items: center;
-  min-height: 34px;
-  padding: 0 14px;
-  border-radius: 999px;
-  font-size: 13px;
-  font-style: normal;
-  font-weight: 900;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-  border: 1px solid #d8e4f4;
-  background: #f4f8fd;
-  color: #5f7391;
-}
-
-.affiliate-data-row p {
-  grid-column: 1 / -1;
-  grid-row: 3;
-  margin: 0;
   font-size: 14px;
-  line-height: 1.65;
-  color: #6f8099;
+  font-weight: 800;
+  color: #6f7f9a;
+  white-space: nowrap;
 }
 
-.affiliate-data-row .status.pending,
-.affiliate-data-row em.pending {
-  background: #fff7e8;
-  border-color: #f4ddb0;
-  color: #9b6a00;
+/* Status colors */
+.affiliate-data-row .pending {
+  color: #8a6500;
 }
 
-.affiliate-data-row .status.approved,
-.affiliate-data-row em.approved {
-  background: #edf8ef;
-  border-color: #bfe4c6;
-  color: #1f7a35;
+.affiliate-data-row .approved {
+  color: #1d7a38;
 }
 
-.affiliate-data-row .status.paid,
-.affiliate-data-row em.paid {
-  background: #eaf4ff;
-  border-color: #bdd7fb;
-  color: #145fbe;
+.affiliate-data-row .paid {
+  color: #1f5fbf;
 }
 
-.affiliate-data-row .status.rejected,
-.affiliate-data-row em.rejected,
-.affiliate-data-row .status.denied,
-.affiliate-data-row em.denied {
-  background: #fff0f0;
-  border-color: #f1c2c2;
-  color: #b33434;
+.affiliate-data-row .rejected {
+  color: #b42318;
 }
 
-@media (max-width: 640px) {
-  .affiliate-claims-balance-row {
-    font-size: 16px;
-  }
+/* Empty */
+.affiliate-empty-state {
+  padding: 18px;
+  border-radius: 16px;
+  border: 1px dashed #dbe4f0;
+  text-align: center;
+  color: #6f7f9a;
+}
 
-  .affiliate-claims-balance-row strong {
-    font-size: 18px;
+/* =========================================
+   MOBILE FIX
+   ========================================= */
+
+@media (max-width: 768px) {
+  .affiliate-grid-2 {
+    grid-template-columns: 1fr;
   }
 
   .affiliate-data-row {
-    grid-template-columns: 1fr auto;
-    column-gap: 14px;
-    row-gap: 8px;
-    padding: 16px 0;
+    grid-template-columns: 1fr;
+    gap: 6px;
   }
 
-  .affiliate-data-row strong {
-    font-size: 21px;
-  }
-
-  .affiliate-data-row span {
-    font-size: 13px;
-    padding-left: 12px;
-  }
-
-  .affiliate-data-row em,
-  .affiliate-data-row .status {
-    font-size: 12px;
-    min-height: 32px;
-    padding: 0 12px;
-  }
-
-  .affiliate-data-row p {
-    font-size: 13px;
+  .affiliate-data-row strong,
+  .affiliate-data-row em {
+    text-align: left;
   }
 }
