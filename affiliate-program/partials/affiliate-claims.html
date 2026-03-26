@@ -2,25 +2,72 @@
   <div class="affiliate-claims-header">
     <h2 class="affiliate-section-title">Claim Commission</h2>
     <p class="affiliate-muted">
-      Submit a claim, then message support on Discord with your affiliate email and payout request.
+      Submit a claim request for your available balance. Below that, you can also see every claim you already sent, including the date, amount, note, and current status.
     </p>
   </div>
 
-  <form id="affiliateClaimForm" class="affiliate-claims-form">
+  <form id="affiliateClaimForm" class="affiliate-claim-form">
     <div class="affiliate-grid-2">
       <div class="affiliate-field">
         <label for="affiliateClaimAmount">Claim Amount</label>
-        <input id="affiliateClaimAmount" class="affiliate-input" type="number" min="0" step="0.01" placeholder="0.00" />
+        <input
+          id="affiliateClaimAmount"
+          class="affiliate-input"
+          type="number"
+          min="0"
+          step="0.01"
+          inputmode="decimal"
+          placeholder="0.00"
+        />
       </div>
 
       <div class="affiliate-field">
         <label for="affiliateClaimNote">Claim Note</label>
-        <input id="affiliateClaimNote" class="affiliate-input" type="text" placeholder="Optional note" />
+        <input
+          id="affiliateClaimNote"
+          class="affiliate-input"
+          type="text"
+          maxlength="200"
+          placeholder="Optional note for this claim"
+        />
       </div>
     </div>
 
-    <button type="button" class="affiliate-btn affiliate-btn-primary" id="submitAffiliateClaimBtn">
+    <div class="affiliate-claim-meta">
+      <div class="affiliate-claim-meta-row">
+        <span class="affiliate-muted">Available to claim</span>
+        <strong id="affiliateClaimAvailableAmount">$0.00</strong>
+      </div>
+
+      <div class="affiliate-claim-meta-row">
+        <span class="affiliate-muted">Already reserved in pending / approved claims</span>
+        <strong id="affiliateClaimReservedAmount">$0.00</strong>
+      </div>
+
+      <p id="affiliateClaimHelperText" class="affiliate-muted affiliate-claim-helper">
+        You can only submit up to your currently available claimable balance.
+      </p>
+    </div>
+
+    <button
+      type="button"
+      id="submitAffiliateClaimBtn"
+      class="affiliate-btn affiliate-btn-primary"
+    >
       Submit Claim Request
     </button>
   </form>
+</section>
+
+<section class="affiliate-card">
+  <div class="affiliate-claims-history-header">
+    <h2 class="affiliate-section-title">Sent Claims</h2>
+    <p id="affiliateClaimsSummary" class="affiliate-muted">
+      No claim requests submitted yet.
+    </p>
+  </div>
+
+  <div id="affiliateClaimsList" class="affiliate-data-list">
+    <div class="affiliate-empty-state">No claim requests yet.</div>
+  </div>
 </section>
