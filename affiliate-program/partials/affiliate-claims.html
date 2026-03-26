@@ -2,11 +2,12 @@
   <div class="affiliate-claims-header">
     <h2 class="affiliate-section-title">Claim Commission</h2>
     <p class="affiliate-muted">
-      Submit a claim request for your available balance. Below that, you can also see every claim you already sent, including the date, amount, note, and current status.
+      Submit a claim request for your available balance. Add your payout details below so we can send your payment quickly after approval.
     </p>
   </div>
 
   <form id="affiliateClaimForm" class="affiliate-claim-form">
+    <!-- CLAIM INFO -->
     <div class="affiliate-grid-2">
       <div class="affiliate-field">
         <label for="affiliateClaimAmount">Claim Amount</label>
@@ -33,6 +34,58 @@
       </div>
     </div>
 
+    <!-- PAYOUT INFO -->
+    <div class="affiliate-grid-2">
+      <div class="affiliate-field">
+        <label for="affiliateClaimPayoutMethod">Payout Method</label>
+        <select
+          id="affiliateClaimPayoutMethod"
+          class="affiliate-input"
+        >
+          <option value="">Select payout method</option>
+          <option value="BTC">Bitcoin (BTC)</option>
+          <option value="ETH">Ethereum (ETH)</option>
+          <option value="USDT-ETH">USDT (Ethereum)</option>
+          <option value="USDC-ETH">USDC (Ethereum)</option>
+          <option value="SOL">Solana (SOL)</option>
+          <option value="USDC-SOL">USDC (Solana)</option>
+          <option value="USDT-SOL">USDT (Solana)</option>
+          <option value="OTHER">Other</option>
+        </select>
+      </div>
+
+      <div class="affiliate-field">
+        <label for="affiliateClaimPayoutNetwork">Network</label>
+        <input
+          id="affiliateClaimPayoutNetwork"
+          class="affiliate-input"
+          type="text"
+          placeholder="Ethereum / Solana / Bitcoin"
+        />
+      </div>
+    </div>
+
+    <div class="affiliate-field">
+      <label for="affiliateClaimPayoutAddress">Wallet Address / Payout Address</label>
+      <input
+        id="affiliateClaimPayoutAddress"
+        class="affiliate-input"
+        type="text"
+        placeholder="Enter your wallet address"
+      />
+    </div>
+
+    <div class="affiliate-field">
+      <label for="affiliateClaimPayoutContact">Backup Contact (Optional)</label>
+      <input
+        id="affiliateClaimPayoutContact"
+        class="affiliate-input"
+        type="text"
+        placeholder="Telegram / Discord / Email"
+      />
+    </div>
+
+    <!-- META -->
     <div class="affiliate-claim-meta">
       <div class="affiliate-claim-meta-row">
         <span class="affiliate-muted">Available to claim</span>
@@ -45,7 +98,7 @@
       </div>
 
       <p id="affiliateClaimHelperText" class="affiliate-muted affiliate-claim-helper">
-        You can only submit up to your currently available claimable balance.
+        You can only submit up to your available balance. Payouts are sent after approval using your provided details.
       </p>
     </div>
 
@@ -59,11 +112,12 @@
   </form>
 </section>
 
+<!-- SENT CLAIMS -->
 <section class="affiliate-card">
   <div class="affiliate-claims-history-header">
     <h2 class="affiliate-section-title">Sent Claims</h2>
     <p id="affiliateClaimsSummary" class="affiliate-muted">
-      No claim requests submitted yet.
+      View your submitted claims, including payout details and status.
     </p>
   </div>
 
