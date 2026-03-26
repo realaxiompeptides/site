@@ -126,6 +126,49 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
       : "";
   },
 
+  getClaimStatusLabel(status) {
+    const value = String(status || "").trim().toLowerCase();
+
+    if (value === "approved") return "Approved";
+    if (value === "paid") return "Paid";
+    if (value === "rejected") return "Rejected";
+    return "Pending";
+  },
+
+  getClaimStatusClass(status) {
+    const value = String(status || "").trim().toLowerCase();
+
+    if (value === "approved") return "is-approved";
+    if (value === "paid") return "is-paid";
+    if (value === "rejected") return "is-rejected";
+    return "is-pending";
+  },
+
+  getPayoutStatusLabel(status) {
+    const value = String(status || "").trim().toLowerCase();
+
+    if (value === "paid") return "Paid";
+    if (value === "cancelled") return "Cancelled";
+    return "Pending";
+  },
+
+  getPayoutStatusClass(status) {
+    const value = String(status || "").trim().toLowerCase();
+
+    if (value === "paid") return "is-paid";
+    if (value === "cancelled") return "is-rejected";
+    return "is-pending";
+  },
+
+  escapeHtml(value) {
+    return String(value == null ? "" : value)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  },
+
   setReferralCodeStatus(message, type) {
     const el = this.getReferralCodeStatusEl();
     if (!el) return;
@@ -652,17 +695,53 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
     this.setText("affiliateClaimableAmount", this.formatMoney(stats.availableToClaim));
     this.setText("affiliatePaidAmount", this.formatMoney(stats.paid));
 
+    this.setText("affiliatePendingClaimsAmount", this.formatMoney(stats.pendingClaims));
+    this.setText("affiliateApprovedClaimsAmount", this.formatMoney(stats.approvedClaims));
+    this.setText("affiliateRejectedClaimsAmount", this.formatMoney(stats.rejectedClaims));
+
     const claimAmountInput = document.getElementById("affiliateClaimAmount");
     if (claimAmountInput) {
       claimAmountInput.max = String(this.toNumber(stats.availableToClaim, 0).toFixed(2));
       claimAmountInput.placeholder = this.toNumber(stats.availableToClaim, 0) > 0
         ? this.toNumber(stats.availableToClaim, 0).toFixed(2)
         : "0.00";
+      claimAmountInput.disabled = this.toNumber(stats.availableToClaim, 0) <= 0;
+    }
+
+    const claimNoteInput = document.getElementById("affiliateClaimNote");
+    if (claimNoteInput) {
+      claimNoteInput.disabled = this.toNumber(stats.availableToClaim, 0) <= 0;
+    }
+
+    const claimButton = document.getElementById("submitAffiliateClaimBtn");
+    if (claimButton) {
+      claimButton.disabled = this.toNumber(stats.availableToClaim, 0) <= 0;
+      if (this.toNumber(stats.availableToClaim, 0) <= 0) {
+        claimButton.textContent = "No Claimable Balance Available";
+      } else if (!claimButton.dataset.loading) {
+        claimButton.textContent = claimButton.dataset.defaultText || "Submit Claim Request";
+      }
+
+      if (!claimButton.dataset.defaultText) {
+        claimButton.dataset.defaultText = claimButton.textContent || "Submit Claim Request";
+      }
     }
 
     const claimAvailableEl = document.getElementById("affiliateClaimAvailableAmount");
     if (claimAvailableEl) {
       claimAvailableEl.textContent = this.formatMoney(stats.availableToClaim);
+    }
+
+    const claimReservedEl = document.getElementById("affiliateClaimReservedAmount");
+    if (claimReservedEl) {
+      claimReservedEl.textContent = this.formatMoney(stats.pendingClaims);
+    }
+
+    const claimHelperText = document.getElementById("affiliateClaimHelperText");
+    if (claimHelperText) {
+      claimHelperText.textContent = stats.pendingClaims > 0
+        ? "Pending and approved claim requests are temporarily reserved until reviewed or paid."
+        : "You can only submit up to your currently available claimable balance.";
     }
 
     const code = (profile && profile.referral_code) || "";
@@ -695,6 +774,7 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
         claimable: 0,
         pendingClaims: 0,
         approvedClaims: 0,
+        rejectedClaims: 0,
         availableToClaim: 0,
         paid: 0,
         recentCommissions: [],
@@ -765,6 +845,10 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
         .filter((item) => String(item.status || "").toLowerCase() === "approved")
         .reduce((sum, item) => sum + Number(item.amount || 0), 0);
 
+      const rejectedClaims = claimRows
+        .filter((item) => String(item.status || "").toLowerCase() === "rejected")
+        .reduce((sum, item) => sum + Number(item.amount || 0), 0);
+
       const availableToClaim = Math.max(claimable - pendingClaims, 0);
 
       return {
@@ -773,11 +857,12 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
         claimable: claimable,
         pendingClaims: pendingClaims,
         approvedClaims: approvedClaims,
+        rejectedClaims: rejectedClaims,
         availableToClaim: availableToClaim,
         paid: paid,
         recentCommissions: conversionRows.slice(0, 6),
-        payouts: payoutRows.slice(0, 6),
-        claims: claimRows.slice(0, 10)
+        payouts: payoutRows.slice(0, 10),
+        claims: claimRows.slice(0, 20)
       };
     } catch (error) {
       console.error(error);
@@ -787,6 +872,7 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
         claimable: 0,
         pendingClaims: 0,
         approvedClaims: 0,
+        rejectedClaims: 0,
         availableToClaim: 0,
         paid: 0,
         recentCommissions: [],
@@ -807,10 +893,14 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
 
     mount.innerHTML = rows
       .map((row) => {
+        const status = this.escapeHtml(row.commission_status || "pending");
+        const orderNumber = this.escapeHtml(row.order_number || "—");
+        const amount = this.formatMoney(row.commission_amount || 0);
+
         return (
           '<div class="affiliate-data-row">' +
-            "<span>Order #" + (row.order_number || "—") + " · " + (row.commission_status || "pending") + "</span>" +
-            "<strong>" + this.formatMoney(row.commission_amount || 0) + "</strong>" +
+            "<span>Order #" + orderNumber + " · " + status + "</span>" +
+            "<strong>" + amount + "</strong>" +
           "</div>"
         );
       })
@@ -828,10 +918,22 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
 
     mount.innerHTML = rows
       .map((row) => {
+        const statusLabel = this.getPayoutStatusLabel(row.payout_status);
+        const statusClass = this.getPayoutStatusClass(row.payout_status);
+        const method = row.payout_method ? " · " + this.escapeHtml(row.payout_method) : "";
+        const reference = row.payout_reference ? " · " + this.escapeHtml(row.payout_reference) : "";
+        const dateText = this.escapeHtml(this.formatDate(row.paid_at || row.created_at));
+        const amount = this.formatMoney(row.amount || 0);
+
         return (
-          '<div class="affiliate-data-row">' +
-            "<span>" + (row.payout_status || "pending") + " · " + this.formatDate(row.created_at) + "</span>" +
-            "<strong>" + this.formatMoney(row.amount || 0) + "</strong>" +
+          '<div class="affiliate-data-row affiliate-data-row--stacked">' +
+            '<div class="affiliate-data-row-main">' +
+              "<span>" + dateText + method + reference + "</span>" +
+              "<strong>" + amount + "</strong>" +
+            "</div>" +
+            '<div class="affiliate-data-row-sub">' +
+              '<span class="affiliate-status-badge ' + statusClass + '">' + statusLabel + "</span>" +
+            "</div>" +
           "</div>"
         );
       })
@@ -842,6 +944,22 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
     const mount = document.getElementById("affiliateClaimsList");
     if (!mount) return;
 
+    const summaryEl = document.getElementById("affiliateClaimsSummary");
+    if (summaryEl) {
+      if (!rows || !rows.length) {
+        summaryEl.textContent = "No claim requests submitted yet.";
+      } else {
+        const pendingCount = rows.filter((row) => {
+          const status = String(row.status || "").toLowerCase();
+          return status === "pending" || status === "approved";
+        }).length;
+
+        summaryEl.textContent = pendingCount > 0
+          ? "Pending and approved claim requests stay reserved until they are reviewed or paid."
+          : "Your past and current claim requests are shown below.";
+      }
+    }
+
     if (!rows || !rows.length) {
       mount.innerHTML = '<div class="affiliate-empty-state">No claim requests yet.</div>';
       return;
@@ -849,10 +967,22 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
 
     mount.innerHTML = rows
       .map((row) => {
+        const statusLabel = this.getClaimStatusLabel(row.status);
+        const statusClass = this.getClaimStatusClass(row.status);
+        const dateText = this.escapeHtml(this.formatDate(row.created_at));
+        const noteText = row.message ? this.escapeHtml(row.message) : "";
+        const amount = this.formatMoney(row.amount || 0);
+
         return (
-          '<div class="affiliate-data-row">' +
-            "<span>" + this.formatDate(row.created_at) + " · " + (row.status || "pending") + "</span>" +
-            "<strong>" + this.formatMoney(row.amount || 0) + "</strong>" +
+          '<div class="affiliate-data-row affiliate-data-row--stacked">' +
+            '<div class="affiliate-data-row-main">' +
+              "<span>" + dateText + "</span>" +
+              "<strong>" + amount + "</strong>" +
+            "</div>" +
+            '<div class="affiliate-data-row-sub">' +
+              '<span class="affiliate-status-badge ' + statusClass + '">' + statusLabel + "</span>" +
+              (noteText ? '<span class="affiliate-data-note">' + noteText + "</span>" : "") +
+            "</div>" +
           "</div>"
         );
       })
@@ -892,7 +1022,6 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
 
     const amount = this.toNumber(payload && payload.amount, 0);
     const note = payload && payload.note ? String(payload.note).trim() : "";
-    const discordContact = this.getSafeDiscordContact() || null;
 
     if (!amount || amount <= 0) {
       throw new Error("Enter a valid claim amount.");
@@ -903,30 +1032,10 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
       p_message: note || null
     };
 
-    try {
-      const rpcResponse = await window.axiomSupabase.rpc("affiliate_submit_claim_request", rpcPayload);
+    const rpcResponse = await window.axiomSupabase.rpc("affiliate_submit_claim_request", rpcPayload);
 
-      if (!rpcResponse.error) {
-        return true;
-      }
-
-      console.error("affiliate_submit_claim_request RPC failed, falling back to direct insert:", rpcResponse.error);
-    } catch (rpcError) {
-      console.error("affiliate_submit_claim_request RPC exception, falling back to direct insert:", rpcError);
-    }
-
-    const insertResponse = await window.axiomSupabase
-      .from("affiliate_claim_requests")
-      .insert({
-        affiliate_id: affiliateId,
-        amount: amount,
-        message: note || null,
-        discord_contact: discordContact,
-        status: "pending"
-      });
-
-    if (insertResponse.error) {
-      throw insertResponse.error;
+    if (rpcResponse.error) {
+      throw rpcResponse.error;
     }
 
     return true;
@@ -947,11 +1056,18 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
       return;
     }
 
-    const originalButtonText = claimButton ? claimButton.textContent : "";
+    if (claimButton && !claimButton.dataset.defaultText) {
+      claimButton.dataset.defaultText = claimButton.textContent || "Submit Claim Request";
+    }
+
+    const originalButtonText = claimButton
+      ? (claimButton.dataset.defaultText || claimButton.textContent || "Submit Claim Request")
+      : "Submit Claim Request";
 
     try {
       if (claimButton) {
         claimButton.disabled = true;
+        claimButton.dataset.loading = "true";
         claimButton.textContent = "Submitting...";
       }
 
@@ -991,11 +1107,30 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
       await this.renderDashboard();
     } catch (error) {
       console.error(error);
-      this.setMessage(error.message || "Claim request failed.", "error");
+
+      const rawMessage = String(error && error.message ? error.message : "Claim request failed.");
+      let friendlyMessage = rawMessage;
+
+      if (/only claim up to/i.test(rawMessage) || /exceeds available balance/i.test(rawMessage)) {
+        friendlyMessage = "You can only submit up to your currently available claimable balance.";
+      } else if (/not approved/i.test(rawMessage)) {
+        friendlyMessage = "Your affiliate account must be approved before you can submit claims.";
+      } else if (/signed in/i.test(rawMessage)) {
+        friendlyMessage = "You must be signed in to submit a claim.";
+      }
+
+      this.setMessage(friendlyMessage, "error");
     } finally {
       if (claimButton) {
         claimButton.disabled = false;
-        claimButton.textContent = originalButtonText || "Submit Claim Request";
+        delete claimButton.dataset.loading;
+        claimButton.textContent = originalButtonText;
+      }
+
+      const refreshedStats = await this.fetchStats();
+      if (claimButton && this.toNumber(refreshedStats.availableToClaim, 0) <= 0) {
+        claimButton.disabled = true;
+        claimButton.textContent = "No Claimable Balance Available";
       }
     }
   },
