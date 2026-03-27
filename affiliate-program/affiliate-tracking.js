@@ -7,6 +7,9 @@
   const VISITOR_COOKIE_KEY = "axiom_visitor_id";
   const SESSION_TTL_DAYS = 30;
 
+  const PENDING_CONVERSION_KEY = "axiom_pending_affiliate_conversion_order_id";
+  const PENDING_CONVERSION_SESSION_KEY = "axiom_pending_affiliate_conversion_order_id_session";
+
   let syncTimeoutId = null;
   let isSyncingCheckoutAttribution = false;
   let scheduledSyncAttempts = 0;
@@ -14,7 +17,28 @@
   const SYNC_RETRY_MS = 750;
 
   function getSupabase() {
-    return window.axiomSupabase || null;
+    return window.axiomSupabase || window.AXIOM_SUPABASE || window.supabaseClient || null;
+  }
+
+  function wait(ms) {
+    return new Promise(function (resolve) {
+      setTimeout(resolve, ms);
+    });
+  }
+
+  async function waitForSupabase(maxAttempts, delayMs) {
+    const attempts = Number(maxAttempts || 40);
+    const delay = Number(delayMs || 150);
+
+    for (let index = 0; index < attempts; index += 1) {
+      const supabase = getSupabase();
+      if (supabase) {
+        return supabase;
+      }
+      await wait(delay);
+    }
+
+    return null;
   }
 
   function generateUuidLike() {
@@ -805,6 +829,49 @@
     }
   }
 
+  function setPendingConversionOrderId(orderId) {
+    const cleanOrderId = String(orderId || "").trim();
+    if (!cleanOrderId) return;
+
+    try {
+      localStorage.setItem(PENDING_CONVERSION_KEY, cleanOrderId);
+    } catch (error) {
+      console.error("Failed storing pending affiliate conversion order id:", error);
+    }
+
+    try {
+      sessionStorage.setItem(PENDING_CONVERSION_SESSION_KEY, cleanOrderId);
+    } catch (error) {
+      console.error("Failed storing pending affiliate conversion session order id:", error);
+    }
+  }
+
+  function getPendingConversionOrderId() {
+    let orderId = "";
+
+    try {
+      orderId = localStorage.getItem(PENDING_CONVERSION_KEY) || "";
+    } catch (error) {}
+
+    if (!orderId) {
+      try {
+        orderId = sessionStorage.getItem(PENDING_CONVERSION_SESSION_KEY) || "";
+      } catch (error) {}
+    }
+
+    return String(orderId || "").trim();
+  }
+
+  function clearPendingConversionOrderId() {
+    try {
+      localStorage.removeItem(PENDING_CONVERSION_KEY);
+    } catch (error) {}
+
+    try {
+      sessionStorage.removeItem(PENDING_CONVERSION_SESSION_KEY);
+    } catch (error) {}
+  }
+
   async function syncConversionForOrder(orderId) {
     const supabase = getSupabase();
     if (!supabase || !orderId) return null;
@@ -824,6 +891,7 @@
       }
 
       if (!orderRow.affiliate_id || !orderRow.affiliate_code) {
+        clearPendingConversionOrderId();
         return null;
       }
 
@@ -866,8 +934,10 @@
 
         if (updateError) {
           console.error("Failed updating affiliate conversion:", updateError);
+          return null;
         }
 
+        clearPendingConversionOrderId();
         return true;
       }
 
@@ -911,9 +981,22 @@
         }
       }
 
+      clearPendingConversionOrderId();
       return true;
     } catch (error) {
       console.error("Affiliate conversion sync crashed:", error);
+      return null;
+    }
+  }
+
+  async function processPendingConversionIfNeeded() {
+    const pendingOrderId = getPendingConversionOrderId();
+    if (!pendingOrderId) return null;
+
+    try {
+      return await syncConversionForOrder(pendingOrderId);
+    } catch (error) {
+      console.error("Processing pending affiliate conversion failed:", error);
       return null;
     }
   }
@@ -1010,6 +1093,10 @@
           syncAttributionIntoCheckoutSession().catch(function (error) {
             console.error("Pageshow affiliate sync failed:", error);
           });
+
+          processPendingConversionIfNeeded().catch(function (error) {
+            console.error("Pageshow pending affiliate conversion sync failed:", error);
+          });
         });
     });
 
@@ -1038,6 +1125,8 @@
       const orderId = event && event.detail ? event.detail.orderId : null;
       if (!orderId) return;
 
+      setPendingConversionOrderId(orderId);
+
       syncConversionForOrder(orderId).catch(function (error) {
         console.error("Order-created affiliate conversion sync failed:", error);
       });
@@ -1053,13 +1142,17 @@
             syncAttributionIntoCheckoutSession().catch(function (error) {
               console.error("Visibility affiliate sync failed:", error);
             });
+
+            processPendingConversionIfNeeded().catch(function (error) {
+              console.error("Visibility pending affiliate conversion sync failed:", error);
+            });
           });
       }
     });
   }
 
   async function initAffiliateTracking() {
-    const supabase = getSupabase();
+    const supabase = await waitForSupabase(60, 150);
 
     if (!supabase) {
       console.warn("Affiliate tracking skipped: axiomSupabase is not available.");
@@ -1080,6 +1173,7 @@
       await hydrateAttributionFromCheckoutSession();
       bindAffiliateTrackingListeners();
       await syncAttributionIntoCheckoutSession();
+      await processPendingConversionIfNeeded();
       scheduleCheckoutAttributionSync();
     } catch (error) {
       console.error("Affiliate tracking init failed:", error);
@@ -1096,6 +1190,7 @@
     syncAttributionIntoCheckoutSession: syncAttributionIntoCheckoutSession,
     syncDiscountCodeIntoAffiliateAttribution: syncDiscountCodeIntoAffiliateAttribution,
     syncConversionForOrder: syncConversionForOrder,
+    processPendingConversionIfNeeded: processPendingConversionIfNeeded,
     storageKey: STORAGE_KEY,
     sessionStorageKey: SESSION_STORAGE_KEY,
     cookieKey: ATTR_COOKIE_KEY,
