@@ -10,6 +10,10 @@
     return Number.isFinite(num) ? num : fallback;
   }
 
+  function cleanText(value) {
+    return value == null ? "" : String(value).trim();
+  }
+
   function findAffiliateById(affiliateId) {
     return (state.affiliates || []).find(function (item) {
       return String(item.id) === String(affiliateId);
@@ -26,6 +30,48 @@
     if (state.selectedAffiliateId) {
       await actionsApi.openAffiliateDetails(state.selectedAffiliateId);
     }
+  }
+
+  function getClaimPaymentSummary(claim) {
+    const payoutMethod =
+      cleanText(claim?.payout_method) ||
+      cleanText(claim?.payoutMethod) ||
+      "manual";
+
+    const payoutNetwork =
+      cleanText(claim?.payout_network) ||
+      cleanText(claim?.payoutNetwork);
+
+    const payoutAddress =
+      cleanText(claim?.payout_address) ||
+      cleanText(claim?.payoutAddress);
+
+    const backupContact =
+      cleanText(claim?.backup_contact) ||
+      cleanText(claim?.backupContact) ||
+      cleanText(claim?.payout_contact) ||
+      cleanText(claim?.payoutContact);
+
+    const claimNote =
+      cleanText(claim?.message) ||
+      cleanText(claim?.notes);
+
+    const lines = [
+      "Payout method: " + payoutMethod,
+      payoutNetwork ? "Network: " + payoutNetwork : "",
+      payoutAddress ? "Address: " + payoutAddress : "",
+      backupContact ? "Backup contact: " + backupContact : "",
+      claimNote ? "Claim note: " + claimNote : ""
+    ].filter(Boolean);
+
+    return {
+      payoutMethod: payoutMethod,
+      payoutNetwork: payoutNetwork,
+      payoutAddress: payoutAddress,
+      backupContact: backupContact,
+      claimNote: claimNote,
+      detailsText: lines.join("\n")
+    };
   }
 
   const actions = {
@@ -235,39 +281,86 @@
 
       try {
         const claim = findClaimRequestById(claimId);
-        const affiliateId = claim?.affiliate_id || claim?.affiliateId || "";
 
-        if (typeof dataApi.markClaimPaid === "function") {
-          await dataApi.markClaimPaid(claimId);
-        } else if (typeof dataApi.updateClaimStatus === "function") {
-          await dataApi.updateClaimStatus(claimId, "paid");
-        } else {
-          throw new Error("Mark-paid payout API is not available.");
+        if (!claim) {
+          throw new Error("Payout request not found.");
         }
 
-        if (
-          affiliateId &&
-          typeof dataApi.recordPayout === "function" &&
-          claim &&
-          toNumber(claim.amount, 0) > 0
-        ) {
-          try {
+        const currentStatus = cleanText(claim.status).toLowerCase();
+        if (currentStatus === "paid") {
+          alert("This payout request is already marked paid.");
+          return;
+        }
+
+        const paymentSummary = getClaimPaymentSummary(claim);
+
+        const confirmed = window.confirm(
+          "Mark this payout request as paid?\n\n" +
+          paymentSummary.detailsText +
+          "\n\nThis will also create the payout history entry."
+        );
+
+        if (!confirmed) {
+          return;
+        }
+
+        let payoutMethod = paymentSummary.payoutMethod;
+        let payoutReference = cleanText(claim.payout_reference) || cleanText(claim.payoutAddress) || "";
+        let payoutNotes = paymentSummary.detailsText;
+
+        const customMethod = window.prompt(
+          "Payment method used for this payout:",
+          payoutMethod || "manual"
+        );
+        if (customMethod === null) {
+          return;
+        }
+        payoutMethod = cleanText(customMethod) || payoutMethod || "manual";
+
+        const customReference = window.prompt(
+          "Transaction hash / reference / wallet sent to:",
+          payoutReference || paymentSummary.payoutAddress || ""
+        );
+        if (customReference === null) {
+          return;
+        }
+        payoutReference = cleanText(customReference) || null;
+
+        const customNotes = window.prompt(
+          "Optional admin payout notes:",
+          payoutNotes || ""
+        );
+        if (customNotes === null) {
+          return;
+        }
+        payoutNotes = cleanText(customNotes) || payoutNotes || null;
+
+        if (typeof dataApi.markClaimPaid === "function") {
+          await dataApi.markClaimPaid(claimId, {
+            method: payoutMethod,
+            reference: payoutReference,
+            notes: payoutNotes
+          });
+        } else if (typeof dataApi.updateClaimStatus === "function") {
+          await dataApi.updateClaimStatus(claimId, "paid");
+
+          if (typeof dataApi.recordPayout === "function") {
             await dataApi.recordPayout({
-              affiliateId: affiliateId,
+              affiliateId: claim.affiliate_id || claim.affiliateId || "",
               amount: toNumber(claim.amount, 0),
-              method: claim.payout_method || claim.payoutMethod || "manual",
-              reference: claim.payout_reference || claim.payoutReference || `claim:${claimId}`,
-              notes: claim.notes || claim.message || "Recorded from affiliate claim request"
+              method: payoutMethod,
+              reference: payoutReference,
+              notes: payoutNotes
             });
-          } catch (payoutError) {
-            console.error("Claim was marked paid, but payout record insert failed:", payoutError);
           }
+        } else {
+          throw new Error("Mark-paid payout API is not available.");
         }
 
         await this.loadAffiliates();
         await refreshSelectedAffiliateDetails(this);
 
-        alert("Payout request marked paid.");
+        alert("Payout request marked paid and payout history recorded.");
       } catch (error) {
         console.error("Failed to mark payout request paid:", error);
         alert(error.message || "Failed to mark payout request paid.");
@@ -277,9 +370,9 @@
     recordPayout: async function recordPayout() {
       const affiliateId = document.getElementById("affiliatePayoutAffiliateId")?.value || "";
       const amount = toNumber(document.getElementById("affiliatePayoutAmount")?.value, 0);
-      const method = document.getElementById("affiliatePayoutMethod")?.value.trim() || "";
-      const reference = document.getElementById("affiliatePayoutReference")?.value.trim() || "";
-      const notes = document.getElementById("affiliatePayoutNotes")?.value.trim() || "";
+      const method = cleanText(document.getElementById("affiliatePayoutMethod")?.value || "");
+      const reference = cleanText(document.getElementById("affiliatePayoutReference")?.value || "");
+      const notes = cleanText(document.getElementById("affiliatePayoutNotes")?.value || "");
 
       if (!affiliateId) {
         alert("Missing affiliate.");
