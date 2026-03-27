@@ -365,3 +365,149 @@
     </div>
   </div>
 </div>
+
+<div
+  class="affiliates-admin-modal"
+  id="affiliatePayoutReviewModal"
+  hidden
+  aria-hidden="true"
+>
+  <div
+    class="affiliates-admin-modal-backdrop"
+    data-payout-review-close
+  ></div>
+
+  <div
+    class="affiliates-admin-modal-dialog affiliate-admin-payout-review-dialog"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="affiliatePayoutReviewTitle"
+  >
+    <div class="affiliates-admin-modal-header">
+      <div>
+        <p class="affiliates-admin-kicker">Payout Review</p>
+        <h3 class="affiliates-admin-modal-title" id="affiliatePayoutReviewTitle">Confirm Affiliate Payout</h3>
+      </div>
+
+      <button
+        type="button"
+        class="affiliates-admin-icon-btn"
+        data-payout-review-close
+        aria-label="Close payout review"
+      >
+        &times;
+      </button>
+    </div>
+
+    <div class="affiliates-admin-modal-body">
+      <div class="affiliates-admin-detail-card">
+        <h4>Payout Request Details</h4>
+
+        <div class="affiliates-admin-detail-list">
+          <div class="affiliates-admin-detail-row">
+            <span>Affiliate</span>
+            <strong id="affiliatePayoutReviewName">—</strong>
+          </div>
+
+          <div class="affiliates-admin-detail-row">
+            <span>Email</span>
+            <strong id="affiliatePayoutReviewEmail">—</strong>
+          </div>
+
+          <div class="affiliates-admin-detail-row">
+            <span>Discord</span>
+            <strong id="affiliatePayoutReviewDiscord">—</strong>
+          </div>
+
+          <div class="affiliates-admin-detail-row">
+            <span>Amount</span>
+            <strong id="affiliatePayoutReviewAmount">$0.00</strong>
+          </div>
+
+          <div class="affiliates-admin-detail-row">
+            <span>Payout Method</span>
+            <strong id="affiliatePayoutReviewMethod">—</strong>
+          </div>
+
+          <div class="affiliates-admin-detail-row">
+            <span>Network</span>
+            <strong id="affiliatePayoutReviewNetwork">—</strong>
+          </div>
+
+          <div class="affiliates-admin-detail-row">
+            <span>Contact</span>
+            <strong id="affiliatePayoutReviewContact">—</strong>
+          </div>
+
+          <div class="affiliates-admin-detail-row affiliates-admin-detail-row-full">
+            <span>Wallet / Address</span>
+            <div class="affiliates-admin-inline-copy">
+              <input
+                type="text"
+                id="affiliatePayoutReviewAddress"
+                class="affiliates-admin-copy-input"
+                readonly
+                value=""
+              />
+              <button
+                type="button"
+                class="affiliates-admin-btn affiliates-admin-btn-secondary"
+                id="affiliatePayoutCopyAddressBtn"
+              >
+                Copy
+              </button>
+            </div>
+          </div>
+
+          <div class="affiliates-admin-detail-row affiliates-admin-detail-row-full">
+            <span>Claim Note</span>
+            <strong id="affiliatePayoutReviewClaimNote">—</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="affiliates-admin-detail-card">
+        <h4>Confirm Payment</h4>
+
+        <div class="affiliates-admin-form-grid">
+          <div class="affiliates-admin-field affiliates-admin-field-full">
+            <label for="affiliatePayoutReviewTxId">Transaction ID / Hash</label>
+            <input
+              type="text"
+              id="affiliatePayoutReviewTxId"
+              placeholder="Paste transaction hash / tx id here"
+              autocomplete="off"
+            />
+          </div>
+
+          <div class="affiliates-admin-field affiliates-admin-field-full">
+            <label for="affiliatePayoutReviewNotes">Admin Notes</label>
+            <textarea
+              id="affiliatePayoutReviewNotes"
+              rows="4"
+              placeholder="Optional internal notes about this payout"
+            ></textarea>
+          </div>
+
+          <div class="affiliates-admin-form-actions">
+            <button
+              type="button"
+              class="affiliates-admin-btn affiliates-admin-btn-secondary"
+              data-payout-review-close
+            >
+              Cancel
+            </button>
+
+            <button
+              type="button"
+              class="affiliates-admin-btn affiliates-admin-btn-primary"
+              id="affiliatePayoutConfirmPaidBtn"
+            >
+              Confirm Mark Paid
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
