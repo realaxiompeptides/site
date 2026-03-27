@@ -205,6 +205,38 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
       .replace(/'/g, "&#039;");
   },
 
+  getSiteRootPath() {
+    let pathname = window.location.pathname || "/";
+
+    pathname = pathname.replace(/\/+$/, "");
+
+    pathname = pathname
+      .replace(/\/affiliate-program\/affiliate-dashboard\.html$/i, "")
+      .replace(/\/affiliate-program\/affiliate-program\.html$/i, "")
+      .replace(/affiliate-program\/affiliate-dashboard\.html$/i, "")
+      .replace(/affiliate-program\/affiliate-program\.html$/i, "");
+
+    if (!pathname) return "";
+
+    return pathname.endsWith("/") ? pathname.slice(0, -1) : pathname;
+  },
+
+  buildAffiliateUrl(customPath = "/") {
+    const code = (this.affiliateProfile && this.affiliateProfile.referral_code) || "";
+    if (!code) return "";
+
+    const origin = window.location.origin;
+    const siteRoot = this.getSiteRootPath();
+
+    let normalizedPath = String(customPath || "/").trim();
+    if (!normalizedPath) normalizedPath = "/";
+    if (!normalizedPath.startsWith("/")) {
+      normalizedPath = "/" + normalizedPath;
+    }
+
+    return origin + siteRoot + normalizedPath + "?ref=" + encodeURIComponent(code);
+  },
+
   setReferralCodeStatus(message, type) {
     const el = this.getReferralCodeStatusEl();
     if (!el) return;
@@ -229,16 +261,7 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
 
     const generatedLinkInput = document.getElementById("affiliateGeneratedLink");
     if (generatedLinkInput) {
-      const origin = window.location.origin;
-      const pathname = window.location.pathname;
-      const siteRoot = pathname
-        .replace("/affiliate-program/affiliate-program.html", "")
-        .replace("affiliate-program/affiliate-program.html", "");
-      const normalizedSiteRoot = siteRoot.endsWith("/") ? siteRoot.slice(0, -1) : siteRoot;
-
-      generatedLinkInput.value = cleanCode
-        ? origin + normalizedSiteRoot + "/?ref=" + encodeURIComponent(cleanCode)
-        : "";
+      generatedLinkInput.value = cleanCode ? this.buildAffiliateUrl("/") : "";
     }
   },
 
@@ -957,16 +980,8 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
           : "You can only submit up to your currently available claimable balance.";
     }
 
-    const code = (profile && profile.referral_code) || "";
-    const origin = window.location.origin;
-    const pathname = window.location.pathname;
-    const siteRoot = pathname
-      .replace("/affiliate-program/affiliate-program.html", "")
-      .replace("affiliate-program/affiliate-program.html", "");
-
-    const normalizedSiteRoot = siteRoot.endsWith("/") ? siteRoot.slice(0, -1) : siteRoot;
-    const defaultLink = code
-      ? origin + normalizedSiteRoot + "/?ref=" + encodeURIComponent(code)
+    const defaultLink = profile && profile.referral_code
+      ? this.buildAffiliateUrl("/")
       : "";
 
     const generatedLinkInput = document.getElementById("affiliateGeneratedLink");
@@ -1225,16 +1240,7 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
 
     if (!output || !code) return;
 
-    const origin = window.location.origin;
-    const siteRoot = window.location.pathname
-      .replace("/affiliate-program/affiliate-program.html", "")
-      .replace("affiliate-program/affiliate-program.html", "");
-    const normalizedRoot = siteRoot.endsWith("/") ? siteRoot.slice(0, -1) : siteRoot;
-    const normalizedPath = customPath
-      ? (customPath.startsWith("/") ? customPath : "/" + customPath)
-      : "/";
-
-    output.value = origin + normalizedRoot + normalizedPath + "?ref=" + encodeURIComponent(code);
+    output.value = this.buildAffiliateUrl(customPath || "/");
   },
 
   async submitClaimRequest(payload) {
