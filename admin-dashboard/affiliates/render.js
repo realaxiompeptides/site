@@ -7,6 +7,13 @@
     return Array.isArray(value) ? value : [];
   }
 
+  function safeText(value, fallback) {
+    if (value === undefined || value === null || value === "") {
+      return fallback;
+    }
+    return value;
+  }
+
   function getSummaryValue(summary, keys, fallback = 0) {
     for (let i = 0; i < keys.length; i += 1) {
       const key = keys[i];
@@ -22,6 +29,7 @@
 
     return Number(
       item.available_to_claim ??
+      item.availableToClaim ??
       item.claimable ??
       item.claimable_commission ??
       item.claimable_amount ??
@@ -35,6 +43,7 @@
     return Number(
       item.pending_claim_amount ??
       item.pending_claims_amount ??
+      item.reserved_claim_amount ??
       0
     ) || 0;
   }
@@ -116,6 +125,73 @@
     }).length;
   }
 
+  function getPayoutRequestAffiliate(row) {
+    return row?.affiliates || row?.affiliate || {};
+  }
+
+  function getClaimPaymentDetailsHtml(row) {
+    const payoutMethod = utils.escapeHtml(
+      safeText(row?.payout_method || row?.payoutMethod, "—")
+    );
+    const payoutNetwork = utils.escapeHtml(
+      safeText(row?.payout_network || row?.payoutNetwork, "—")
+    );
+    const payoutAddress = utils.escapeHtml(
+      safeText(row?.payout_address || row?.payoutAddress, "—")
+    );
+    const backupContact = utils.escapeHtml(
+      safeText(row?.backup_contact || row?.backupContact || row?.payout_contact || row?.payoutContact, "—")
+    );
+
+    return (
+      '<div class="affiliates-admin-detail-row"><span>Payout Method</span><strong>' + payoutMethod + "</strong></div>" +
+      '<div class="affiliates-admin-detail-row"><span>Network</span><strong>' + payoutNetwork + "</strong></div>" +
+      '<div class="affiliates-admin-detail-row"><span>Wallet / Address</span><strong>' + payoutAddress + "</strong></div>" +
+      '<div class="affiliates-admin-detail-row"><span>Backup Contact</span><strong>' + backupContact + "</strong></div>"
+    );
+  }
+
+  function getPayoutRequestActionsHtml(row) {
+    const claimId = utils.escapeHtml(row?.id || "");
+    const statusRaw = String(row?.status || "pending").trim().toLowerCase();
+
+    if (statusRaw === "pending") {
+      return (
+        '<div class="affiliates-admin-actions">' +
+          '<button type="button" class="affiliates-admin-action-btn affiliates-admin-action-btn-approve" data-claim-id="' + claimId + '" data-claim-status="approved">Approve</button>' +
+          '<button type="button" class="affiliates-admin-action-btn affiliates-admin-action-btn-reject" data-claim-id="' + claimId + '" data-claim-status="rejected">Reject</button>' +
+        "</div>"
+      );
+    }
+
+    if (statusRaw === "approved") {
+      return (
+        '<div class="affiliates-admin-actions">' +
+          '<button type="button" class="affiliates-admin-action-btn affiliates-admin-action-btn-approve" data-claim-id="' + claimId + '" data-claim-status="paid">Mark Paid</button>' +
+          '<button type="button" class="affiliates-admin-action-btn affiliates-admin-action-btn-reject" data-claim-id="' + claimId + '" data-claim-status="rejected">Reject</button>' +
+        "</div>"
+      );
+    }
+
+    if (statusRaw === "paid") {
+      return (
+        '<div class="affiliates-admin-actions">' +
+          '<button type="button" class="affiliates-admin-action-btn" data-claim-id="' + claimId + '" data-claim-status="approved">Mark Unpaid</button>' +
+        "</div>"
+      );
+    }
+
+    if (statusRaw === "rejected") {
+      return (
+        '<div class="affiliates-admin-actions">' +
+          '<button type="button" class="affiliates-admin-action-btn" data-claim-id="' + claimId + '" data-claim-status="approved">Restore</button>' +
+        "</div>"
+      );
+    }
+
+    return '<span class="affiliates-admin-muted">—</span>';
+  }
+
   function renderStats() {
     const dom = domApi.get();
     const summary = state.summary || {
@@ -148,8 +224,13 @@
       domApi.setHTML(dom.tableBody, '<tr><td colspan="10">Loading affiliates...</td></tr>');
     }
 
-    if (dom.payoutRequestsTableBody) {
-      domApi.setHTML(dom.payoutRequestsTableBody, '<tr><td colspan="6">Loading payout requests...</td></tr>');
+    const payoutRequestsTableBody =
+      dom.payoutRequestsTableBody ||
+      dom.payoutRequestsBody ||
+      document.getElementById("affiliatePayoutRequestsTableBody");
+
+    if (payoutRequestsTableBody) {
+      domApi.setHTML(payoutRequestsTableBody, '<tr><td colspan="6">Loading payout requests...</td></tr>');
     }
   }
 
@@ -165,9 +246,14 @@
       );
     }
 
-    if (dom.payoutRequestsTableBody) {
+    const payoutRequestsTableBody =
+      dom.payoutRequestsTableBody ||
+      dom.payoutRequestsBody ||
+      document.getElementById("affiliatePayoutRequestsTableBody");
+
+    if (payoutRequestsTableBody) {
       domApi.setHTML(
-        dom.payoutRequestsTableBody,
+        payoutRequestsTableBody,
         '<tr><td colspan="6">Failed to load payout requests: ' +
           utils.escapeHtml(message || "Unknown error") +
           "</td></tr>"
@@ -252,42 +338,19 @@
 
     tableBody.innerHTML = rows
       .map(function (row) {
-        const affiliate = row.affiliates || row.affiliate || {};
-        const claimId = utils.escapeHtml(row.id || "");
+        const affiliate = getPayoutRequestAffiliate(row);
         const statusRaw = String(row.status || "pending").trim().toLowerCase();
         const statusLabel = utils.escapeHtml(statusRaw || "pending");
-        const affiliateName = utils.escapeHtml(affiliate.full_name || affiliate.email || "—");
-        const affiliateEmail = utils.escapeHtml(affiliate.email || "—");
-        const amount = utils.formatCurrency(Number(row.amount || 0));
-        const createdAt = utils.formatDate(row.created_at);
         const statusClass = "affiliate-admin-status-" + statusRaw;
-
-        let actionsHtml = "";
-
-        if (statusRaw === "pending") {
-          actionsHtml =
-            '<div class="affiliates-admin-actions">' +
-              '<button type="button" class="affiliates-admin-action-btn affiliates-admin-action-btn-approve" data-claim-id="' + claimId + '" data-claim-status="approved">Approve</button>' +
-              '<button type="button" class="affiliates-admin-action-btn affiliates-admin-action-btn-reject" data-claim-id="' + claimId + '" data-claim-status="rejected">Reject</button>' +
-            "</div>";
-        } else if (statusRaw === "approved") {
-          actionsHtml =
-            '<div class="affiliates-admin-actions">' +
-              '<button type="button" class="affiliates-admin-action-btn affiliates-admin-action-btn-approve" data-claim-id="' + claimId + '" data-claim-status="paid">Mark Paid</button>' +
-              '<button type="button" class="affiliates-admin-action-btn affiliates-admin-action-btn-reject" data-claim-id="' + claimId + '" data-claim-status="rejected">Reject</button>' +
-            "</div>";
-        } else {
-          actionsHtml = '<span class="affiliates-admin-muted">—</span>';
-        }
 
         return (
           "<tr>" +
-            "<td>" + affiliateName + "</td>" +
-            "<td>" + affiliateEmail + "</td>" +
-            "<td>" + amount + "</td>" +
-            '<td><span class="affiliate-admin-status ' + statusClass + '">' + statusLabel + "</span></td>" +
-            "<td>" + createdAt + "</td>" +
-            "<td>" + actionsHtml + "</td>" +
+            "<td>" + utils.escapeHtml(affiliate.full_name || affiliate.email || "—") + "</td>" +
+            "<td>" + utils.escapeHtml(affiliate.email || "—") + "</td>" +
+            "<td>" + utils.formatCurrency(Number(row.amount || 0)) + "</td>" +
+            '<td><span class="affiliate-admin-status ' + statusClass + '">' + statusLabel + "</span></td>' +
+            "<td>" + utils.formatDate(row.created_at) + "</td>" +
+            "<td>" + getPayoutRequestActionsHtml(row) + "</td>" +
           "</tr>"
         );
       })
@@ -357,7 +420,6 @@
         ? '<div class="affiliates-admin-empty">No claim requests yet.</div>'
         : claims.map(function (row) {
             const rowStatus = String(row.status || "pending").trim().toLowerCase();
-
             let buttons = "";
 
             if (rowStatus === "pending") {
@@ -372,6 +434,16 @@
                   '<button type="button" class="affiliates-admin-action-btn affiliates-admin-action-btn-approve" data-claim-id="' + utils.escapeHtml(row.id) + '" data-claim-status="paid">Mark Paid</button>' +
                   '<button type="button" class="affiliates-admin-action-btn affiliates-admin-action-btn-reject" data-claim-id="' + utils.escapeHtml(row.id) + '" data-claim-status="rejected">Reject</button>' +
                 "</div>";
+            } else if (rowStatus === "paid") {
+              buttons =
+                '<div class="affiliates-admin-actions">' +
+                  '<button type="button" class="affiliates-admin-action-btn" data-claim-id="' + utils.escapeHtml(row.id) + '" data-claim-status="approved">Mark Unpaid</button>' +
+                "</div>";
+            } else if (rowStatus === "rejected") {
+              buttons =
+                '<div class="affiliates-admin-actions">' +
+                  '<button type="button" class="affiliates-admin-action-btn" data-claim-id="' + utils.escapeHtml(row.id) + '" data-claim-status="approved">Restore</button>' +
+                "</div>";
             }
 
             return (
@@ -383,6 +455,7 @@
                   '<div class="affiliates-admin-detail-row"><span>Created</span><strong>' + utils.formatDate(row.created_at) + "</strong></div>" +
                   '<div class="affiliates-admin-detail-row"><span>Updated</span><strong>' + utils.formatDate(row.updated_at) + "</strong></div>" +
                   '<div class="affiliates-admin-detail-row"><span>Message</span><strong>' + utils.escapeHtml(row.message || "—") + "</strong></div>" +
+                  getClaimPaymentDetailsHtml(row) +
                 "</div>" +
                 buttons +
               "</div>"
@@ -394,14 +467,21 @@
       payoutsMount.innerHTML = !payouts.length
         ? '<div class="affiliates-admin-empty">No payouts yet.</div>'
         : payouts.map(function (row) {
+            const payoutMethod = utils.escapeHtml(row.payout_method || "Payout");
+            const payoutStatus = utils.escapeHtml(row.payout_status || "pending");
+            const payoutReference = utils.escapeHtml(row.payout_reference || "—");
+            const payoutNotes = utils.escapeHtml(row.notes || "—");
+
             return (
-              '<div class="affiliates-admin-stack-row">' +
-                "<span>" +
-                  utils.escapeHtml(row.payout_method || "Payout") + " · " +
-                  utils.escapeHtml(row.payout_status || "pending") + " · " +
-                  utils.formatDate(row.created_at) +
-                "</span>" +
-                "<strong>" + utils.formatCurrency(row.amount || 0) + "</strong>" +
+              '<div class="affiliates-admin-detail-card">' +
+                '<div class="affiliates-admin-detail-list">' +
+                  '<div class="affiliates-admin-detail-row"><span>Amount</span><strong>' + utils.formatCurrency(row.amount || 0) + "</strong></div>" +
+                  '<div class="affiliates-admin-detail-row"><span>Method</span><strong>' + payoutMethod + "</strong></div>" +
+                  '<div class="affiliates-admin-detail-row"><span>Status</span><strong>' + payoutStatus + "</strong></div>" +
+                  '<div class="affiliates-admin-detail-row"><span>Reference</span><strong>' + payoutReference + "</strong></div>" +
+                  '<div class="affiliates-admin-detail-row"><span>Paid At</span><strong>' + utils.formatDate(row.paid_at || row.created_at) + "</strong></div>" +
+                  '<div class="affiliates-admin-detail-row"><span>Notes</span><strong>' + payoutNotes + "</strong></div>" +
+                "</div>" +
               "</div>"
             );
           }).join("");
