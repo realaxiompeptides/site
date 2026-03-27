@@ -13,8 +13,13 @@
     const dom = typeof domApi.cache === "function" ? domApi.cache() : {};
     actions.dom = dom;
 
-    if (!dom.tableBody) {
-      console.warn("Affiliate admin table body not found yet.");
+    const payoutRequestsTableBody =
+      dom.payoutRequestsTableBody ||
+      dom.payoutRequestsBody ||
+      document.getElementById("affiliatePayoutRequestsTableBody");
+
+    if (!dom.tableBody && !payoutRequestsTableBody) {
+      console.warn("Affiliate admin failed to boot: no affiliate table or payout request table found yet.");
       return;
     }
 
@@ -94,7 +99,8 @@
           event.target.closest("[data-affiliate-view]") ||
           event.target.closest("[data-action='view'][data-affiliate-id]");
 
-        const claimStatusBtn = event.target.closest("[data-claim-status]");
+        const claimStatusBtn = event.target.closest("[data-claim-status][data-claim-id]");
+
         const modalClose =
           event.target.closest("[data-affiliate-modal-close]") ||
           event.target.closest("#closeAffiliateDetailModal");
@@ -165,7 +171,12 @@
 
           if (!claimId || !claimStatus) return;
 
-          await actions.updateClaimStatus(claimId, claimStatus);
+          if (typeof actions.submitAffiliateClaimReview === "function") {
+            await actions.submitAffiliateClaimReview(claimId, claimStatus);
+          } else if (typeof actions.updateClaimStatus === "function") {
+            await actions.updateClaimStatus(claimId, claimStatus);
+          }
+
           return;
         }
 
@@ -191,6 +202,9 @@
       openAffiliateDetails: actions.openAffiliateDetails.bind(actions),
       closeModal: actions.closeModal.bind(actions),
       updateClaimStatus: actions.updateClaimStatus.bind(actions),
+      submitAffiliateClaimReview: actions.submitAffiliateClaimReview
+        ? actions.submitAffiliateClaimReview.bind(actions)
+        : null,
       recordPayout: actions.recordPayout.bind(actions),
       get affiliates() {
         return state.affiliates;
@@ -203,6 +217,9 @@
       },
       get selectedAffiliateId() {
         return state.selectedAffiliateId;
+      },
+      get payoutRequests() {
+        return state.payoutRequests || [];
       }
     };
 
