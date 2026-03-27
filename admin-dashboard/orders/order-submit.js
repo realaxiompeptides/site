@@ -113,17 +113,41 @@ window.AXIOM_ORDER_SUBMIT = {
         0
       );
 
-      if (String(commissionType || "").toLowerCase() === "percent") {
+      const cleanType = String(commissionType || "").toLowerCase();
+
+      if (cleanType === "percent") {
         return Number(
           ((commissionableAmount * Number(commissionValue || 0)) / 100).toFixed(2)
         );
       }
 
-      if (String(commissionType || "").toLowerCase() === "flat") {
+      if (cleanType === "fixed" || cleanType === "flat") {
         return Number(Math.max(Number(commissionValue || 0), 0).toFixed(2));
       }
 
       return 0;
+    }
+
+    function getCookie(name) {
+      try {
+        const encodedName = encodeURIComponent(name) + "=";
+        const parts = document.cookie ? document.cookie.split("; ") : [];
+
+        for (let i = 0; i < parts.length; i += 1) {
+          const part = parts[i];
+          if (part.indexOf(encodedName) === 0) {
+            return decodeURIComponent(part.substring(encodedName.length));
+          }
+        }
+
+        return "";
+      } catch (error) {
+        return "";
+      }
+    }
+
+    function normalizeAffiliateCode(value) {
+      return String(value || "").trim().toUpperCase();
     }
 
     function getBrowserAffiliateAttribution() {
@@ -136,7 +160,7 @@ window.AXIOM_ORDER_SUBMIT = {
           if (attribution && typeof attribution === "object") {
             return {
               affiliate_id: attribution.affiliate_id || null,
-              affiliate_code: attribution.affiliate_code || null,
+              affiliate_code: normalizeAffiliateCode(attribution.affiliate_code || ""),
               affiliate_click_id: attribution.affiliate_click_id || null,
               affiliate_referral_session_id: attribution.affiliate_referral_session_id || null,
               affiliate_landing_page: attribution.affiliate_landing_page || null,
@@ -156,15 +180,22 @@ window.AXIOM_ORDER_SUBMIT = {
         ) {
           return {
             affiliate_id: window.AXIOM_AFFILIATE_ATTRIBUTION.affiliate_id || null,
-            affiliate_code: window.AXIOM_AFFILIATE_ATTRIBUTION.affiliate_code || null,
+            affiliate_code: normalizeAffiliateCode(
+              window.AXIOM_AFFILIATE_ATTRIBUTION.affiliate_code || ""
+            ),
             affiliate_click_id: window.AXIOM_AFFILIATE_ATTRIBUTION.affiliate_click_id || null,
             affiliate_referral_session_id:
               window.AXIOM_AFFILIATE_ATTRIBUTION.affiliate_referral_session_id || null,
-            affiliate_landing_page: window.AXIOM_AFFILIATE_ATTRIBUTION.landing_page || null,
-            affiliate_discount_amount:
-              Number(window.AXIOM_AFFILIATE_ATTRIBUTION.affiliate_discount_amount || 0),
-            affiliate_commission_amount:
-              Number(window.AXIOM_AFFILIATE_ATTRIBUTION.affiliate_commission_amount || 0)
+            affiliate_landing_page:
+              window.AXIOM_AFFILIATE_ATTRIBUTION.affiliate_landing_page ||
+              window.AXIOM_AFFILIATE_ATTRIBUTION.landing_page ||
+              null,
+            affiliate_discount_amount: Number(
+              window.AXIOM_AFFILIATE_ATTRIBUTION.affiliate_discount_amount || 0
+            ),
+            affiliate_commission_amount: Number(
+              window.AXIOM_AFFILIATE_ATTRIBUTION.affiliate_commission_amount || 0
+            )
           };
         }
       } catch (error) {
@@ -178,10 +209,11 @@ window.AXIOM_ORDER_SUBMIT = {
           if (parsed && typeof parsed === "object") {
             return {
               affiliate_id: parsed.affiliate_id || null,
-              affiliate_code: parsed.affiliate_code || null,
+              affiliate_code: normalizeAffiliateCode(parsed.affiliate_code || ""),
               affiliate_click_id: parsed.affiliate_click_id || null,
               affiliate_referral_session_id: parsed.affiliate_referral_session_id || null,
-              affiliate_landing_page: parsed.landing_page || null,
+              affiliate_landing_page:
+                parsed.affiliate_landing_page || parsed.landing_page || null,
               affiliate_discount_amount: Number(parsed.affiliate_discount_amount || 0),
               affiliate_commission_amount: Number(parsed.affiliate_commission_amount || 0)
             };
@@ -191,21 +223,53 @@ window.AXIOM_ORDER_SUBMIT = {
         console.error("Failed to read local affiliate attribution:", error);
       }
 
+      try {
+        const raw = sessionStorage.getItem("axiom_affiliate_attribution_session");
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed && typeof parsed === "object") {
+            return {
+              affiliate_id: parsed.affiliate_id || null,
+              affiliate_code: normalizeAffiliateCode(parsed.affiliate_code || ""),
+              affiliate_click_id: parsed.affiliate_click_id || null,
+              affiliate_referral_session_id: parsed.affiliate_referral_session_id || null,
+              affiliate_landing_page:
+                parsed.affiliate_landing_page || parsed.landing_page || null,
+              affiliate_discount_amount: Number(parsed.affiliate_discount_amount || 0),
+              affiliate_commission_amount: Number(parsed.affiliate_commission_amount || 0)
+            };
+          }
+        }
+      } catch (error) {
+        console.error("Failed to read session affiliate attribution:", error);
+      }
+
+      try {
+        const cookieRaw = getCookie("axiom_affiliate_attribution");
+        if (cookieRaw) {
+          const parsed = JSON.parse(cookieRaw);
+          if (parsed && typeof parsed === "object") {
+            return {
+              affiliate_id: parsed.affiliate_id || null,
+              affiliate_code: normalizeAffiliateCode(parsed.affiliate_code || ""),
+              affiliate_click_id: parsed.affiliate_click_id || null,
+              affiliate_referral_session_id: parsed.affiliate_referral_session_id || null,
+              affiliate_landing_page:
+                parsed.affiliate_landing_page || parsed.landing_page || null,
+              affiliate_discount_amount: Number(parsed.affiliate_discount_amount || 0),
+              affiliate_commission_amount: Number(parsed.affiliate_commission_amount || 0)
+            };
+          }
+        }
+      } catch (error) {
+        console.error("Failed to read cookie affiliate attribution:", error);
+      }
+
       return null;
     }
 
     async function hydrateSessionAffiliateAttribution(sessionRow) {
       if (!sessionRow) return sessionRow;
-
-      const alreadyHasAffiliate =
-        sessionRow.affiliate_id ||
-        sessionRow.affiliate_code ||
-        sessionRow.affiliate_click_id ||
-        sessionRow.affiliate_referral_session_id;
-
-      if (alreadyHasAffiliate) {
-        return sessionRow;
-      }
 
       const browserAttribution = getBrowserAffiliateAttribution();
 
@@ -216,15 +280,65 @@ window.AXIOM_ORDER_SUBMIT = {
         return sessionRow;
       }
 
+      const mergedAffiliateId = sessionRow.affiliate_id || browserAttribution.affiliate_id || null;
+      const mergedAffiliateCode = normalizeAffiliateCode(
+        sessionRow.affiliate_code || browserAttribution.affiliate_code || ""
+      );
+      const mergedAffiliateClickId =
+        sessionRow.affiliate_click_id || browserAttribution.affiliate_click_id || null;
+      const mergedAffiliateReferralSessionId =
+        sessionRow.affiliate_referral_session_id ||
+        browserAttribution.affiliate_referral_session_id ||
+        null;
+      const mergedAffiliateLandingPage =
+        sessionRow.affiliate_landing_page || browserAttribution.affiliate_landing_page || null;
+
+      const alreadySynced =
+        String(sessionRow.affiliate_id || "") === String(mergedAffiliateId || "") &&
+        normalizeAffiliateCode(sessionRow.affiliate_code || "") === mergedAffiliateCode &&
+        String(sessionRow.affiliate_click_id || "") === String(mergedAffiliateClickId || "") &&
+        String(sessionRow.affiliate_referral_session_id || "") ===
+          String(mergedAffiliateReferralSessionId || "") &&
+        String(sessionRow.affiliate_landing_page || "") ===
+          String(mergedAffiliateLandingPage || "");
+
+      if (alreadySynced) {
+        return {
+          ...sessionRow,
+          affiliate_id: mergedAffiliateId,
+          affiliate_code: mergedAffiliateCode || null,
+          affiliate_click_id: mergedAffiliateClickId,
+          affiliate_referral_session_id: mergedAffiliateReferralSessionId,
+          affiliate_landing_page: mergedAffiliateLandingPage,
+          affiliate_discount_amount: Number(
+            sessionRow.affiliate_discount_amount ||
+              browserAttribution.affiliate_discount_amount ||
+              0
+          ),
+          affiliate_commission_amount: Number(
+            sessionRow.affiliate_commission_amount ||
+              browserAttribution.affiliate_commission_amount ||
+              0
+          )
+        };
+      }
+
       const patchPayload = {
-        affiliate_id: browserAttribution.affiliate_id || null,
-        affiliate_code: browserAttribution.affiliate_code || null,
-        affiliate_click_id: browserAttribution.affiliate_click_id || null,
-        affiliate_referral_session_id:
-          browserAttribution.affiliate_referral_session_id || null,
-        affiliate_landing_page: browserAttribution.affiliate_landing_page || null,
-        affiliate_discount_amount: Number(browserAttribution.affiliate_discount_amount || 0),
-        affiliate_commission_amount: Number(browserAttribution.affiliate_commission_amount || 0),
+        affiliate_id: mergedAffiliateId,
+        affiliate_code: mergedAffiliateCode || null,
+        affiliate_click_id: mergedAffiliateClickId,
+        affiliate_referral_session_id: mergedAffiliateReferralSessionId,
+        affiliate_landing_page: mergedAffiliateLandingPage,
+        affiliate_discount_amount: Number(
+          sessionRow.affiliate_discount_amount ||
+            browserAttribution.affiliate_discount_amount ||
+            0
+        ),
+        affiliate_commission_amount: Number(
+          sessionRow.affiliate_commission_amount ||
+            browserAttribution.affiliate_commission_amount ||
+            0
+        ),
         updated_at: nowIso,
         last_activity_at: nowIso
       };
@@ -251,8 +365,21 @@ window.AXIOM_ORDER_SUBMIT = {
 
       if (!sessionRow || !orderRow) return;
 
-      const affiliateId = orderRow.affiliate_id || sessionRow.affiliate_id || null;
-      const affiliateCode = orderRow.affiliate_code || sessionRow.affiliate_code || null;
+      const browserAttribution = getBrowserAffiliateAttribution();
+
+      const affiliateId =
+        orderRow.affiliate_id ||
+        sessionRow.affiliate_id ||
+        browserAttribution?.affiliate_id ||
+        null;
+
+      const affiliateCode =
+        normalizeAffiliateCode(
+          orderRow.affiliate_code ||
+            sessionRow.affiliate_code ||
+            browserAttribution?.affiliate_code ||
+            ""
+        ) || null;
 
       if (!affiliateId || !affiliateCode) {
         return;
@@ -290,10 +417,15 @@ window.AXIOM_ORDER_SUBMIT = {
         const conversionPayload = {
           affiliate_id: affiliateId,
           referral_code: affiliateCode,
-          affiliate_click_id: orderRow.affiliate_click_id || sessionRow.affiliate_click_id || null,
+          affiliate_click_id:
+            orderRow.affiliate_click_id ||
+            sessionRow.affiliate_click_id ||
+            browserAttribution?.affiliate_click_id ||
+            null,
           affiliate_referral_session_id:
             orderRow.affiliate_referral_session_id ||
             sessionRow.affiliate_referral_session_id ||
+            browserAttribution?.affiliate_referral_session_id ||
             null,
           checkout_session_id: orderRow.checkout_session_id || sessionRow.id || null,
           order_id: orderRow.id,
@@ -338,17 +470,20 @@ window.AXIOM_ORDER_SUBMIT = {
           }
         }
 
-        if (sessionRow.affiliate_referral_session_id || orderRow.affiliate_referral_session_id) {
+        const referralSessionId =
+          sessionRow.affiliate_referral_session_id ||
+          orderRow.affiliate_referral_session_id ||
+          browserAttribution?.affiliate_referral_session_id ||
+          null;
+
+        if (referralSessionId) {
           const { error: referralSessionUpdateError } = await supabase
             .from("affiliate_referral_sessions")
             .update({
               is_converted: true,
               updated_at: nowIso
             })
-            .eq(
-              "id",
-              orderRow.affiliate_referral_session_id || sessionRow.affiliate_referral_session_id
-            );
+            .eq("id", referralSessionId);
 
           if (referralSessionUpdateError) {
             console.error(
@@ -439,16 +574,33 @@ window.AXIOM_ORDER_SUBMIT = {
 
       if (existingOrder) {
         const existingOrderAffiliateCommissionAmount =
-          existingOrder.affiliate_id
+          existingOrder.affiliate_id || sessionRow.affiliate_id
             ? affiliateCommissionAmount
             : 0;
 
+        const existingOrderUpdatePayload = {
+          affiliate_id: existingOrder.affiliate_id || sessionRow.affiliate_id || null,
+          affiliate_code: existingOrder.affiliate_code || sessionRow.affiliate_code || null,
+          affiliate_click_id:
+            existingOrder.affiliate_click_id || sessionRow.affiliate_click_id || null,
+          affiliate_referral_session_id:
+            existingOrder.affiliate_referral_session_id ||
+            sessionRow.affiliate_referral_session_id ||
+            null,
+          affiliate_landing_page:
+            existingOrder.affiliate_landing_page || sessionRow.affiliate_landing_page || null,
+          affiliate_discount_amount: Number(
+            existingOrder.affiliate_discount_amount ||
+              sessionRow.affiliate_discount_amount ||
+              0
+          ),
+          affiliate_commission_amount: existingOrderAffiliateCommissionAmount,
+          updated_at: nowIso
+        };
+
         const { error: existingOrderCommissionUpdateError } = await supabase
           .from("orders")
-          .update({
-            affiliate_commission_amount: existingOrderAffiliateCommissionAmount,
-            updated_at: nowIso
-          })
+          .update(existingOrderUpdatePayload)
           .eq("id", existingOrder.id);
 
         if (existingOrderCommissionUpdateError) {
@@ -469,6 +621,12 @@ window.AXIOM_ORDER_SUBMIT = {
               extraPayload.fulfillment_status ||
               existingOrder.fulfillment_status ||
               "unfulfilled",
+            affiliate_id: sessionRow.affiliate_id || null,
+            affiliate_code: sessionRow.affiliate_code || null,
+            affiliate_click_id: sessionRow.affiliate_click_id || null,
+            affiliate_referral_session_id: sessionRow.affiliate_referral_session_id || null,
+            affiliate_landing_page: sessionRow.affiliate_landing_page || null,
+            affiliate_discount_amount: Number(sessionRow.affiliate_discount_amount || 0),
             affiliate_commission_amount: affiliateCommissionAmount,
             confirmed_at: nowIso,
             updated_at: nowIso,
@@ -490,7 +648,7 @@ window.AXIOM_ORDER_SUBMIT = {
           },
           orderRow: {
             ...existingOrder,
-            affiliate_commission_amount: existingOrderAffiliateCommissionAmount
+            ...existingOrderUpdatePayload
           }
         });
 
@@ -597,6 +755,12 @@ window.AXIOM_ORDER_SUBMIT = {
         session_status: extraPayload.session_status || "converted",
         payment_status: extraPayload.payment_status || "pending",
         fulfillment_status: extraPayload.fulfillment_status || "unfulfilled",
+        affiliate_id: sessionRow.affiliate_id || null,
+        affiliate_code: sessionRow.affiliate_code || null,
+        affiliate_click_id: sessionRow.affiliate_click_id || null,
+        affiliate_referral_session_id: sessionRow.affiliate_referral_session_id || null,
+        affiliate_landing_page: sessionRow.affiliate_landing_page || null,
+        affiliate_discount_amount: Number(sessionRow.affiliate_discount_amount || 0),
         affiliate_commission_amount: affiliateCommissionAmount,
         confirmed_at: nowIso,
         updated_at: nowIso,
