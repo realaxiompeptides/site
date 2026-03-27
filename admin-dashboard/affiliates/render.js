@@ -140,14 +140,20 @@
       safeText(row?.payout_address || row?.payoutAddress, "—")
     );
     const backupContact = utils.escapeHtml(
-      safeText(row?.backup_contact || row?.backupContact || row?.payout_contact || row?.payoutContact, "—")
+      safeText(
+        row?.backup_contact ||
+        row?.backupContact ||
+        row?.payout_contact ||
+        row?.payoutContact,
+        "—"
+      )
     );
 
     return (
-      '<div class="affiliates-admin-detail-row"><span>Payout Method</span><strong>' + payoutMethod + "</strong></div>" +
-      '<div class="affiliates-admin-detail-row"><span>Network</span><strong>' + payoutNetwork + "</strong></div>" +
-      '<div class="affiliates-admin-detail-row"><span>Wallet / Address</span><strong>' + payoutAddress + "</strong></div>" +
-      '<div class="affiliates-admin-detail-row"><span>Backup Contact</span><strong>' + backupContact + "</strong></div>"
+      '<div class="affiliates-admin-detail-row"><span>Payout Method</span><strong>' + payoutMethod + '</strong></div>' +
+      '<div class="affiliates-admin-detail-row"><span>Network</span><strong>' + payoutNetwork + '</strong></div>' +
+      '<div class="affiliates-admin-detail-row"><span>Wallet / Address</span><strong>' + payoutAddress + '</strong></div>' +
+      '<div class="affiliates-admin-detail-row"><span>Backup Contact</span><strong>' + backupContact + '</strong></div>'
     );
   }
 
@@ -230,7 +236,10 @@
       document.getElementById("affiliatePayoutRequestsTableBody");
 
     if (payoutRequestsTableBody) {
-      domApi.setHTML(payoutRequestsTableBody, '<tr><td colspan="6">Loading payout requests...</td></tr>');
+      domApi.setHTML(
+        payoutRequestsTableBody,
+        '<tr><td colspan="6">Loading payout requests...</td></tr>'
+      );
     }
   }
 
@@ -242,7 +251,7 @@
         dom.tableBody,
         '<tr><td colspan="10">Failed to load affiliates: ' +
           utils.escapeHtml(message || "Unknown error") +
-          "</td></tr>"
+          '</td></tr>'
       );
     }
 
@@ -256,7 +265,7 @@
         payoutRequestsTableBody,
         '<tr><td colspan="6">Failed to load payout requests: ' +
           utils.escapeHtml(message || "Unknown error") +
-          "</td></tr>"
+          '</td></tr>'
       );
     }
   }
@@ -290,25 +299,25 @@
           const pendingClaimRequests = getPendingClaimRequestCount(item);
 
           return (
-            "<tr>" +
-              "<td>" + utils.escapeHtml(item.full_name || "—") + "</td>" +
-              "<td>" + utils.escapeHtml(item.email || "—") + "</td>" +
-              "<td>" + utils.escapeHtml(item.discord_username || "—") + "</td>" +
-              '<td><span class="affiliate-admin-status ' + statusClass + '">' + statusValue + "</span></td>" +
-              "<td>" + utils.escapeHtml(item.referral_code || "—") + "</td>" +
-              "<td>" + clicks + "</td>" +
-              "<td>" + conversions + "</td>" +
-              "<td>" + utils.formatCurrency(claimable) + "</td>" +
-              "<td>" + pendingClaimRequests + "</td>" +
-              "<td>" +
+            '<tr>' +
+              '<td>' + utils.escapeHtml(item.full_name || "—") + '</td>' +
+              '<td>' + utils.escapeHtml(item.email || "—") + '</td>' +
+              '<td>' + utils.escapeHtml(item.discord_username || "—") + '</td>' +
+              '<td><span class="affiliate-admin-status ' + statusClass + '">' + statusValue + '</span></td>' +
+              '<td>' + utils.escapeHtml(item.referral_code || "—") + '</td>' +
+              '<td>' + clicks + '</td>' +
+              '<td>' + conversions + '</td>' +
+              '<td>' + utils.formatCurrency(claimable) + '</td>' +
+              '<td>' + pendingClaimRequests + '</td>' +
+              '<td>' +
                 '<div class="affiliates-admin-actions">' +
                   '<button type="button" class="affiliates-admin-action-btn" data-action="view" data-affiliate-id="' + utils.escapeHtml(item.id) + '">View</button>' +
                   '<button type="button" class="affiliates-admin-action-btn affiliates-admin-action-btn-approve" data-action="approve" data-affiliate-id="' + utils.escapeHtml(item.id) + '">Approve</button>' +
                   '<button type="button" class="affiliates-admin-action-btn affiliates-admin-action-btn-reject" data-action="reject" data-affiliate-id="' + utils.escapeHtml(item.id) + '">Reject</button>' +
                   '<button type="button" class="affiliates-admin-action-btn affiliates-admin-action-btn-suspend" data-action="suspend" data-affiliate-id="' + utils.escapeHtml(item.id) + '">Suspend</button>' +
-                "</div>" +
-              "</td>" +
-            "</tr>"
+                '</div>' +
+              '</td>' +
+            '</tr>'
           );
         })
         .join("")
@@ -344,14 +353,14 @@
         const statusClass = "affiliate-admin-status-" + statusRaw;
 
         return (
-          "<tr>" +
-            "<td>" + utils.escapeHtml(affiliate.full_name || affiliate.email || "—") + "</td>" +
-            "<td>" + utils.escapeHtml(affiliate.email || "—") + "</td>" +
-            "<td>" + utils.formatCurrency(Number(row.amount || 0)) + "</td>" +
-            '<td><span class="affiliate-admin-status ' + statusClass + '">' + statusLabel + "</span></td>' +
-            "<td>" + utils.formatDate(row.created_at) + "</td>" +
-            "<td>" + getPayoutRequestActionsHtml(row) + "</td>" +
-          "</tr>"
+          '<tr>' +
+            '<td>' + utils.escapeHtml(affiliate.full_name || affiliate.email || "—") + '</td>' +
+            '<td>' + utils.escapeHtml(affiliate.email || "—") + '</td>' +
+            '<td>' + utils.formatCurrency(Number(row.amount || 0)) + '</td>' +
+            '<td><span class="affiliate-admin-status ' + statusClass + '">' + statusLabel + '</span></td>' +
+            '<td>' + utils.formatDate(row.created_at) + '</td>' +
+            '<td>' + getPayoutRequestActionsHtml(row) + '</td>' +
+          '</tr>'
         );
       })
       .join("");
@@ -404,13 +413,13 @@
         : conversions.map(function (row) {
             return (
               '<div class="affiliates-admin-stack-row">' +
-                "<span>" +
-                  "Order #" + utils.escapeHtml(row.order_number || "—") + " · " +
-                  utils.escapeHtml(row.commission_status || "pending") + " · " +
+                '<span>' +
+                  'Order #' + utils.escapeHtml(row.order_number || "—") + ' · ' +
+                  utils.escapeHtml(row.commission_status || "pending") + ' · ' +
                   utils.formatDate(row.created_at) +
-                "</span>" +
-                "<strong>" + utils.formatCurrency(row.commission_amount || 0) + "</strong>" +
-              "</div>"
+                '</span>' +
+                '<strong>' + utils.formatCurrency(row.commission_amount || 0) + '</strong>' +
+              '</div>'
             );
           }).join("");
     }
@@ -427,38 +436,38 @@
                 '<div class="affiliates-admin-actions">' +
                   '<button type="button" class="affiliates-admin-action-btn affiliates-admin-action-btn-approve" data-claim-id="' + utils.escapeHtml(row.id) + '" data-claim-status="approved">Approve</button>' +
                   '<button type="button" class="affiliates-admin-action-btn affiliates-admin-action-btn-reject" data-claim-id="' + utils.escapeHtml(row.id) + '" data-claim-status="rejected">Reject</button>' +
-                "</div>";
+                '</div>';
             } else if (rowStatus === "approved") {
               buttons =
                 '<div class="affiliates-admin-actions">' +
                   '<button type="button" class="affiliates-admin-action-btn affiliates-admin-action-btn-approve" data-claim-id="' + utils.escapeHtml(row.id) + '" data-claim-status="paid">Mark Paid</button>' +
                   '<button type="button" class="affiliates-admin-action-btn affiliates-admin-action-btn-reject" data-claim-id="' + utils.escapeHtml(row.id) + '" data-claim-status="rejected">Reject</button>' +
-                "</div>";
+                '</div>';
             } else if (rowStatus === "paid") {
               buttons =
                 '<div class="affiliates-admin-actions">' +
                   '<button type="button" class="affiliates-admin-action-btn" data-claim-id="' + utils.escapeHtml(row.id) + '" data-claim-status="approved">Mark Unpaid</button>' +
-                "</div>";
+                '</div>';
             } else if (rowStatus === "rejected") {
               buttons =
                 '<div class="affiliates-admin-actions">' +
                   '<button type="button" class="affiliates-admin-action-btn" data-claim-id="' + utils.escapeHtml(row.id) + '" data-claim-status="approved">Restore</button>' +
-                "</div>";
+                '</div>';
             }
 
             return (
               '<div class="affiliates-admin-detail-card">' +
                 '<div class="affiliates-admin-detail-list">' +
-                  '<div class="affiliates-admin-detail-row"><span>Status</span><strong>' + utils.escapeHtml(row.status || "pending") + "</strong></div>" +
-                  '<div class="affiliates-admin-detail-row"><span>Amount</span><strong>' + utils.formatCurrency(row.amount || 0) + "</strong></div>" +
-                  '<div class="affiliates-admin-detail-row"><span>Discord</span><strong>' + utils.escapeHtml(row.discord_contact || "—") + "</strong></div>" +
-                  '<div class="affiliates-admin-detail-row"><span>Created</span><strong>' + utils.formatDate(row.created_at) + "</strong></div>" +
-                  '<div class="affiliates-admin-detail-row"><span>Updated</span><strong>' + utils.formatDate(row.updated_at) + "</strong></div>" +
-                  '<div class="affiliates-admin-detail-row"><span>Message</span><strong>' + utils.escapeHtml(row.message || "—") + "</strong></div>" +
+                  '<div class="affiliates-admin-detail-row"><span>Status</span><strong>' + utils.escapeHtml(row.status || "pending") + '</strong></div>' +
+                  '<div class="affiliates-admin-detail-row"><span>Amount</span><strong>' + utils.formatCurrency(row.amount || 0) + '</strong></div>' +
+                  '<div class="affiliates-admin-detail-row"><span>Discord</span><strong>' + utils.escapeHtml(row.discord_contact || "—") + '</strong></div>' +
+                  '<div class="affiliates-admin-detail-row"><span>Created</span><strong>' + utils.formatDate(row.created_at) + '</strong></div>' +
+                  '<div class="affiliates-admin-detail-row"><span>Updated</span><strong>' + utils.formatDate(row.updated_at) + '</strong></div>' +
+                  '<div class="affiliates-admin-detail-row"><span>Message</span><strong>' + utils.escapeHtml(row.message || "—") + '</strong></div>' +
                   getClaimPaymentDetailsHtml(row) +
-                "</div>" +
+                '</div>' +
                 buttons +
-              "</div>"
+              '</div>'
             );
           }).join("");
     }
@@ -475,14 +484,14 @@
             return (
               '<div class="affiliates-admin-detail-card">' +
                 '<div class="affiliates-admin-detail-list">' +
-                  '<div class="affiliates-admin-detail-row"><span>Amount</span><strong>' + utils.formatCurrency(row.amount || 0) + "</strong></div>" +
-                  '<div class="affiliates-admin-detail-row"><span>Method</span><strong>' + payoutMethod + "</strong></div>" +
-                  '<div class="affiliates-admin-detail-row"><span>Status</span><strong>' + payoutStatus + "</strong></div>" +
-                  '<div class="affiliates-admin-detail-row"><span>Reference</span><strong>' + payoutReference + "</strong></div>" +
-                  '<div class="affiliates-admin-detail-row"><span>Paid At</span><strong>' + utils.formatDate(row.paid_at || row.created_at) + "</strong></div>" +
-                  '<div class="affiliates-admin-detail-row"><span>Notes</span><strong>' + payoutNotes + "</strong></div>" +
-                "</div>" +
-              "</div>"
+                  '<div class="affiliates-admin-detail-row"><span>Amount</span><strong>' + utils.formatCurrency(row.amount || 0) + '</strong></div>' +
+                  '<div class="affiliates-admin-detail-row"><span>Method</span><strong>' + payoutMethod + '</strong></div>' +
+                  '<div class="affiliates-admin-detail-row"><span>Status</span><strong>' + payoutStatus + '</strong></div>' +
+                  '<div class="affiliates-admin-detail-row"><span>Reference</span><strong>' + payoutReference + '</strong></div>' +
+                  '<div class="affiliates-admin-detail-row"><span>Paid At</span><strong>' + utils.formatDate(row.paid_at || row.created_at) + '</strong></div>' +
+                  '<div class="affiliates-admin-detail-row"><span>Notes</span><strong>' + payoutNotes + '</strong></div>' +
+                '</div>' +
+              '</div>'
             );
           }).join("");
     }
