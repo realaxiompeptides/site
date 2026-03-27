@@ -202,7 +202,7 @@
       openAffiliateDetails: actions.openAffiliateDetails.bind(actions),
       closeModal: actions.closeModal.bind(actions),
       updateClaimStatus: actions.updateClaimStatus.bind(actions),
-      submitAffiliateClaimReview: actions.submitAffiliateClaimReview
+      submitAffiliateClaimReview: typeof actions.submitAffiliateClaimReview === "function"
         ? actions.submitAffiliateClaimReview.bind(actions)
         : null,
       recordPayout: actions.recordPayout.bind(actions),
@@ -229,4 +229,10 @@
   window.AXIOM_ADMIN_AFFILIATES_INIT = {
     boot: boot
   };
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", boot, { once: true });
+  } else {
+    boot();
+  }
 })();
