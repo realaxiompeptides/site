@@ -46,11 +46,13 @@
       cleanText(claim?.payout_address) ||
       cleanText(claim?.payoutAddress);
 
-    const backupContact =
-      cleanText(claim?.backup_contact) ||
-      cleanText(claim?.backupContact) ||
+    const payoutContact =
       cleanText(claim?.payout_contact) ||
       cleanText(claim?.payoutContact);
+
+    const discordContact =
+      cleanText(claim?.discord_contact) ||
+      cleanText(claim?.affiliates?.discord_username);
 
     const claimNote =
       cleanText(claim?.message) ||
@@ -60,7 +62,8 @@
       "Payout method: " + payoutMethod,
       payoutNetwork ? "Network: " + payoutNetwork : "",
       payoutAddress ? "Address: " + payoutAddress : "",
-      backupContact ? "Backup contact: " + backupContact : "",
+      payoutContact ? "Contact: " + payoutContact : "",
+      discordContact ? "Discord: " + discordContact : "",
       claimNote ? "Claim note: " + claimNote : ""
     ].filter(Boolean);
 
@@ -68,7 +71,8 @@
       payoutMethod: payoutMethod,
       payoutNetwork: payoutNetwork,
       payoutAddress: payoutAddress,
-      backupContact: backupContact,
+      payoutContact: payoutContact,
+      discordContact: discordContact,
       claimNote: claimNote,
       detailsText: lines.join("\n")
     };
@@ -98,11 +102,6 @@
 
     loadAffiliates: async function loadAffiliates() {
       this.dom = domApi.cache();
-
-      if (!this.dom.tableBody) {
-        console.warn("Affiliate admin table body not found.");
-        return;
-      }
 
       try {
         state.setLoading(true);
@@ -238,10 +237,6 @@
       if (!claimId) return;
 
       try {
-        if (typeof dataApi.updateClaimStatus !== "function") {
-          throw new Error("Claim approval API is not available.");
-        }
-
         await dataApi.updateClaimStatus(claimId, "approved");
         await this.loadAffiliates();
         await refreshSelectedAffiliateDetails(this);
@@ -257,10 +252,6 @@
       if (!claimId) return;
 
       try {
-        if (typeof dataApi.updateClaimStatus !== "function") {
-          throw new Error("Claim rejection API is not available.");
-        }
-
         await dataApi.updateClaimStatus(claimId, "rejected");
         await this.loadAffiliates();
         await refreshSelectedAffiliateDetails(this);
@@ -297,65 +288,36 @@
         const confirmed = window.confirm(
           "Mark this payout request as paid?\n\n" +
           paymentSummary.detailsText +
-          "\n\nThis will also create the payout history entry."
+          "\n\nAfter you confirm, the payout will be saved and the popup will close."
         );
 
         if (!confirmed) {
           return;
         }
 
-        let payoutMethod = paymentSummary.payoutMethod;
-        let payoutReference = cleanText(claim.payout_reference) || cleanText(claim.payoutAddress) || "";
-        let payoutNotes = paymentSummary.detailsText;
-
         const customMethod = window.prompt(
-          "Payment method used for this payout:",
-          payoutMethod || "manual"
+          "Payment method used:",
+          paymentSummary.payoutMethod || "manual"
         );
-        if (customMethod === null) {
-          return;
-        }
-        payoutMethod = cleanText(customMethod) || payoutMethod || "manual";
+        if (customMethod === null) return;
 
         const customReference = window.prompt(
           "Transaction hash / reference / wallet sent to:",
-          payoutReference || paymentSummary.payoutAddress || ""
+          paymentSummary.payoutAddress || ""
         );
-        if (customReference === null) {
-          return;
-        }
-        payoutReference = cleanText(customReference) || null;
+        if (customReference === null) return;
 
         const customNotes = window.prompt(
           "Optional admin payout notes:",
-          payoutNotes || ""
+          paymentSummary.detailsText || ""
         );
-        if (customNotes === null) {
-          return;
-        }
-        payoutNotes = cleanText(customNotes) || payoutNotes || null;
+        if (customNotes === null) return;
 
-        if (typeof dataApi.markClaimPaid === "function") {
-          await dataApi.markClaimPaid(claimId, {
-            method: payoutMethod,
-            reference: payoutReference,
-            notes: payoutNotes
-          });
-        } else if (typeof dataApi.updateClaimStatus === "function") {
-          await dataApi.updateClaimStatus(claimId, "paid");
-
-          if (typeof dataApi.recordPayout === "function") {
-            await dataApi.recordPayout({
-              affiliateId: claim.affiliate_id || claim.affiliateId || "",
-              amount: toNumber(claim.amount, 0),
-              method: payoutMethod,
-              reference: payoutReference,
-              notes: payoutNotes
-            });
-          }
-        } else {
-          throw new Error("Mark-paid payout API is not available.");
-        }
+        await dataApi.markClaimPaid(claimId, {
+          method: cleanText(customMethod) || paymentSummary.payoutMethod || "manual",
+          reference: cleanText(customReference) || null,
+          notes: cleanText(customNotes) || paymentSummary.detailsText || null
+        });
 
         await this.loadAffiliates();
         await refreshSelectedAffiliateDetails(this);
@@ -364,6 +326,42 @@
       } catch (error) {
         console.error("Failed to mark payout request paid:", error);
         alert(error.message || "Failed to mark payout request paid.");
+      }
+    },
+
+    markPayoutRequestUnpaid: async function markPayoutRequestUnpaid(claimId) {
+      if (!claimId) return;
+
+      try {
+        const claim = findClaimRequestById(claimId);
+
+        if (!claim) {
+          throw new Error("Payout request not found.");
+        }
+
+        const currentStatus = cleanText(claim.status).toLowerCase();
+        if (currentStatus !== "paid") {
+          throw new Error("Only paid claim requests can be changed back.");
+        }
+
+        const confirmed = window.confirm(
+          "Mark this payout request as unpaid?\n\n" +
+          "This will change the claim back to approved and cancel the matching payout history row."
+        );
+
+        if (!confirmed) {
+          return;
+        }
+
+        await dataApi.markClaimUnpaid(claimId);
+
+        await this.loadAffiliates();
+        await refreshSelectedAffiliateDetails(this);
+
+        alert("Payout request moved back to approved.");
+      } catch (error) {
+        console.error("Failed to mark payout request unpaid:", error);
+        alert(error.message || "Failed to mark payout request unpaid.");
       }
     },
 
@@ -401,10 +399,6 @@
       }
 
       try {
-        if (typeof dataApi.recordPayout !== "function") {
-          throw new Error("Record payout API is not available.");
-        }
-
         await dataApi.recordPayout({
           affiliateId: affiliateId,
           amount: amount,
@@ -437,16 +431,19 @@
 
       try {
         if (nextStatus === "approved") {
+          const claim = findClaimRequestById(claimId);
+          const currentStatus = cleanText(claim?.status).toLowerCase();
+
+          if (currentStatus === "paid") {
+            await this.markPayoutRequestUnpaid(claimId);
+            return;
+          }
+
           await this.approvePayoutRequest(claimId);
           return;
         }
 
-        if (nextStatus === "rejected") {
-          await this.rejectPayoutRequest(claimId);
-          return;
-        }
-
-        if (nextStatus === "denied") {
+        if (nextStatus === "rejected" || nextStatus === "denied") {
           await this.rejectPayoutRequest(claimId);
           return;
         }
