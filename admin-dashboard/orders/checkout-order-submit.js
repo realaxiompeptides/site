@@ -2,7 +2,9 @@ document.addEventListener("DOMContentLoaded", function () {
   const form = document.getElementById("checkoutForm");
   if (!form) return;
 
-  const THANK_YOU_BASE_URL = "https://realaxiompeptides.github.io/site/thank-you/thank-you.html";
+  const THANK_YOU_BASE_URL = window.location.hostname.includes("github.io")
+    ? "https://realaxiompeptides.github.io/site/thank-you/thank-you.html"
+    : `${window.location.origin}/thank-you/thank-you.html`;
 
   function normalizeCartItems(items) {
     if (!Array.isArray(items)) return [];
