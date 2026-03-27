@@ -75,6 +75,34 @@
       });
     }
 
+    const payoutReviewModal = document.getElementById("affiliatePayoutReviewModal");
+    const payoutReviewConfirmBtn = document.getElementById("affiliatePayoutConfirmPaidBtn");
+    const payoutReviewCopyBtn = document.getElementById("affiliatePayoutCopyAddressBtn");
+
+    if (payoutReviewConfirmBtn && !payoutReviewConfirmBtn.dataset.bound) {
+      payoutReviewConfirmBtn.dataset.bound = "true";
+      payoutReviewConfirmBtn.addEventListener("click", async function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+
+        if (typeof actions.confirmPayoutReviewPaid === "function") {
+          await actions.confirmPayoutReviewPaid();
+        }
+      });
+    }
+
+    if (payoutReviewCopyBtn && !payoutReviewCopyBtn.dataset.bound) {
+      payoutReviewCopyBtn.dataset.bound = "true";
+      payoutReviewCopyBtn.addEventListener("click", async function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+
+        if (typeof actions.copyPayoutAddress === "function") {
+          await actions.copyPayoutAddress();
+        }
+      });
+    }
+
     if (!document.body.dataset.affiliateAdminDelegated) {
       document.body.dataset.affiliateAdminDelegated = "true";
 
@@ -104,6 +132,13 @@
         const modalClose =
           event.target.closest("[data-affiliate-modal-close]") ||
           event.target.closest("#closeAffiliateDetailModal");
+
+        const payoutReviewClose =
+          event.target.closest("[data-affiliate-payout-review-close]") ||
+          event.target.closest("#closeAffiliatePayoutReviewModal");
+
+        const payoutReviewBackdrop =
+          event.target.closest("#affiliatePayoutReviewModal [data-affiliate-payout-review-close]");
 
         if (refreshBtn || refreshTopBtn || refreshSidebarBtn) {
           event.preventDefault();
@@ -180,6 +215,17 @@
           return;
         }
 
+        if (payoutReviewClose || payoutReviewBackdrop) {
+          event.preventDefault();
+          event.stopPropagation();
+
+          if (typeof actions.closePayoutReviewModal === "function") {
+            actions.closePayoutReviewModal();
+          }
+
+          return;
+        }
+
         if (modalClose) {
           event.preventDefault();
           event.stopPropagation();
@@ -189,6 +235,11 @@
 
       document.addEventListener("keydown", function (event) {
         if (event.key === "Escape") {
+          if (payoutReviewModal && !payoutReviewModal.hidden && typeof actions.closePayoutReviewModal === "function") {
+            actions.closePayoutReviewModal();
+            return;
+          }
+
           actions.closeModal();
         }
       });
@@ -202,9 +253,22 @@
       openAffiliateDetails: actions.openAffiliateDetails.bind(actions),
       closeModal: actions.closeModal.bind(actions),
       updateClaimStatus: actions.updateClaimStatus.bind(actions),
-      submitAffiliateClaimReview: typeof actions.submitAffiliateClaimReview === "function"
-        ? actions.submitAffiliateClaimReview.bind(actions)
-        : null,
+      submitAffiliateClaimReview:
+        typeof actions.submitAffiliateClaimReview === "function"
+          ? actions.submitAffiliateClaimReview.bind(actions)
+          : null,
+      confirmPayoutReviewPaid:
+        typeof actions.confirmPayoutReviewPaid === "function"
+          ? actions.confirmPayoutReviewPaid.bind(actions)
+          : null,
+      closePayoutReviewModal:
+        typeof actions.closePayoutReviewModal === "function"
+          ? actions.closePayoutReviewModal.bind(actions)
+          : null,
+      copyPayoutAddress:
+        typeof actions.copyPayoutAddress === "function"
+          ? actions.copyPayoutAddress.bind(actions)
+          : null,
       recordPayout: actions.recordPayout.bind(actions),
       get affiliates() {
         return state.affiliates;
