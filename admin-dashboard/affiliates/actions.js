@@ -33,6 +33,8 @@
   }
 
   function getClaimPaymentSummary(claim) {
+    const affiliate = claim?.affiliates || claim?.affiliate || {};
+
     const payoutMethod =
       cleanText(claim?.payout_method) ||
       cleanText(claim?.payoutMethod) ||
@@ -48,17 +50,36 @@
 
     const payoutContact =
       cleanText(claim?.payout_contact) ||
-      cleanText(claim?.payoutContact);
+      cleanText(claim?.payoutContact) ||
+      cleanText(claim?.backup_contact) ||
+      cleanText(claim?.backupContact);
 
     const discordContact =
       cleanText(claim?.discord_contact) ||
-      cleanText(claim?.affiliates?.discord_username);
+      cleanText(affiliate?.discord_username);
 
     const claimNote =
       cleanText(claim?.message) ||
       cleanText(claim?.notes);
 
+    const affiliateName =
+      cleanText(affiliate?.full_name) ||
+      cleanText(claim?.full_name) ||
+      "—";
+
+    const affiliateEmail =
+      cleanText(affiliate?.email) ||
+      cleanText(claim?.email) ||
+      "—";
+
+    const amount = toNumber(claim?.amount, 0);
+
     const lines = [
+      "Affiliate: " + affiliateName,
+      affiliateEmail ? "Email: " + affiliateEmail : "",
+      "Amount: " + (window.AXIOM_ADMIN_AFFILIATES_UTILS?.formatCurrency
+        ? window.AXIOM_ADMIN_AFFILIATES_UTILS.formatCurrency(amount)
+        : "$" + amount.toFixed(2)),
       "Payout method: " + payoutMethod,
       payoutNetwork ? "Network: " + payoutNetwork : "",
       payoutAddress ? "Address: " + payoutAddress : "",
@@ -68,6 +89,9 @@
     ].filter(Boolean);
 
     return {
+      affiliateName: affiliateName,
+      affiliateEmail: affiliateEmail,
+      amount: amount,
       payoutMethod: payoutMethod,
       payoutNetwork: payoutNetwork,
       payoutAddress: payoutAddress,
@@ -80,6 +104,26 @@
 
   const actions = {
     dom: null,
+    pendingPayoutReviewClaimId: null,
+
+    getPayoutReviewModalElements: function getPayoutReviewModalElements() {
+      return {
+        modal: document.getElementById("affiliatePayoutReviewModal"),
+        affiliate: document.getElementById("affiliatePayoutReviewAffiliate"),
+        email: document.getElementById("affiliatePayoutReviewEmail"),
+        discord: document.getElementById("affiliatePayoutReviewDiscord"),
+        amount: document.getElementById("affiliatePayoutReviewAmount"),
+        method: document.getElementById("affiliatePayoutReviewMethod"),
+        network: document.getElementById("affiliatePayoutReviewNetwork"),
+        address: document.getElementById("affiliatePayoutReviewAddress"),
+        contact: document.getElementById("affiliatePayoutReviewContact"),
+        note: document.getElementById("affiliatePayoutReviewNote"),
+        txid: document.getElementById("affiliatePayoutReviewTxId"),
+        notes: document.getElementById("affiliatePayoutReviewNotes"),
+        copyAddressBtn: document.getElementById("affiliatePayoutCopyAddressBtn"),
+        confirmBtn: document.getElementById("affiliatePayoutConfirmPaidBtn")
+      };
+    },
 
     applyFilters: function applyFilters() {
       const dom = this.dom || domApi.get();
@@ -218,6 +262,162 @@
       document.body.style.overflow = "";
     },
 
+    openPayoutReviewModal: function openPayoutReviewModal(claimId) {
+      const claim = findClaimRequestById(claimId);
+
+      if (!claim) {
+        throw new Error("Payout request not found.");
+      }
+
+      const summary = getClaimPaymentSummary(claim);
+      const els = this.getPayoutReviewModalElements();
+
+      this.pendingPayoutReviewClaimId = claimId;
+
+      if (!els.modal) {
+        return false;
+      }
+
+      if (els.affiliate) els.affiliate.textContent = summary.affiliateName || "—";
+      if (els.email) els.email.textContent = summary.affiliateEmail || "—";
+      if (els.discord) els.discord.textContent = summary.discordContact || "—";
+      if (els.amount) els.amount.textContent = utils.formatCurrency(summary.amount || 0);
+      if (els.method) els.method.textContent = summary.payoutMethod || "manual";
+      if (els.network) els.network.textContent = summary.payoutNetwork || "—";
+      if (els.address) els.address.textContent = summary.payoutAddress || "—";
+      if (els.contact) els.contact.textContent = summary.payoutContact || "—";
+      if (els.note) els.note.textContent = summary.claimNote || "—";
+
+      if (els.txid) {
+        els.txid.value = cleanText(claim?.payout_reference) || "";
+      }
+
+      if (els.notes) {
+        els.notes.value = summary.detailsText || "";
+      }
+
+      if (els.copyAddressBtn) {
+        els.copyAddressBtn.disabled = !summary.payoutAddress;
+        els.copyAddressBtn.setAttribute("data-copy-value", summary.payoutAddress || "");
+      }
+
+      els.modal.hidden = false;
+      els.modal.style.display = "block";
+      els.modal.style.pointerEvents = "auto";
+      els.modal.setAttribute("aria-hidden", "false");
+
+      return true;
+    },
+
+    closePayoutReviewModal: function closePayoutReviewModal() {
+      const els = this.getPayoutReviewModalElements();
+
+      this.pendingPayoutReviewClaimId = null;
+
+      if (els.txid) {
+        els.txid.value = "";
+      }
+
+      if (els.notes) {
+        els.notes.value = "";
+      }
+
+      if (els.modal) {
+        els.modal.hidden = true;
+        els.modal.style.display = "";
+        els.modal.style.pointerEvents = "";
+        els.modal.setAttribute("aria-hidden", "true");
+      }
+    },
+
+    copyPayoutAddress: async function copyPayoutAddress() {
+      const els = this.getPayoutReviewModalElements();
+      const value =
+        cleanText(els.copyAddressBtn?.getAttribute("data-copy-value")) ||
+        cleanText(els.address?.textContent);
+
+      if (!value || value === "—") {
+        alert("No payout address to copy.");
+        return;
+      }
+
+      try {
+        await navigator.clipboard.writeText(value);
+
+        if (els.copyAddressBtn) {
+          const original = els.copyAddressBtn.textContent;
+          els.copyAddressBtn.textContent = "Copied";
+          setTimeout(function () {
+            els.copyAddressBtn.textContent = original || "Copy Address";
+          }, 1200);
+        }
+      } catch (error) {
+        console.error("Failed to copy payout address:", error);
+        alert("Failed to copy address.");
+      }
+    },
+
+    confirmPayoutReviewPaid: async function confirmPayoutReviewPaid() {
+      const claimId = this.pendingPayoutReviewClaimId;
+
+      if (!claimId) {
+        alert("No payout request selected.");
+        return;
+      }
+
+      try {
+        const claim = findClaimRequestById(claimId);
+
+        if (!claim) {
+          throw new Error("Payout request not found.");
+        }
+
+        const currentStatus = cleanText(claim.status).toLowerCase();
+        if (currentStatus === "paid") {
+          alert("This payout request is already marked paid.");
+          this.closePayoutReviewModal();
+          return;
+        }
+
+        const summary = getClaimPaymentSummary(claim);
+        const els = this.getPayoutReviewModalElements();
+
+        const payoutMethod =
+          cleanText(els.method?.textContent) ||
+          summary.payoutMethod ||
+          "manual";
+
+        const payoutReference =
+          cleanText(els.txid?.value) ||
+          summary.payoutAddress ||
+          null;
+
+        const payoutNotes =
+          cleanText(els.notes?.value) ||
+          summary.detailsText ||
+          null;
+
+        if (!window.confirm("Confirm mark paid and save payout history?")) {
+          return;
+        }
+
+        await dataApi.markClaimPaid(claimId, {
+          method: payoutMethod,
+          reference: payoutReference,
+          notes: payoutNotes
+        });
+
+        this.closePayoutReviewModal();
+        await this.loadAffiliates();
+        await refreshSelectedAffiliateDetails(this);
+
+        alert("Payout request marked paid and payout history recorded.");
+      } catch (error) {
+        console.error("Failed to confirm payout review:", error);
+        alert(error.message || "Failed to mark payout request paid.");
+      }
+    },
+
     updateClaimStatus: async function updateClaimStatus(claimId, status) {
       if (!claimId || !status) return;
 
@@ -283,12 +483,18 @@
           return;
         }
 
+        const modalOpened = this.openPayoutReviewModal(claimId);
+
+        if (modalOpened) {
+          return;
+        }
+
         const paymentSummary = getClaimPaymentSummary(claim);
 
         const confirmed = window.confirm(
           "Mark this payout request as paid?\n\n" +
           paymentSummary.detailsText +
-          "\n\nAfter you confirm, the payout will be saved and the popup will close."
+          "\n\nAfter you confirm, the payout will be saved."
         );
 
         if (!confirmed) {
