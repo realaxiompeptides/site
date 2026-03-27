@@ -601,3 +601,28 @@
     padding: 18px 16px;
   }
 }
+
+.catalog-sort-wrap {
+  position: relative;
+}
+
+.catalog-sort-wrap::after {
+  content: "\f078";
+  font-family: "Font Awesome 6 Free";
+  font-weight: 900;
+  position: absolute;
+  right: 18px;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+  color: #0f172a;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.catalog-sort-select {
+  -webkit-appearance: none;
+  appearance: none;
+  padding-right: 48px;
+  background-image: none !important;
+}
