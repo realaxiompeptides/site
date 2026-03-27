@@ -7,18 +7,67 @@
     return window.axiomSupabase;
   }
 
-  function toNumber(value, fallback) {
+  function toNumber(value, fallback = 0) {
     const num = Number(value);
     return Number.isFinite(num) ? num : fallback;
   }
 
   function normalizeText(value) {
-    return value == null ? null : String(value).trim() || null;
+    if (value == null) return null;
+    const clean = String(value).trim();
+    return clean ? clean : null;
   }
 
-  function normalizeStatus(value, fallback) {
+  function normalizeStatus(value, fallback = "") {
     const clean = String(value || "").trim().toLowerCase();
     return clean || fallback;
+  }
+
+  function buildPayoutReference(claimRow, options = {}) {
+    return (
+      normalizeText(options.reference) ||
+      normalizeText(claimRow && claimRow.payout_address) ||
+      (claimRow && claimRow.id ? "claim:" + String(claimRow.id) : null)
+    );
+  }
+
+  function buildPayoutNotes(claimRow, options = {}) {
+    const notesParts = [];
+
+    const manualNotes = normalizeText(options.notes);
+    const claimMessage = normalizeText(claimRow && claimRow.message);
+    const payoutNetwork = normalizeText(claimRow && claimRow.payout_network);
+    const payoutContact = normalizeText(
+      (claimRow && claimRow.payout_contact) ||
+      (claimRow && claimRow.backup_contact)
+    );
+    const discordContact = normalizeText(claimRow && claimRow.discord_contact);
+
+    if (claimRow && claimRow.id) {
+      notesParts.push("Claim ID: " + String(claimRow.id));
+    }
+
+    if (manualNotes) {
+      notesParts.push(manualNotes);
+    }
+
+    if (claimMessage) {
+      notesParts.push("Claim note: " + claimMessage);
+    }
+
+    if (payoutNetwork) {
+      notesParts.push("Network: " + payoutNetwork);
+    }
+
+    if (payoutContact) {
+      notesParts.push("Contact: " + payoutContact);
+    }
+
+    if (discordContact) {
+      notesParts.push("Discord: " + discordContact);
+    }
+
+    return notesParts.length ? notesParts.join(" | ") : null;
   }
 
   async function fetchAffiliates() {
@@ -50,7 +99,7 @@
         payout_method,
         payout_network,
         payout_address,
-        backup_contact,
+        payout_contact,
         status,
         created_at,
         updated_at,
@@ -79,7 +128,6 @@
     }
 
     const normalizedStatus = normalizeStatus(status, "");
-
     if (!normalizedStatus) {
       throw new Error("Missing affiliate status.");
     }
@@ -145,7 +193,6 @@
     }
 
     const normalizedStatus = normalizeStatus(status, "");
-
     if (!normalizedStatus) {
       throw new Error("Missing claim status.");
     }
@@ -164,55 +211,61 @@
     return true;
   }
 
-  async function ensurePayoutRowExists(supabase, claimRow, options) {
+  async function ensurePayoutRowExists(supabase, claimRow, options = {}) {
+    if (!claimRow || !claimRow.affiliate_id) {
+      throw new Error("Claim row is missing affiliate information.");
+    }
+
     const payoutMethod =
       normalizeText(options.method) ||
       normalizeText(claimRow.payout_method) ||
       "manual";
 
-    const payoutReference =
-      normalizeText(options.reference) ||
-      normalizeText(claimRow.payout_address) ||
-      null;
+    const payoutReference = buildPayoutReference(claimRow, options);
+    const payoutNotes = buildPayoutNotes(claimRow, options);
 
-    const notesParts = [];
-
-    if (normalizeText(options.notes)) {
-      notesParts.push(String(options.notes).trim());
-    }
-
-    if (normalizeText(claimRow.message)) {
-      notesParts.push("Claim note: " + String(claimRow.message).trim());
-    }
-
-    if (normalizeText(claimRow.payout_network)) {
-      notesParts.push("Network: " + String(claimRow.payout_network).trim());
-    }
-
-    if (normalizeText(claimRow.backup_contact)) {
-      notesParts.push("Backup: " + String(claimRow.backup_contact).trim());
-    }
-
-    if (normalizeText(claimRow.discord_contact)) {
-      notesParts.push("Discord: " + String(claimRow.discord_contact).trim());
-    }
-
-    const payoutNotes = notesParts.length ? notesParts.join(" | ") : null;
-
-    const existingPayoutResult = await supabase
+    let existingQuery = supabase
       .from("affiliate_payouts")
-      .select("id")
+      .select("*")
       .eq("affiliate_id", claimRow.affiliate_id)
       .eq("amount", claimRow.amount)
-      .gte("created_at", claimRow.created_at)
       .order("created_at", { ascending: false })
       .limit(1);
+
+    if (payoutReference) {
+      existingQuery = existingQuery.eq("payout_reference", payoutReference);
+    }
+
+    const existingPayoutResult = await existingQuery;
 
     if (existingPayoutResult.error) {
       throw existingPayoutResult.error;
     }
 
-    if (Array.isArray(existingPayoutResult.data) && existingPayoutResult.data.length) {
+    const existingRow =
+      Array.isArray(existingPayoutResult.data) && existingPayoutResult.data.length
+        ? existingPayoutResult.data[0]
+        : null;
+
+    if (existingRow) {
+      if (String(existingRow.payout_status || "").trim().toLowerCase() !== "paid") {
+        const { error: updateExistingError } = await supabase
+          .from("affiliate_payouts")
+          .update({
+            payout_method: payoutMethod,
+            payout_reference: payoutReference,
+            notes: payoutNotes,
+            payout_status: "paid",
+            paid_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          })
+          .eq("id", existingRow.id);
+
+        if (updateExistingError) {
+          throw updateExistingError;
+        }
+      }
+
       return true;
     }
 
@@ -236,9 +289,9 @@
   }
 
   async function markConversionsPaidForClaim(supabase, claimRow) {
-    const targetAmount = toNumber(claimRow.amount, 0);
+    const targetAmount = toNumber(claimRow && claimRow.amount, 0);
 
-    if (targetAmount <= 0 || !claimRow.affiliate_id) {
+    if (!claimRow || !claimRow.affiliate_id || targetAmount <= 0) {
       return true;
     }
 
@@ -264,10 +317,7 @@
     rows.forEach(function (row) {
       const amount = toNumber(row.commission_amount, 0);
 
-      if (amount <= 0) {
-        return;
-      }
-
+      if (amount <= 0) return;
       if (remaining + 0.005 >= amount) {
         idsToUpdate.push(row.id);
         remaining -= amount;
@@ -282,6 +332,61 @@
       .from("affiliate_conversions")
       .update({
         commission_status: "paid",
+        updated_at: new Date().toISOString()
+      })
+      .in("id", idsToUpdate);
+
+    if (updateConversionsError) {
+      throw updateConversionsError;
+    }
+
+    return true;
+  }
+
+  async function revertConversionsFromPaidForClaim(supabase, claimRow, fallbackStatus = "claimed") {
+    const targetAmount = toNumber(claimRow && claimRow.amount, 0);
+
+    if (!claimRow || !claimRow.affiliate_id || targetAmount <= 0) {
+      return true;
+    }
+
+    const conversionsResult = await supabase
+      .from("affiliate_conversions")
+      .select("id, commission_amount, commission_status, created_at")
+      .eq("affiliate_id", claimRow.affiliate_id)
+      .eq("commission_status", "paid")
+      .order("created_at", { ascending: false });
+
+    if (conversionsResult.error) {
+      throw conversionsResult.error;
+    }
+
+    const rows = Array.isArray(conversionsResult.data) ? conversionsResult.data : [];
+    if (!rows.length) {
+      return true;
+    }
+
+    let remaining = targetAmount;
+    const idsToUpdate = [];
+
+    rows.forEach(function (row) {
+      const amount = toNumber(row.commission_amount, 0);
+
+      if (amount <= 0) return;
+      if (remaining + 0.005 >= amount) {
+        idsToUpdate.push(row.id);
+        remaining -= amount;
+      }
+    });
+
+    if (!idsToUpdate.length) {
+      return true;
+    }
+
+    const { error: updateConversionsError } = await supabase
+      .from("affiliate_conversions")
+      .update({
+        commission_status: fallbackStatus,
         updated_at: new Date().toISOString()
       })
       .in("id", idsToUpdate);
@@ -392,6 +497,67 @@
     return true;
   }
 
+  async function markClaimUnpaid(claimId, options = {}) {
+    const supabase = getSupabase();
+
+    if (!claimId) {
+      throw new Error("Missing claim request id.");
+    }
+
+    const revertToStatus = normalizeStatus(options.revertToStatus, "approved");
+
+    const { data: claimRow, error: claimError } = await supabase
+      .from("affiliate_claim_requests")
+      .select("*")
+      .eq("id", claimId)
+      .maybeSingle();
+
+    if (claimError) {
+      throw claimError;
+    }
+
+    if (!claimRow) {
+      throw new Error("Claim request not found.");
+    }
+
+    const payoutReference = buildPayoutReference(claimRow, options);
+
+    const { error: updateClaimError } = await supabase
+      .from("affiliate_claim_requests")
+      .update({
+        status: revertToStatus,
+        updated_at: new Date().toISOString()
+      })
+      .eq("id", claimId);
+
+    if (updateClaimError) {
+      throw updateClaimError;
+    }
+
+    let payoutQuery = supabase
+      .from("affiliate_payouts")
+      .update({
+        payout_status: "cancelled",
+        updated_at: new Date().toISOString()
+      })
+      .eq("affiliate_id", claimRow.affiliate_id)
+      .eq("amount", claimRow.amount);
+
+    if (payoutReference) {
+      payoutQuery = payoutQuery.eq("payout_reference", payoutReference);
+    }
+
+    const { error: payoutUpdateError } = await payoutQuery;
+
+    if (payoutUpdateError) {
+      throw payoutUpdateError;
+    }
+
+    await revertConversionsFromPaidForClaim(supabase, claimRow, "claimed");
+
+    return true;
+  }
+
   async function recordPayout(payload) {
     const supabase = getSupabase();
 
@@ -478,6 +644,7 @@
     fetchAffiliateDetails: fetchAffiliateDetails,
     updateClaimStatus: updateClaimStatus,
     markClaimPaid: markClaimPaid,
+    markClaimUnpaid: markClaimUnpaid,
     recordPayout: recordPayout,
     updateAffiliateReferralCode: updateAffiliateReferralCode
   };
