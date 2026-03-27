@@ -1,5 +1,6 @@
 .catalog-page {
   background: #f5f7fb;
+  overflow-x: hidden;
 }
 
 /* Main page spacing */
@@ -97,6 +98,13 @@
   gap: 10px;
   padding: 0 22px;
   cursor: pointer;
+  transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
+}
+
+.catalog-filter-toggle:hover {
+  border-color: #b9cde2;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+  transform: translateY(-1px);
 }
 
 .catalog-sort-wrap {
@@ -108,6 +116,16 @@
   width: 100%;
   padding: 0 18px;
   cursor: pointer;
+  outline: none;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.04);
+  transition: border-color 0.16s ease, box-shadow 0.16s ease, transform 0.16s ease;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.catalog-sort-select:focus {
+  border-color: #72a9df;
+  box-shadow: 0 0 0 4px rgba(47, 132, 191, 0.14);
 }
 
 .catalog-results-bar {
@@ -128,13 +146,9 @@
   gap: 22px;
 }
 
-/* Sidebar */
+/* Sidebar / filter modal base */
 .catalog-sidebar {
   display: none;
-}
-
-.catalog-sidebar.catalog-sidebar-open {
-  display: block;
 }
 
 .catalog-sidebar-card {
@@ -167,6 +181,12 @@
   color: #1675db;
   font-size: 30px;
   cursor: pointer;
+  transition: transform 0.16s ease, background 0.16s ease;
+}
+
+.catalog-sidebar-close:hover {
+  background: #eaf2fb;
+  transform: scale(1.04);
 }
 
 .catalog-filter-group + .catalog-filter-group {
@@ -207,6 +227,13 @@
   padding: 0 14px;
   font-size: 16px;
   background: #fff;
+  outline: none;
+  transition: border-color 0.16s ease, box-shadow 0.16s ease;
+}
+
+.catalog-price-inputs input:focus {
+  border-color: #72a9df;
+  box-shadow: 0 0 0 4px rgba(47, 132, 191, 0.12);
 }
 
 .catalog-filter-actions {
@@ -216,6 +243,13 @@
 .catalog-clear-btn {
   width: 100%;
   cursor: pointer;
+  transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
+}
+
+.catalog-clear-btn:hover {
+  border-color: #b9cde2;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
+  transform: translateY(-1px);
 }
 
 /* Product grid */
@@ -336,6 +370,7 @@
   box-shadow: 0 16px 32px rgba(0, 123, 255, 0.35);
 }
 
+.catalog-empty,
 .catalog-empty-state {
   grid-column: 1 / -1;
   background: #ffffff;
@@ -369,6 +404,25 @@
 
   .catalog-sidebar {
     display: block !important;
+    position: static;
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: none;
+    background: transparent;
+  }
+
+  .catalog-sidebar::before {
+    display: none;
+  }
+
+  .catalog-sidebar-card {
+    position: static;
+    width: 100%;
+    max-width: none;
+    max-height: none;
+    overflow: visible;
+    transform: none;
   }
 
   .catalog-sidebar-close,
@@ -390,18 +444,65 @@
   }
 }
 
-/* Mobile */
+/* Mobile / tablet popup modal */
 @media (max-width: 899px) {
   .catalog-layout {
     grid-template-columns: 1fr;
   }
 
   .catalog-sidebar {
-    display: none;
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 1200;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.18s ease, visibility 0.18s ease;
   }
 
-  .catalog-sidebar.catalog-sidebar-open {
-    display: block;
+  .catalog-sidebar::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.46);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    opacity: 0;
+    transition: opacity 0.18s ease;
+  }
+
+  .catalog-sidebar-card {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: min(92vw, 420px);
+    max-height: min(82vh, 720px);
+    overflow-y: auto;
+    border-radius: 28px;
+    padding: 22px 18px 20px;
+    box-shadow: 0 28px 60px rgba(15, 23, 42, 0.22);
+    transform: translate(-50%, -50%) scale(0.96);
+    transition: transform 0.18s ease, opacity 0.18s ease;
+    opacity: 0;
+  }
+
+  .catalog-sidebar.catalog-sidebar-open,
+  .catalog-sidebar.active {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+  }
+
+  .catalog-sidebar.catalog-sidebar-open::before,
+  .catalog-sidebar.active::before {
+    opacity: 1;
+  }
+
+  .catalog-sidebar.catalog-sidebar-open .catalog-sidebar-card,
+  .catalog-sidebar.active .catalog-sidebar-card {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
   }
 }
 
@@ -495,7 +596,8 @@
   }
 
   .catalog-sidebar-card {
+    width: min(94vw, 380px);
+    border-radius: 24px;
     padding: 18px 16px;
-    border-radius: 20px;
   }
 }
