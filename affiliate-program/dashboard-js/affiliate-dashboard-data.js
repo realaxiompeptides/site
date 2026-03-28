@@ -40,7 +40,7 @@ Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
           profile = byEmail.data;
 
           if (!profile.auth_user_id && authUserId) {
-            const patchResult = await supabase
+            const patched = await supabase
               .from("affiliates")
               .update({
                 auth_user_id: authUserId,
@@ -50,16 +50,17 @@ Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
               .select("*")
               .maybeSingle();
 
-            if (patchResult.error) {
-              console.error("[Affiliate Dashboard] Failed linking affiliate profile to auth user:", patchResult.error);
-            } else if (patchResult.data) {
-              profile = patchResult.data;
+            if (patched.error) {
+              console.error("[Affiliate Dashboard] Failed linking profile to auth user:", patched.error);
+            } else if (patched.data) {
+              profile = patched.data;
             }
           }
         }
       }
 
       this.affiliateProfile = profile || null;
+      console.log("[Affiliate Dashboard] Loaded affiliate profile:", this.affiliateProfile);
       return this.affiliateProfile;
     } catch (error) {
       console.error("[Affiliate Dashboard] Failed loading affiliate profile:", error);
@@ -174,62 +175,20 @@ Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
 
         supabase
           .from("affiliate_conversions")
-          .select(`
-            id,
-            affiliate_id,
-            referral_code,
-            affiliate_click_id,
-            affiliate_referral_session_id,
-            checkout_session_id,
-            order_id,
-            order_number,
-            customer_email,
-            subtotal,
-            total_amount,
-            discount_amount,
-            commission_amount,
-            commission_status,
-            claimable_at,
-            created_at,
-            updated_at
-          `)
+          .select("*")
           .eq("affiliate_id", affiliateId)
           .order("created_at", { ascending: false }),
 
         supabase
           .from("affiliate_payouts")
-          .select(`
-            id,
-            affiliate_id,
-            amount,
-            payout_method,
-            payout_reference,
-            notes,
-            payout_status,
-            created_at,
-            updated_at,
-            paid_at
-          `)
+          .select("*")
           .eq("affiliate_id", affiliateId)
           .order("paid_at", { ascending: false })
           .order("created_at", { ascending: false }),
 
         supabase
           .from("affiliate_claim_requests")
-          .select(`
-            id,
-            affiliate_id,
-            amount,
-            message,
-            discord_contact,
-            status,
-            created_at,
-            updated_at,
-            payout_method,
-            payout_address,
-            payout_network,
-            payout_contact
-          `)
+          .select("*")
           .eq("affiliate_id", affiliateId)
           .order("created_at", { ascending: false })
       ]);
@@ -263,10 +222,16 @@ Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
       const displayConversionRows = this.getDisplayCommissionRows(conversionRows, claimRows);
 
       const availableToClaim = displayConversionRows
-        .filter((item) => {
-          return String(item.display_status || item.commission_status || "").trim().toLowerCase() === "claimable";
-        })
+        .filter((item) => String(item.display_status || item.commission_status || "").trim().toLowerCase() === "claimable")
         .reduce((sum, item) => sum + Number(item.commission_amount || 0), 0);
+
+      console.log("[Affiliate Dashboard] Stats loaded:", {
+        affiliateId,
+        clicks,
+        conversions: conversionRows.length,
+        availableToClaim,
+        paid
+      });
 
       return {
         clicks: clicks,
