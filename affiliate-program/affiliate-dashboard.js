@@ -1,11 +1,14 @@
 window.AXIOM_AFFILIATE_DASHBOARD = {
   currentUser: null,
   affiliateProfile: null,
+  authSubscription: null,
+  isRenderingDashboard: false,
 
   async init() {
     await this.loadDashboardPartials();
     this.cacheDom();
     this.bindAuthEvents();
+    this.bindSupabaseAuthListener();
     this.showAuth();
     await this.restoreSessionAndRender();
   },
@@ -32,7 +35,7 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
           }
           mount.innerHTML = await response.text();
         } catch (error) {
-          console.error(error);
+          console.error("[Affiliate Dashboard] Partial load failed:", item.file, error);
         }
       })
     );
@@ -61,6 +64,10 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
       "affiliatePayoutsMount",
       "affiliateHelpMount"
     ];
+  },
+
+  getSupabase() {
+    return window.axiomSupabase || window.AXIOM_SUPABASE || window.supabaseClient || null;
   },
 
   getReferralCodeInput() {
@@ -124,7 +131,8 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
   getClaimBackupContactInput() {
     return (
       document.getElementById("affiliateClaimPayoutContact") ||
-      document.getElementById("affiliateClaimBackupContact")
+      document.getElementById("affiliateClaimBackupContact") ||
+      null
     );
   },
 
@@ -303,6 +311,36 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
     claimButton.textContent = claimButton.dataset.defaultText || "Submit Claim Request";
   },
 
+  bindSupabaseAuthListener() {
+    const supabase = this.getSupabase();
+    if (!supabase || !supabase.auth || this.authSubscription) {
+      return;
+    }
+
+    try {
+      const authListener = supabase.auth.onAuthStateChange(async (_event, session) => {
+        this.currentUser = session && session.user ? session.user : null;
+
+        if (!this.currentUser) {
+          this.affiliateProfile = null;
+          this.showAuth();
+          this.setMessage("");
+          this.setReferralCodeStatus("", "");
+          return;
+        }
+
+        await this.restoreSessionAndRender();
+      });
+
+      this.authSubscription =
+        authListener && authListener.data && authListener.data.subscription
+          ? authListener.data.subscription
+          : null;
+    } catch (error) {
+      console.error("[Affiliate Dashboard] Failed to bind auth listener:", error);
+    }
+  },
+
   bindAuthEvents() {
     if (this.loginTab && !this.loginTab.dataset.bound) {
       this.loginTab.dataset.bound = "true";
@@ -350,6 +388,7 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
         const copyCodeBtn = event.target.closest(
           "#affiliateCopyReferralCodeBtn, #affiliateCopyDiscountCodeBtn, #affiliateCopyCodeBtn"
         );
+        const refreshBtn = event.target.closest("#affiliateRefreshDashboardBtn");
 
         if (generateBtn) {
           event.preventDefault();
@@ -380,6 +419,11 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
           const code = (this.affiliateProfile && this.affiliateProfile.referral_code) || "";
           this.copyValue(code, copyCodeBtn);
           return;
+        }
+
+        if (refreshBtn) {
+          event.preventDefault();
+          this.renderDashboard();
         }
       });
 
@@ -526,14 +570,16 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
   },
 
   async restoreSessionAndRender() {
-    if (!window.axiomSupabase || !window.axiomSupabase.auth) {
+    const supabase = this.getSupabase();
+
+    if (!supabase || !supabase.auth) {
       this.setMessage("Supabase auth is not available.", "error");
       this.showAuth();
       return;
     }
 
     try {
-      const result = await window.axiomSupabase.auth.getUser();
+      const result = await supabase.auth.getUser();
       const user = result && result.data ? result.data.user || null : null;
       this.currentUser = user;
 
@@ -551,7 +597,7 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
         return;
       }
 
-      if (this.affiliateProfile.status !== "approved") {
+      if (String(this.affiliateProfile.status || "").toLowerCase() !== "approved") {
         this.showAuth();
         this.setMessage(
           "Your affiliate account is currently " +
@@ -566,17 +612,24 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
       await this.showDashboard();
       this.setMessage("");
     } catch (error) {
-      console.error(error);
+      console.error("[Affiliate Dashboard] Restore session failed:", error);
       this.showAuth();
+      this.setMessage("Could not restore your affiliate session.", "error");
     }
   },
 
   async signIn() {
+    const supabase = this.getSupabase();
     const emailEl = document.getElementById("affiliateLoginEmail");
     const passwordEl = document.getElementById("affiliateLoginPassword");
 
     const email = emailEl ? emailEl.value.trim() : "";
     const password = passwordEl ? passwordEl.value : "";
+
+    if (!supabase || !supabase.auth) {
+      this.setMessage("Supabase auth is not available.", "error");
+      return;
+    }
 
     if (!email || !password) {
       this.setMessage("Enter your email and password.", "error");
@@ -584,7 +637,7 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
     }
 
     try {
-      const result = await window.axiomSupabase.auth.signInWithPassword({
+      const result = await supabase.auth.signInWithPassword({
         email: email,
         password: password
       });
@@ -601,7 +654,7 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
         return;
       }
 
-      if (this.affiliateProfile.status !== "approved") {
+      if (String(this.affiliateProfile.status || "").toLowerCase() !== "approved") {
         this.showAuth();
         this.setMessage(
           "Your affiliate account is currently " +
@@ -616,12 +669,45 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
       await this.showDashboard();
       this.setMessage("");
     } catch (error) {
-      console.error(error);
+      console.error("[Affiliate Dashboard] Sign in failed:", error);
       this.setMessage(error.message || "Sign in failed.", "error");
     }
   },
 
+  async generateUniqueReferralCode(name, email) {
+    const supabase = this.getSupabase();
+    const baseSeed = (name + email).replace(/[^a-zA-Z0-9]/g, "").toUpperCase() || "AXIOMAFFILIATE";
+    const base = baseSeed.slice(0, 8) || "AXIOMAFF";
+
+    for (let attempt = 0; attempt < 12; attempt += 1) {
+      const suffix = Math.random().toString(36).slice(2, 6).toUpperCase();
+      const candidate = this.normalizeCode((base + suffix).slice(0, 12));
+
+      if (!supabase) {
+        return candidate;
+      }
+
+      try {
+        const existing = await supabase
+          .from("affiliates")
+          .select("id")
+          .eq("referral_code", candidate)
+          .maybeSingle();
+
+        if (!existing.error && !existing.data) {
+          return candidate;
+        }
+      } catch (error) {
+        console.error("[Affiliate Dashboard] Referral code uniqueness check failed:", error);
+      }
+    }
+
+    return this.normalizeCode((base + Date.now().toString().slice(-4)).slice(0, 12));
+  },
+
   async signUp() {
+    const supabase = this.getSupabase();
+
     const nameEl = document.getElementById("affiliateSignupName");
     const emailEl = document.getElementById("affiliateSignupEmail");
     const passwordEl = document.getElementById("affiliateSignupPassword");
@@ -632,13 +718,18 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
     const password = passwordEl ? passwordEl.value : "";
     const discord = discordEl ? discordEl.value.trim() : "";
 
+    if (!supabase || !supabase.auth) {
+      this.setMessage("Supabase auth is not available.", "error");
+      return;
+    }
+
     if (!name || !email || !password) {
       this.setMessage("Complete all required fields.", "error");
       return;
     }
 
     try {
-      const result = await window.axiomSupabase.auth.signUp({
+      const result = await supabase.auth.signUp({
         email: email,
         password: password,
         options: {
@@ -651,10 +742,10 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
       if (result.error) throw result.error;
 
       const userId = result.data && result.data.user ? result.data.user.id || null : null;
-      const referralCode = this.generateReferralCode(name, email);
+      const referralCode = await this.generateUniqueReferralCode(name, email);
 
       if (userId) {
-        const existingResult = await window.axiomSupabase
+        const existingResult = await supabase
           .from("affiliates")
           .select("id, auth_user_id")
           .eq("auth_user_id", userId)
@@ -663,18 +754,19 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
         if (existingResult.error) throw existingResult.error;
 
         if (existingResult.data && existingResult.data.id) {
-          const updateResult = await window.axiomSupabase
+          const updateResult = await supabase
             .from("affiliates")
             .update({
               email: email,
               full_name: name,
-              discord_username: discord || null
+              discord_username: discord || null,
+              updated_at: new Date().toISOString()
             })
             .eq("id", existingResult.data.id);
 
           if (updateResult.error) throw updateResult.error;
         } else {
-          const insertResult = await window.axiomSupabase
+          const insertResult = await supabase
             .from("affiliates")
             .insert({
               auth_user_id: userId,
@@ -701,16 +793,20 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
         this.signupForm.reset();
       }
     } catch (error) {
-      console.error(error);
+      console.error("[Affiliate Dashboard] Sign up failed:", error);
       this.setMessage(error.message || "Sign up failed.", "error");
     }
   },
 
   async signOut() {
+    const supabase = this.getSupabase();
+
     try {
-      await window.axiomSupabase.auth.signOut();
+      if (supabase && supabase.auth) {
+        await supabase.auth.signOut();
+      }
     } catch (error) {
-      console.error(error);
+      console.error("[Affiliate Dashboard] Sign out failed:", error);
     }
 
     this.currentUser = null;
@@ -721,13 +817,15 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
   },
 
   async loadAffiliateProfile() {
-    if (!this.currentUser || !this.currentUser.id) {
+    const supabase = this.getSupabase();
+
+    if (!supabase || !this.currentUser || !this.currentUser.id) {
       this.affiliateProfile = null;
       return;
     }
 
     try {
-      const result = await window.axiomSupabase
+      const result = await supabase
         .from("affiliates")
         .select("*")
         .eq("auth_user_id", this.currentUser.id)
@@ -737,7 +835,7 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
 
       this.affiliateProfile = result.data || null;
     } catch (error) {
-      console.error(error);
+      console.error("[Affiliate Dashboard] Failed loading affiliate profile:", error);
       this.affiliateProfile = null;
     }
   },
@@ -881,122 +979,137 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
   },
 
   async renderDashboard() {
-    const profile = this.affiliateProfile;
-    const email = (this.currentUser && this.currentUser.email) || "—";
-    const fullName =
-      (profile && profile.full_name) ||
-      (this.currentUser &&
-        this.currentUser.user_metadata &&
-        this.currentUser.user_metadata.full_name) ||
-      "—";
+    if (this.isRenderingDashboard) {
+      return;
+    }
 
-    this.setText("affiliateDashboardEmail", email);
-    this.setText("affiliateDashboardEmailRow", email);
-    this.setText("affiliateDashboardFullName", fullName);
-    this.setText("affiliateDashboardStatus", (profile && profile.status) || "pending");
-    this.setText("affiliateDashboardCode", (profile && profile.referral_code) || "—");
-    this.setText(
-      "affiliateDashboardCommissionRate",
-      profile ? String(Number(profile.commission_value || 0)) + "%" : "—"
-    );
-    this.setText(
-      "affiliateDashboardDiscountRate",
-      profile ? String(Number(profile.discount_value || 0)) + "%" : "—"
-    );
+    this.isRenderingDashboard = true;
 
-    this.syncReferralCodeUi((profile && profile.referral_code) || "");
-    this.setReferralCodeStatus("", "");
+    try {
+      const profile = this.affiliateProfile;
+      const email = (this.currentUser && this.currentUser.email) || "—";
+      const fullName =
+        (profile && profile.full_name) ||
+        (this.currentUser &&
+          this.currentUser.user_metadata &&
+          this.currentUser.user_metadata.full_name) ||
+        "—";
 
-    const stats = await this.fetchStats();
+      this.setText("affiliateDashboardEmail", email);
+      this.setText("affiliateDashboardEmailRow", email);
+      this.setText("affiliateDashboardFullName", fullName);
+      this.setText("affiliateDashboardStatus", (profile && profile.status) || "pending");
+      this.setText("affiliateDashboardCode", (profile && profile.referral_code) || "—");
+      this.setText(
+        "affiliateDashboardCommissionRate",
+        profile ? String(Number(profile.commission_value || 0)) + "%" : "—"
+      );
+      this.setText(
+        "affiliateDashboardDiscountRate",
+        profile ? String(Number(profile.discount_value || 0)) + "%" : "—"
+      );
 
-    this.setText("affiliateClicksCount", String(stats.clicks));
-    this.setText("affiliateConversionsCount", String(stats.conversions));
-    this.setText("affiliateClaimableAmount", this.formatMoney(stats.availableToClaim));
-    this.setText("affiliatePaidAmount", this.formatMoney(stats.paid));
-    this.setText("affiliatePendingClaimsAmount", this.formatMoney(stats.pendingClaims));
-    this.setText("affiliateApprovedClaimsAmount", this.formatMoney(stats.approvedClaims));
-    this.setText("affiliateRejectedClaimsAmount", this.formatMoney(stats.rejectedClaims));
+      this.syncReferralCodeUi((profile && profile.referral_code) || "");
+      this.setReferralCodeStatus("", "");
 
-    const claimAmountInput = this.getClaimAmountInput();
-    if (claimAmountInput) {
-      claimAmountInput.max = String(this.toNumber(stats.availableToClaim, 0).toFixed(2));
-      claimAmountInput.placeholder =
-        this.toNumber(stats.availableToClaim, 0) > 0
-          ? this.toNumber(stats.availableToClaim, 0).toFixed(2)
-          : "0.00";
-      claimAmountInput.disabled = this.toNumber(stats.availableToClaim, 0) <= 0;
+      const stats = await this.fetchStats();
 
-      if (this.toNumber(stats.availableToClaim, 0) > 0 && !claimAmountInput.value) {
-        claimAmountInput.value = this.toNumber(stats.availableToClaim, 0).toFixed(2);
+      this.setText("affiliateClicksCount", String(stats.clicks));
+      this.setText("affiliateConversionsCount", String(stats.conversions));
+      this.setText("affiliateClaimableAmount", this.formatMoney(stats.availableToClaim));
+      this.setText("affiliatePaidAmount", this.formatMoney(stats.paid));
+      this.setText("affiliatePendingClaimsAmount", this.formatMoney(stats.pendingClaims));
+      this.setText("affiliateApprovedClaimsAmount", this.formatMoney(stats.approvedClaims));
+      this.setText("affiliateRejectedClaimsAmount", this.formatMoney(stats.rejectedClaims));
+
+      const claimAmountInput = this.getClaimAmountInput();
+      if (claimAmountInput) {
+        claimAmountInput.max = String(this.toNumber(stats.availableToClaim, 0).toFixed(2));
+        claimAmountInput.placeholder =
+          this.toNumber(stats.availableToClaim, 0) > 0
+            ? this.toNumber(stats.availableToClaim, 0).toFixed(2)
+            : "0.00";
+        claimAmountInput.disabled = this.toNumber(stats.availableToClaim, 0) <= 0;
+
+        if (this.toNumber(stats.availableToClaim, 0) > 0 && !claimAmountInput.value) {
+          claimAmountInput.value = this.toNumber(stats.availableToClaim, 0).toFixed(2);
+        }
       }
+
+      const claimNoteInput = this.getClaimNoteInput();
+      if (claimNoteInput) {
+        claimNoteInput.disabled = this.toNumber(stats.availableToClaim, 0) <= 0;
+      }
+
+      const payoutMethodInput = this.getClaimPayoutMethodInput();
+      if (payoutMethodInput) {
+        payoutMethodInput.disabled = this.toNumber(stats.availableToClaim, 0) <= 0;
+      }
+
+      const payoutNetworkInput = this.getClaimPayoutNetworkInput();
+      if (payoutNetworkInput) {
+        payoutNetworkInput.disabled = this.toNumber(stats.availableToClaim, 0) <= 0;
+      }
+
+      const payoutAddressInput = this.getClaimPayoutAddressInput();
+      if (payoutAddressInput) {
+        payoutAddressInput.disabled = this.toNumber(stats.availableToClaim, 0) <= 0;
+      }
+
+      const backupContactInput = this.getClaimBackupContactInput();
+      if (backupContactInput) {
+        backupContactInput.disabled = this.toNumber(stats.availableToClaim, 0) <= 0;
+      }
+
+      if (this.toNumber(stats.availableToClaim, 0) <= 0) {
+        this.setClaimButtonState("disabled");
+      } else {
+        this.setClaimButtonState("ready");
+      }
+
+      const claimAvailableEl = document.getElementById("affiliateClaimAvailableAmount");
+      if (claimAvailableEl) {
+        claimAvailableEl.textContent = this.formatMoney(stats.availableToClaim);
+      }
+
+      const claimReservedEl = document.getElementById("affiliateClaimReservedAmount");
+      if (claimReservedEl) {
+        claimReservedEl.textContent = this.formatMoney(stats.pendingClaims);
+      }
+
+      const claimHelperText = document.getElementById("affiliateClaimHelperText");
+      if (claimHelperText) {
+        claimHelperText.textContent =
+          stats.pendingClaims > 0
+            ? "Pending and approved claim requests are temporarily reserved until reviewed or paid."
+            : "You can only submit up to your currently available claimable balance.";
+      }
+
+      const defaultLink = profile && profile.referral_code
+        ? this.buildAffiliateUrl("/")
+        : "";
+
+      const generatedLinkInput = document.getElementById("affiliateGeneratedLink");
+      if (generatedLinkInput) {
+        generatedLinkInput.value = defaultLink;
+      }
+
+      this.updateClaimPayoutFieldVisibility();
+      this.renderRecentCommissions(stats.recentCommissions);
+      this.renderPayouts(stats.payouts);
+      this.renderClaims(stats.claims);
+    } catch (error) {
+      console.error("[Affiliate Dashboard] Render failed:", error);
+      this.setMessage("Failed to load affiliate dashboard data.", "error");
+    } finally {
+      this.isRenderingDashboard = false;
     }
-
-    const claimNoteInput = this.getClaimNoteInput();
-    if (claimNoteInput) {
-      claimNoteInput.disabled = this.toNumber(stats.availableToClaim, 0) <= 0;
-    }
-
-    const payoutMethodInput = this.getClaimPayoutMethodInput();
-    if (payoutMethodInput) {
-      payoutMethodInput.disabled = this.toNumber(stats.availableToClaim, 0) <= 0;
-    }
-
-    const payoutNetworkInput = this.getClaimPayoutNetworkInput();
-    if (payoutNetworkInput) {
-      payoutNetworkInput.disabled = this.toNumber(stats.availableToClaim, 0) <= 0;
-    }
-
-    const payoutAddressInput = this.getClaimPayoutAddressInput();
-    if (payoutAddressInput) {
-      payoutAddressInput.disabled = this.toNumber(stats.availableToClaim, 0) <= 0;
-    }
-
-    const backupContactInput = this.getClaimBackupContactInput();
-    if (backupContactInput) {
-      backupContactInput.disabled = this.toNumber(stats.availableToClaim, 0) <= 0;
-    }
-
-    if (this.toNumber(stats.availableToClaim, 0) <= 0) {
-      this.setClaimButtonState("disabled");
-    } else {
-      this.setClaimButtonState("ready");
-    }
-
-    const claimAvailableEl = document.getElementById("affiliateClaimAvailableAmount");
-    if (claimAvailableEl) {
-      claimAvailableEl.textContent = this.formatMoney(stats.availableToClaim);
-    }
-
-    const claimReservedEl = document.getElementById("affiliateClaimReservedAmount");
-    if (claimReservedEl) {
-      claimReservedEl.textContent = this.formatMoney(stats.pendingClaims);
-    }
-
-    const claimHelperText = document.getElementById("affiliateClaimHelperText");
-    if (claimHelperText) {
-      claimHelperText.textContent =
-        stats.pendingClaims > 0
-          ? "Pending and approved claim requests are temporarily reserved until reviewed or paid."
-          : "You can only submit up to your currently available claimable balance.";
-    }
-
-    const defaultLink = profile && profile.referral_code
-      ? this.buildAffiliateUrl("/")
-      : "";
-
-    const generatedLinkInput = document.getElementById("affiliateGeneratedLink");
-    if (generatedLinkInput) {
-      generatedLinkInput.value = defaultLink;
-    }
-
-    this.updateClaimPayoutFieldVisibility();
-    this.renderRecentCommissions(stats.recentCommissions);
-    this.renderPayouts(stats.payouts);
-    this.renderClaims(stats.claims);
   },
 
   async fetchStats() {
-    if (!this.affiliateProfile || !this.affiliateProfile.id) {
+    const supabase = this.getSupabase();
+
+    if (!supabase || !this.affiliateProfile || !this.affiliateProfile.id) {
       return {
         clicks: 0,
         conversions: 0,
@@ -1016,25 +1129,25 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
       const affiliateId = this.affiliateProfile.id;
 
       const results = await Promise.all([
-        window.axiomSupabase
+        supabase
           .from("affiliate_clicks")
-          .select("*", { count: "exact", head: true })
+          .select("id", { count: "exact", head: true })
           .eq("affiliate_id", affiliateId),
 
-        window.axiomSupabase
+        supabase
           .from("affiliate_conversions")
           .select("*")
           .eq("affiliate_id", affiliateId)
           .order("created_at", { ascending: false }),
 
-        window.axiomSupabase
+        supabase
           .from("affiliate_payouts")
           .select("*")
           .eq("affiliate_id", affiliateId)
           .order("paid_at", { ascending: false })
           .order("created_at", { ascending: false }),
 
-        window.axiomSupabase
+        supabase
           .from("affiliate_claim_requests")
           .select("*")
           .eq("affiliate_id", affiliateId)
@@ -1095,7 +1208,7 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
         claims: claimRows.slice(0, 20)
       };
     } catch (error) {
-      console.error(error);
+      console.error("[Affiliate Dashboard] Fetch stats failed:", error);
       return {
         clicks: 0,
         conversions: 0,
@@ -1207,9 +1320,7 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
         const payoutMethodText = row.payout_method ? this.escapeHtml(row.payout_method) : "";
         const payoutNetworkText = row.payout_network ? this.escapeHtml(row.payout_network) : "";
         const payoutAddressText = row.payout_address ? this.escapeHtml(row.payout_address) : "";
-        const backupContactText =
-          (row.backup_contact ? this.escapeHtml(row.backup_contact) : "") ||
-          (row.payout_contact ? this.escapeHtml(row.payout_contact) : "");
+        const payoutContactText = row.payout_contact ? this.escapeHtml(row.payout_contact) : "";
 
         return (
           '<div class="affiliate-data-row affiliate-data-row--stacked">' +
@@ -1223,7 +1334,7 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
               (payoutMethodText ? '<span class="affiliate-data-note">Method: ' + payoutMethodText + "</span>" : "") +
               (payoutNetworkText ? '<span class="affiliate-data-note">Network: ' + payoutNetworkText + "</span>" : "") +
               (payoutAddressText ? '<span class="affiliate-data-note">Address: ' + payoutAddressText + "</span>" : "") +
-              (backupContactText ? '<span class="affiliate-data-note">Backup: ' + backupContactText + "</span>" : "") +
+              (payoutContactText ? '<span class="affiliate-data-note">Contact: ' + payoutContactText + "</span>" : "") +
             "</div>" +
           "</div>"
         );
@@ -1244,7 +1355,9 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
   },
 
   async submitClaimRequest(payload) {
-    if (!window.axiomSupabase) {
+    const supabase = this.getSupabase();
+
+    if (!supabase) {
       throw new Error("Supabase is not available.");
     }
 
@@ -1265,33 +1378,33 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
     }
 
     try {
-      const rpcResponseExtended = await window.axiomSupabase.rpc("affiliate_submit_claim_request", {
+      const rpcResponseExtended = await supabase.rpc("affiliate_submit_claim_request", {
         p_amount: amount,
         p_message: note || null,
         p_payout_method: payoutMethod || null,
         p_payout_network: payoutNetwork || null,
         p_payout_address: payoutAddress || null,
-        p_backup_contact: backupContact || null
+        p_payout_contact: backupContact || null
       });
 
       if (!rpcResponseExtended.error) {
         return true;
       }
 
-      console.error("Extended claim RPC failed, trying base RPC:", rpcResponseExtended.error);
+      console.error("[Affiliate Dashboard] Extended claim RPC failed, trying base RPC:", rpcResponseExtended.error);
     } catch (error) {
-      console.error("Extended claim RPC exception:", error);
+      console.error("[Affiliate Dashboard] Extended claim RPC exception:", error);
     }
 
     try {
-      const rpcResponseBase = await window.axiomSupabase.rpc("affiliate_submit_claim_request", {
+      const rpcResponseBase = await supabase.rpc("affiliate_submit_claim_request", {
         p_amount: amount,
         p_message: note || null
       });
 
       if (!rpcResponseBase.error) {
         try {
-          const latestClaimResult = await window.axiomSupabase
+          const latestClaimResult = await supabase
             .from("affiliate_claim_requests")
             .select("id")
             .eq("affiliate_id", affiliateId)
@@ -1300,31 +1413,31 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
             .maybeSingle();
 
           if (!latestClaimResult.error && latestClaimResult.data && latestClaimResult.data.id) {
-            await window.axiomSupabase
+            await supabase
               .from("affiliate_claim_requests")
               .update({
                 payout_method: payoutMethod || null,
                 payout_network: payoutNetwork || null,
                 payout_address: payoutAddress || null,
-                backup_contact: backupContact || null,
+                payout_contact: backupContact || null,
                 updated_at: new Date().toISOString()
               })
               .eq("id", latestClaimResult.data.id);
           }
         } catch (patchError) {
-          console.error("Claim payout-info patch failed:", patchError);
+          console.error("[Affiliate Dashboard] Claim payout patch failed:", patchError);
         }
 
         return true;
       }
 
-      console.error("Base claim RPC failed, trying direct insert:", rpcResponseBase.error);
+      console.error("[Affiliate Dashboard] Base claim RPC failed, trying direct insert:", rpcResponseBase.error);
     } catch (error) {
-      console.error("Base claim RPC exception:", error);
+      console.error("[Affiliate Dashboard] Base claim RPC exception:", error);
     }
 
     try {
-      const insertExtended = await window.axiomSupabase
+      const insertExtended = await supabase
         .from("affiliate_claim_requests")
         .insert({
           affiliate_id: affiliateId,
@@ -1334,7 +1447,7 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
           payout_method: payoutMethod || null,
           payout_network: payoutNetwork || null,
           payout_address: payoutAddress || null,
-          backup_contact: backupContact || null,
+          payout_contact: backupContact || null,
           status: "pending"
         });
 
@@ -1342,12 +1455,12 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
         return true;
       }
 
-      console.error("Extended direct insert failed, trying plain insert:", insertExtended.error);
+      console.error("[Affiliate Dashboard] Extended direct insert failed, trying plain insert:", insertExtended.error);
     } catch (error) {
-      console.error("Extended direct insert exception:", error);
+      console.error("[Affiliate Dashboard] Extended direct insert exception:", error);
     }
 
-    const insertPlain = await window.axiomSupabase
+    const insertPlain = await supabase
       .from("affiliate_claim_requests")
       .insert({
         affiliate_id: affiliateId,
@@ -1432,7 +1545,7 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
       await this.loadAffiliateProfile();
       await this.renderDashboard();
     } catch (error) {
-      console.error(error);
+      console.error("[Affiliate Dashboard] Submit claim failed:", error);
 
       const rawMessage = String(error && error.message ? error.message : "Claim request failed.");
       let friendlyMessage = rawMessage;
@@ -1457,7 +1570,9 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
   },
 
   async updateOwnReferralCode() {
-    if (!window.axiomSupabase) {
+    const supabase = this.getSupabase();
+
+    if (!supabase) {
       this.setReferralCodeStatus("Supabase is not available.", "error");
       return;
     }
@@ -1519,14 +1634,14 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
       let rpcResult = null;
       let rpcError = null;
 
-      const ownRpcResponse = await window.axiomSupabase.rpc("affiliate_update_own_referral_code", {
+      const ownRpcResponse = await supabase.rpc("affiliate_update_own_referral_code", {
         p_new_referral_code: newCode
       });
 
       if (ownRpcResponse && !ownRpcResponse.error) {
         rpcResult = ownRpcResponse.data || null;
       } else {
-        const fallbackResponse = await window.axiomSupabase.rpc("admin_update_affiliate_referral_code", {
+        const fallbackResponse = await supabase.rpc("admin_update_affiliate_referral_code", {
           p_affiliate_id: this.affiliateProfile.id,
           p_new_referral_code: newCode
         });
@@ -1559,7 +1674,7 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
       this.setReferralCodeStatus("Code updated successfully.", "success");
       this.setMessage("Referral / discount code updated successfully.", "success");
     } catch (error) {
-      console.error(error);
+      console.error("[Affiliate Dashboard] Update referral code failed:", error);
 
       const rawMessage = String(error && error.message ? error.message : "Code update failed.");
       let friendlyMessage = rawMessage;
@@ -1592,7 +1707,7 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
       await navigator.clipboard.writeText(value);
       if (button) button.textContent = "Copied";
     } catch (error) {
-      console.error(error);
+      console.error("[Affiliate Dashboard] Copy failed:", error);
       if (button) button.textContent = "Copy Failed";
     }
 
@@ -1601,13 +1716,6 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
         button.textContent = original;
       }, 1200);
     }
-  },
-
-  generateReferralCode(name, email) {
-    const source = (name + email).replace(/[^a-zA-Z0-9]/g, "").toUpperCase();
-    const base = source.slice(0, 8) || "AXIOMAFF";
-    const suffix = Math.random().toString(36).slice(2, 6).toUpperCase();
-    return (base + suffix).slice(0, 12);
   },
 
   formatMoney(value) {
