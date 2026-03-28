@@ -35,13 +35,15 @@ Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
 
       const stats = await this.fetchStats();
 
-      this.setText("affiliateClicksCount", String(stats.clicks));
-      this.setText("affiliateConversionsCount", String(stats.conversions));
-      this.setText("affiliateClaimableAmount", this.formatMoney(stats.availableToClaim));
-      this.setText("affiliatePaidAmount", this.formatMoney(stats.paid));
-      this.setText("affiliatePendingClaimsAmount", this.formatMoney(stats.pendingClaims));
-      this.setText("affiliateApprovedClaimsAmount", this.formatMoney(stats.approvedClaims));
-      this.setText("affiliateRejectedClaimsAmount", this.formatMoney(stats.rejectedClaims));
+      console.log("[Affiliate Dashboard] renderDashboard stats:", stats);
+
+      this.setText("affiliateClicksCount", String(stats.clicks || 0));
+      this.setText("affiliateConversionsCount", String(stats.conversions || 0));
+      this.setText("affiliateClaimableAmount", this.formatMoney(stats.availableToClaim || 0));
+      this.setText("affiliatePaidAmount", this.formatMoney(stats.paid || 0));
+      this.setText("affiliatePendingClaimsAmount", this.formatMoney(stats.pendingClaims || 0));
+      this.setText("affiliateApprovedClaimsAmount", this.formatMoney(stats.approvedClaims || 0));
+      this.setText("affiliateRejectedClaimsAmount", this.formatMoney(stats.rejectedClaims || 0));
 
       const claimAmountInput = this.getClaimAmountInput();
       if (claimAmountInput) {
@@ -90,18 +92,23 @@ Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
 
       const claimAvailableEl = document.getElementById("affiliateClaimAvailableAmount");
       if (claimAvailableEl) {
-        claimAvailableEl.textContent = this.formatMoney(stats.availableToClaim);
+        claimAvailableEl.textContent = this.formatMoney(stats.availableToClaim || 0);
       }
 
       const claimReservedEl = document.getElementById("affiliateClaimReservedAmount");
       if (claimReservedEl) {
-        claimReservedEl.textContent = this.formatMoney(stats.pendingClaims);
+        claimReservedEl.textContent = this.formatMoney(
+          this.toNumber(stats.pendingClaims, 0) + this.toNumber(stats.approvedClaims, 0)
+        );
       }
 
       const claimHelperText = document.getElementById("affiliateClaimHelperText");
       if (claimHelperText) {
+        const reservedTotal =
+          this.toNumber(stats.pendingClaims, 0) + this.toNumber(stats.approvedClaims, 0);
+
         claimHelperText.textContent =
-          stats.pendingClaims > 0
+          reservedTotal > 0
             ? "Pending and approved claim requests are temporarily reserved until reviewed or paid."
             : "You can only submit up to your currently available claimable balance.";
       }
@@ -117,9 +124,9 @@ Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
       }
 
       this.updateClaimPayoutFieldVisibility();
-      this.renderRecentCommissions(stats.recentCommissions);
-      this.renderPayouts(stats.payouts);
-      this.renderClaims(stats.claims);
+      this.renderRecentCommissions(stats.recentCommissions || []);
+      this.renderPayouts(stats.payouts || []);
+      this.renderClaims(stats.claims || []);
     } catch (error) {
       console.error("[Affiliate Dashboard] Render failed:", error);
       this.setMessage("Failed to load affiliate dashboard data.", "error");
@@ -130,7 +137,10 @@ Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
 
   renderRecentCommissions(rows) {
     const mount = document.getElementById("affiliateRecentCommissionsList");
-    if (!mount) return;
+    if (!mount) {
+      console.error("[Affiliate Dashboard] Missing #affiliateRecentCommissionsList");
+      return;
+    }
 
     if (!rows || !rows.length) {
       mount.innerHTML = '<div class="affiliate-empty-state">No commissions yet.</div>';
@@ -155,7 +165,10 @@ Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
 
   renderPayouts(rows) {
     const mount = document.getElementById("affiliatePayoutsList");
-    if (!mount) return;
+    if (!mount) {
+      console.error("[Affiliate Dashboard] Missing #affiliatePayoutsList");
+      return;
+    }
 
     if (!rows || !rows.length) {
       mount.innerHTML = '<div class="affiliate-empty-state">No payouts yet.</div>';
@@ -191,20 +204,24 @@ Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
 
   renderClaims(rows) {
     const mount = document.getElementById("affiliateClaimsList");
-    if (!mount) return;
-
     const summaryEl = document.getElementById("affiliateClaimsSummary");
+
+    if (!mount) {
+      console.error("[Affiliate Dashboard] Missing #affiliateClaimsList");
+      return;
+    }
+
     if (summaryEl) {
       if (!rows || !rows.length) {
         summaryEl.textContent = "No claim requests submitted yet.";
       } else {
-        const pendingCount = rows.filter((row) => {
-          const status = String(row.status || "").toLowerCase();
+        const reservedCount = rows.filter((row) => {
+          const status = String(row.status || "").trim().toLowerCase();
           return status === "pending" || status === "approved";
         }).length;
 
         summaryEl.textContent =
-          pendingCount > 0
+          reservedCount > 0
             ? "Pending and approved claim requests stay reserved until they are reviewed or paid."
             : "Your past and current claim requests are shown below.";
       }
@@ -234,7 +251,7 @@ Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
               "<strong>" + amount + "</strong>" +
             "</div>" +
             '<div class="affiliate-data-row-sub">' +
-              '<span class="affiliate-status-badge ' + statusClass + '">' + statusLabel + "</span>" +
+              '<span class="affiliate-status-badge ' + statusClass + '">' + statusLabel + "</span>' +
               (noteText ? '<span class="affiliate-data-note">Note: ' + noteText + "</span>" : "") +
               (payoutMethodText ? '<span class="affiliate-data-note">Method: ' + payoutMethodText + "</span>" : "") +
               (payoutNetworkText ? '<span class="affiliate-data-note">Network: ' + payoutNetworkText + "</span>" : "") +
