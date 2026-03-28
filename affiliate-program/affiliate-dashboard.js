@@ -1,10 +1,9 @@
 (function () {
-  const VERSION = "20260328-320";
+  const VERSION = "20260328-401";
 
   const MODULES = [
     "dashboard-js/affiliate-dashboard-core.js",
     "dashboard-js/affiliate-dashboard-auth.js",
-    "dashboard-js/affiliate-dashboard-ui.js",
     "dashboard-js/affiliate-dashboard-data.js",
     "dashboard-js/affiliate-dashboard-claims.js",
     "dashboard-js/affiliate-dashboard-referral.js",
@@ -18,9 +17,8 @@
 
   function loadScript(src) {
     return new Promise((resolve, reject) => {
-      const versionedSrc = withVersion(src);
-
       const existing = document.querySelector(`script[data-affiliate-module="${src}"]`);
+
       if (existing) {
         if (existing.dataset.loaded === "true") {
           resolve();
@@ -28,16 +26,14 @@
         }
 
         existing.addEventListener("load", () => resolve(), { once: true });
-        existing.addEventListener(
-          "error",
-          () => reject(new Error("Failed to load " + src)),
-          { once: true }
-        );
+        existing.addEventListener("error", () => reject(new Error("Failed to load " + src)), {
+          once: true
+        });
         return;
       }
 
       const script = document.createElement("script");
-      script.src = versionedSrc;
+      script.src = withVersion(src);
       script.defer = true;
       script.dataset.affiliateModule = src;
 
