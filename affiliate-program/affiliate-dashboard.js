@@ -1014,7 +1014,7 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
     const reservingClaims = (Array.isArray(claimRows) ? claimRows : [])
       .filter((claim) => {
         const status = String(claim.status || "").toLowerCase();
-        return status === "pending" || status === "approved" || status === "paid";
+        return status === "pending" || status === "approved";
       })
       .sort((a, b) => {
         const aTime = new Date(a.created_at || 0).getTime();
@@ -1163,9 +1163,10 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
             : "You can only submit up to your currently available claimable balance.";
       }
 
-      const defaultLink = profile && profile.referral_code
-        ? this.buildAffiliateUrl("/")
-        : "";
+      const defaultLink =
+        profile && profile.referral_code
+          ? this.buildAffiliateUrl("/")
+          : "";
 
       const generatedLinkInput = document.getElementById("affiliateGeneratedLink");
       if (generatedLinkInput) {
@@ -1314,7 +1315,9 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
 
     mount.innerHTML = rows
       .map((row) => {
-        const statusText = this.getCommissionStatusLabel(row.display_status || row.commission_status || "pending");
+        const statusText = this.getCommissionStatusLabel(
+          row.display_status || row.commission_status || "pending"
+        );
 
         return (
           '<div class="affiliate-data-row">' +
@@ -1469,7 +1472,10 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
         return true;
       }
 
-      console.error("[Affiliate Dashboard] Extended claim RPC failed, trying base RPC:", rpcResponseExtended.error);
+      console.error(
+        "[Affiliate Dashboard] Extended claim RPC failed, trying base RPC:",
+        rpcResponseExtended.error
+      );
     } catch (error) {
       console.error("[Affiliate Dashboard] Extended claim RPC exception:", error);
     }
@@ -1509,7 +1515,10 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
         return true;
       }
 
-      console.error("[Affiliate Dashboard] Base claim RPC failed, trying direct insert:", rpcResponseBase.error);
+      console.error(
+        "[Affiliate Dashboard] Base claim RPC failed, trying direct insert:",
+        rpcResponseBase.error
+      );
     } catch (error) {
       console.error("[Affiliate Dashboard] Base claim RPC exception:", error);
     }
@@ -1533,7 +1542,10 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
         return true;
       }
 
-      console.error("[Affiliate Dashboard] Extended direct insert failed, trying plain insert:", insertExtended.error);
+      console.error(
+        "[Affiliate Dashboard] Extended direct insert failed, trying plain insert:",
+        insertExtended.error
+      );
     } catch (error) {
       console.error("[Affiliate Dashboard] Extended direct insert exception:", error);
     }
@@ -1548,11 +1560,11 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
         status: "pending"
       });
 
-      if (insertPlain.error) {
-        throw insertPlain.error;
-      }
+    if (insertPlain.error) {
+      throw insertPlain.error;
+    }
 
-      return true;
+    return true;
   },
 
   async submitClaim() {
@@ -1820,3 +1832,14 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
     }
   }
 };
+
+document.addEventListener("DOMContentLoaded", function () {
+  if (
+    window.AXIOM_AFFILIATE_DASHBOARD &&
+    typeof window.AXIOM_AFFILIATE_DASHBOARD.init === "function"
+  ) {
+    window.AXIOM_AFFILIATE_DASHBOARD.init();
+  } else {
+    console.error("AXIOM_AFFILIATE_DASHBOARD.init is not available.");
+  }
+});
