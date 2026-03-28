@@ -1,10 +1,12 @@
 window.AXIOM_ORDER_SUBMIT = {
   async createOrderFromSession(extraPayload = {}) {
-    if (!window.axiomSupabase || !window.AXIOM_CHECKOUT_SESSION) {
+    const supabase =
+      window.axiomSupabase || window.AXIOM_SUPABASE || window.supabaseClient || null;
+
+    if (!supabase || !window.AXIOM_CHECKOUT_SESSION) {
       return { ok: false, error: "Missing dependencies" };
     }
 
-    const supabase = window.axiomSupabase;
     const nowIso =
       window.AXIOM_HELPERS && typeof window.AXIOM_HELPERS.nowIso === "function"
         ? window.AXIOM_HELPERS.nowIso()
@@ -293,6 +295,18 @@ window.AXIOM_ORDER_SUBMIT = {
       const mergedAffiliateLandingPage =
         sessionRow.affiliate_landing_page || browserAttribution.affiliate_landing_page || null;
 
+      const mergedAffiliateDiscountAmount = Number(
+        sessionRow.affiliate_discount_amount ||
+          browserAttribution.affiliate_discount_amount ||
+          0
+      );
+
+      const mergedAffiliateCommissionAmount = Number(
+        sessionRow.affiliate_commission_amount ||
+          browserAttribution.affiliate_commission_amount ||
+          0
+      );
+
       const alreadySynced =
         String(sessionRow.affiliate_id || "") === String(mergedAffiliateId || "") &&
         normalizeAffiliateCode(sessionRow.affiliate_code || "") === mergedAffiliateCode &&
@@ -300,7 +314,9 @@ window.AXIOM_ORDER_SUBMIT = {
         String(sessionRow.affiliate_referral_session_id || "") ===
           String(mergedAffiliateReferralSessionId || "") &&
         String(sessionRow.affiliate_landing_page || "") ===
-          String(mergedAffiliateLandingPage || "");
+          String(mergedAffiliateLandingPage || "") &&
+        Number(sessionRow.affiliate_discount_amount || 0) === mergedAffiliateDiscountAmount &&
+        Number(sessionRow.affiliate_commission_amount || 0) === mergedAffiliateCommissionAmount;
 
       if (alreadySynced) {
         return {
@@ -310,16 +326,8 @@ window.AXIOM_ORDER_SUBMIT = {
           affiliate_click_id: mergedAffiliateClickId,
           affiliate_referral_session_id: mergedAffiliateReferralSessionId,
           affiliate_landing_page: mergedAffiliateLandingPage,
-          affiliate_discount_amount: Number(
-            sessionRow.affiliate_discount_amount ||
-              browserAttribution.affiliate_discount_amount ||
-              0
-          ),
-          affiliate_commission_amount: Number(
-            sessionRow.affiliate_commission_amount ||
-              browserAttribution.affiliate_commission_amount ||
-              0
-          )
+          affiliate_discount_amount: mergedAffiliateDiscountAmount,
+          affiliate_commission_amount: mergedAffiliateCommissionAmount
         };
       }
 
@@ -329,16 +337,8 @@ window.AXIOM_ORDER_SUBMIT = {
         affiliate_click_id: mergedAffiliateClickId,
         affiliate_referral_session_id: mergedAffiliateReferralSessionId,
         affiliate_landing_page: mergedAffiliateLandingPage,
-        affiliate_discount_amount: Number(
-          sessionRow.affiliate_discount_amount ||
-            browserAttribution.affiliate_discount_amount ||
-            0
-        ),
-        affiliate_commission_amount: Number(
-          sessionRow.affiliate_commission_amount ||
-            browserAttribution.affiliate_commission_amount ||
-            0
-        ),
+        affiliate_discount_amount: mergedAffiliateDiscountAmount,
+        affiliate_commission_amount: mergedAffiliateCommissionAmount,
         updated_at: nowIso,
         last_activity_at: nowIso
       };
@@ -471,8 +471,8 @@ window.AXIOM_ORDER_SUBMIT = {
         }
 
         const referralSessionId =
-          sessionRow.affiliate_referral_session_id ||
           orderRow.affiliate_referral_session_id ||
+          sessionRow.affiliate_referral_session_id ||
           browserAttribution?.affiliate_referral_session_id ||
           null;
 
@@ -573,11 +573,6 @@ window.AXIOM_ORDER_SUBMIT = {
       }
 
       if (existingOrder) {
-        const existingOrderAffiliateCommissionAmount =
-          existingOrder.affiliate_id || sessionRow.affiliate_id
-            ? affiliateCommissionAmount
-            : 0;
-
         const existingOrderUpdatePayload = {
           affiliate_id: existingOrder.affiliate_id || sessionRow.affiliate_id || null,
           affiliate_code: existingOrder.affiliate_code || sessionRow.affiliate_code || null,
@@ -594,7 +589,10 @@ window.AXIOM_ORDER_SUBMIT = {
               sessionRow.affiliate_discount_amount ||
               0
           ),
-          affiliate_commission_amount: existingOrderAffiliateCommissionAmount,
+          affiliate_commission_amount:
+            existingOrder.affiliate_id || sessionRow.affiliate_id
+              ? affiliateCommissionAmount
+              : 0,
           updated_at: nowIso
         };
 
