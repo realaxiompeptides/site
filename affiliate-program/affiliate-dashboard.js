@@ -1,18 +1,32 @@
 (function () {
   const MODULES = [
-    "dashboard-js/affiliate-dashboard-core.js",
-    "dashboard-js/affiliate-dashboard-auth.js",
-    "dashboard-js/affiliate-dashboard-ui.js",
-    "dashboard-js/affiliate-dashboard-data.js",
-    "dashboard-js/affiliate-dashboard-claims.js",
-    "dashboard-js/affiliate-dashboard-referral.js",
-    "dashboard-js/affiliate-dashboard-render.js",
-    "dashboard-js/affiliate-dashboard-init.js"
+    "affiliate-dashboard-core.js",
+    "affiliate-dashboard-auth.js",
+    "affiliate-dashboard-ui.js",
+    "affiliate-dashboard-data.js",
+    "affiliate-dashboard-claims.js",
+    "affiliate-dashboard-referral.js",
+    "affiliate-dashboard-render.js",
+    "affiliate-dashboard-init.js"
   ];
+
+  function getModuleBasePath() {
+    const currentScript =
+      document.currentScript ||
+      document.querySelector('script[src*="affiliate-dashboard.js"]');
+
+    if (!currentScript || !currentScript.src) {
+      return "dashboard-js/";
+    }
+
+    const src = currentScript.src;
+    return src.slice(0, src.lastIndexOf("/") + 1) + "dashboard-js/";
+  }
 
   function loadScript(src) {
     return new Promise((resolve, reject) => {
       const existing = document.querySelector(`script[data-affiliate-module="${src}"]`);
+
       if (existing) {
         if (existing.dataset.loaded === "true") {
           resolve();
@@ -48,8 +62,10 @@
 
   async function loadAffiliateDashboardModules() {
     try {
-      for (const src of MODULES) {
-        await loadScript(src);
+      const basePath = getModuleBasePath();
+
+      for (const file of MODULES) {
+        await loadScript(basePath + file);
       }
     } catch (error) {
       console.error("[Affiliate Dashboard] Module loader failed:", error);
