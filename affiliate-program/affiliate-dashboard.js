@@ -3,17 +3,82 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
   affiliateProfile: null,
   authSubscription: null,
   isRenderingDashboard: false,
+  hasInitialized: false,
+  initPromise: null,
+  partialsLoaded: false,
+  domCached: false,
+  authEventsBound: false,
+  delegatedEventsBound: false,
 
   async init() {
-    await this.loadDashboardPartials();
-    this.cacheDom();
-    this.bindAuthEvents();
-    this.bindSupabaseAuthListener();
-    this.showAuth();
-    await this.restoreSessionAndRender();
+    if (this.initPromise) {
+      return this.initPromise;
+    }
+
+    const self = this;
+
+    this.initPromise = (async function () {
+      const supabaseReady = await self.waitForSupabase(80, 125);
+      if (!supabaseReady) {
+        self.cacheDom();
+        self.showAuth();
+        self.setMessage("Supabase auth is not available.", "error");
+        return;
+      }
+
+      await self.waitForBaseDom(80, 125);
+      await self.loadDashboardPartialsOnce();
+      self.cacheDom();
+      self.bindAuthEvents();
+      self.bindSupabaseAuthListener();
+
+      if (!self.hasInitialized) {
+        self.hasInitialized = true;
+      }
+
+      self.showAuth();
+      await self.restoreSessionAndRender();
+    })();
+
+    return this.initPromise;
   },
 
-  async loadDashboardPartials() {
+  wait(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  },
+
+  async waitForSupabase(maxAttempts = 80, delayMs = 125) {
+    for (let i = 0; i < maxAttempts; i += 1) {
+      const supabase = this.getSupabase();
+      if (supabase && supabase.auth) {
+        return true;
+      }
+      await this.wait(delayMs);
+    }
+    return false;
+  },
+
+  async waitForBaseDom(maxAttempts = 80, delayMs = 125) {
+    for (let i = 0; i < maxAttempts; i += 1) {
+      const hasGuest = !!document.getElementById("affiliateGuestView");
+      const hasDashboard = !!document.getElementById("affiliateDashboardView");
+      const hasWrap = !!document.getElementById("affiliateDashboardWrap");
+
+      if (hasGuest || hasDashboard || hasWrap) {
+        return true;
+      }
+
+      await this.wait(delayMs);
+    }
+
+    return false;
+  },
+
+  async loadDashboardPartialsOnce() {
+    if (this.partialsLoaded) {
+      return;
+    }
+
     const mounts = [
       { id: "affiliateOverviewMount", file: "partials/affiliate-overview.html" },
       { id: "affiliateLinksMount", file: "partials/affiliate-links.html" },
@@ -28,17 +93,24 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
         const mount = document.getElementById(item.id);
         if (!mount) return;
 
+        if (mount.dataset.loaded === "true") {
+          return;
+        }
+
         try {
           const response = await fetch(item.file, { cache: "no-store" });
           if (!response.ok) {
             throw new Error("Failed to load " + item.file);
           }
           mount.innerHTML = await response.text();
+          mount.dataset.loaded = "true";
         } catch (error) {
           console.error("[Affiliate Dashboard] Partial load failed:", item.file, error);
         }
       })
     );
+
+    this.partialsLoaded = true;
   },
 
   cacheDom() {
@@ -64,6 +136,8 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
       "affiliatePayoutsMount",
       "affiliateHelpMount"
     ];
+
+    this.domCached = true;
   },
 
   getSupabase() {
@@ -342,41 +416,45 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
   },
 
   bindAuthEvents() {
-    if (this.loginTab && !this.loginTab.dataset.bound) {
-      this.loginTab.dataset.bound = "true";
-      this.loginTab.addEventListener("click", () => this.showLogin());
+    if (!this.authEventsBound) {
+      this.authEventsBound = true;
+
+      if (this.loginTab && !this.loginTab.dataset.bound) {
+        this.loginTab.dataset.bound = "true";
+        this.loginTab.addEventListener("click", () => this.showLogin());
+      }
+
+      if (this.signupTab && !this.signupTab.dataset.bound) {
+        this.signupTab.dataset.bound = "true";
+        this.signupTab.addEventListener("click", () => this.showSignup());
+      }
+
+      if (this.loginForm && !this.loginForm.dataset.bound) {
+        this.loginForm.dataset.bound = "true";
+        this.loginForm.addEventListener("submit", async (event) => {
+          event.preventDefault();
+          await this.signIn();
+        });
+      }
+
+      if (this.signupForm && !this.signupForm.dataset.bound) {
+        this.signupForm.dataset.bound = "true";
+        this.signupForm.addEventListener("submit", async (event) => {
+          event.preventDefault();
+          await this.signUp();
+        });
+      }
+
+      if (this.logoutBtn && !this.logoutBtn.dataset.bound) {
+        this.logoutBtn.dataset.bound = "true";
+        this.logoutBtn.addEventListener("click", async () => {
+          await this.signOut();
+        });
+      }
     }
 
-    if (this.signupTab && !this.signupTab.dataset.bound) {
-      this.signupTab.dataset.bound = "true";
-      this.signupTab.addEventListener("click", () => this.showSignup());
-    }
-
-    if (this.loginForm && !this.loginForm.dataset.bound) {
-      this.loginForm.dataset.bound = "true";
-      this.loginForm.addEventListener("submit", async (event) => {
-        event.preventDefault();
-        await this.signIn();
-      });
-    }
-
-    if (this.signupForm && !this.signupForm.dataset.bound) {
-      this.signupForm.dataset.bound = "true";
-      this.signupForm.addEventListener("submit", async (event) => {
-        event.preventDefault();
-        await this.signUp();
-      });
-    }
-
-    if (this.logoutBtn && !this.logoutBtn.dataset.bound) {
-      this.logoutBtn.dataset.bound = "true";
-      this.logoutBtn.addEventListener("click", async () => {
-        await this.signOut();
-      });
-    }
-
-    if (!document.body.dataset.affiliateDashboardDelegated) {
-      document.body.dataset.affiliateDashboardDelegated = "true";
+    if (!this.delegatedEventsBound) {
+      this.delegatedEventsBound = true;
 
       document.addEventListener("click", (event) => {
         const generateBtn = event.target.closest("#generateAffiliateLinkBtn");
@@ -1470,11 +1548,11 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
         status: "pending"
       });
 
-    if (insertPlain.error) {
-      throw insertPlain.error;
-    }
+      if (insertPlain.error) {
+        throw insertPlain.error;
+      }
 
-    return true;
+      return true;
   },
 
   async submitClaim() {
@@ -1742,14 +1820,3 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
     }
   }
 };
-
-document.addEventListener("DOMContentLoaded", function () {
-  if (
-    window.AXIOM_AFFILIATE_DASHBOARD &&
-    typeof window.AXIOM_AFFILIATE_DASHBOARD.init === "function"
-  ) {
-    window.AXIOM_AFFILIATE_DASHBOARD.init();
-  } else {
-    console.error("AXIOM_AFFILIATE_DASHBOARD.init is not available.");
-  }
-});
