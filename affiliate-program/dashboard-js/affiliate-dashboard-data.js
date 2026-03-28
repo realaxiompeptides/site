@@ -6,7 +6,7 @@ Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
 
     const reservingClaims = (Array.isArray(claimRows) ? claimRows : [])
       .filter((claim) => {
-        const status = String(claim.status || "").toLowerCase();
+        const status = String(claim.status || "").trim().toLowerCase();
         return status === "pending" || status === "approved";
       })
       .sort((a, b) => {
@@ -20,7 +20,7 @@ Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
     }, 0);
 
     const claimableRowsOrdered = rows
-      .filter((row) => String(row.commission_status || "").toLowerCase() === "claimable")
+      .filter((row) => String(row.commission_status || "").trim().toLowerCase() === "claimable")
       .sort((a, b) => {
         const aTime = new Date(a.claimable_at || a.created_at || 0).getTime();
         const bTime = new Date(b.claimable_at || b.created_at || 0).getTime();
@@ -28,7 +28,7 @@ Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
       });
 
     claimableRowsOrdered.forEach((row) => {
-      row.display_status = String(row.commission_status || "").toLowerCase();
+      row.display_status = "claimable";
 
       if (reservedAmount > 0) {
         row.display_status = "claimed";
@@ -38,7 +38,7 @@ Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
 
     rows.forEach((row) => {
       if (!row.display_status) {
-        row.display_status = String(row.commission_status || "").toLowerCase();
+        row.display_status = String(row.commission_status || "").trim().toLowerCase();
       }
     });
 
@@ -114,27 +114,27 @@ Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
 
       const pendingClaims = claimRows
         .filter((item) => {
-          const status = String(item.status || "").toLowerCase();
-          return status === "pending" || status === "approved";
+          const status = String(item.status || "").trim().toLowerCase();
+          return status === "pending";
         })
         .reduce((sum, item) => sum + Number(item.amount || 0), 0);
 
       const approvedClaims = claimRows
-        .filter((item) => String(item.status || "").toLowerCase() === "approved")
+        .filter((item) => String(item.status || "").trim().toLowerCase() === "approved")
         .reduce((sum, item) => sum + Number(item.amount || 0), 0);
 
       const rejectedClaims = claimRows
-        .filter((item) => String(item.status || "").toLowerCase() === "rejected")
+        .filter((item) => String(item.status || "").trim().toLowerCase() === "rejected")
         .reduce((sum, item) => sum + Number(item.amount || 0), 0);
 
       const paid = payoutRows
-        .filter((item) => String(item.payout_status || "").toLowerCase() === "paid")
+        .filter((item) => String(item.payout_status || "").trim().toLowerCase() === "paid")
         .reduce((sum, item) => sum + Number(item.amount || 0), 0);
 
       const displayConversionRows = this.getDisplayCommissionRows(conversionRows, claimRows);
 
       const availableToClaim = displayConversionRows
-        .filter((item) => String(item.display_status || item.commission_status || "").toLowerCase() === "claimable")
+        .filter((item) => String(item.display_status || item.commission_status || "").trim().toLowerCase() === "claimable")
         .reduce((sum, item) => sum + Number(item.commission_amount || 0), 0);
 
       return {
