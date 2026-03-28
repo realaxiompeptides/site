@@ -1,32 +1,26 @@
 (function () {
+  const VERSION = "20260328-320";
+
   const MODULES = [
-    "affiliate-dashboard-core.js",
-    "affiliate-dashboard-auth.js",
-    "affiliate-dashboard-ui.js",
-    "affiliate-dashboard-data.js",
-    "affiliate-dashboard-claims.js",
-    "affiliate-dashboard-referral.js",
-    "affiliate-dashboard-render.js",
-    "affiliate-dashboard-init.js"
+    "dashboard-js/affiliate-dashboard-core.js",
+    "dashboard-js/affiliate-dashboard-auth.js",
+    "dashboard-js/affiliate-dashboard-ui.js",
+    "dashboard-js/affiliate-dashboard-data.js",
+    "dashboard-js/affiliate-dashboard-claims.js",
+    "dashboard-js/affiliate-dashboard-referral.js",
+    "dashboard-js/affiliate-dashboard-render.js",
+    "dashboard-js/affiliate-dashboard-init.js"
   ];
 
-  function getModuleBasePath() {
-    const currentScript =
-      document.currentScript ||
-      document.querySelector('script[src*="affiliate-dashboard.js"]');
-
-    if (!currentScript || !currentScript.src) {
-      return "dashboard-js/";
-    }
-
-    const src = currentScript.src;
-    return src.slice(0, src.lastIndexOf("/") + 1) + "dashboard-js/";
+  function withVersion(src) {
+    return src + (src.includes("?") ? "&" : "?") + "v=" + encodeURIComponent(VERSION);
   }
 
   function loadScript(src) {
     return new Promise((resolve, reject) => {
-      const existing = document.querySelector(`script[data-affiliate-module="${src}"]`);
+      const versionedSrc = withVersion(src);
 
+      const existing = document.querySelector(`script[data-affiliate-module="${src}"]`);
       if (existing) {
         if (existing.dataset.loaded === "true") {
           resolve();
@@ -43,7 +37,7 @@
       }
 
       const script = document.createElement("script");
-      script.src = src;
+      script.src = versionedSrc;
       script.defer = true;
       script.dataset.affiliateModule = src;
 
@@ -62,10 +56,8 @@
 
   async function loadAffiliateDashboardModules() {
     try {
-      const basePath = getModuleBasePath();
-
-      for (const file of MODULES) {
-        await loadScript(basePath + file);
+      for (const src of MODULES) {
+        await loadScript(src);
       }
     } catch (error) {
       console.error("[Affiliate Dashboard] Module loader failed:", error);
