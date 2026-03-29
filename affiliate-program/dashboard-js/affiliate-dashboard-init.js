@@ -1,10 +1,14 @@
-document.addEventListener("DOMContentLoaded", function () {
-  if (
-    window.AXIOM_AFFILIATE_DASHBOARD &&
-    typeof window.AXIOM_AFFILIATE_DASHBOARD.init === "function"
-  ) {
-    window.AXIOM_AFFILIATE_DASHBOARD.init();
-  } else {
-    console.error("AXIOM_AFFILIATE_DASHBOARD.init is not available.");
-  }
-});
+(function () {
+  window.AXIOM_AFFILIATE_DASHBOARD_INIT = {
+    async boot() {
+      if (
+        window.AXIOM_AFFILIATE_DASHBOARD &&
+        typeof window.AXIOM_AFFILIATE_DASHBOARD.init === "function"
+      ) {
+        return window.AXIOM_AFFILIATE_DASHBOARD.init();
+      }
+
+      throw new Error("AXIOM_AFFILIATE_DASHBOARD.init is missing.");
+    }
+  };
+})();
