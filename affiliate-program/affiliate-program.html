@@ -152,61 +152,62 @@
       box-sizing: border-box;
     }
 
-    /* Mobile-safe tab bar */
-    .affiliate-dashboard-tabs,
-    .affiliate-tabs,
-    .affiliate-mobile-tabs,
-    .affiliate-nav-tabs,
-    .affiliate-section-tabs {
-      width: 100%;
-      max-width: 100%;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      justify-content: flex-start;
-      align-items: center;
-      margin: 0 0 18px;
-      padding: 0;
-      box-sizing: border-box;
-      overflow: visible !important;
-    }
-
-    .affiliate-dashboard-tab,
-    .affiliate-tab,
-    .affiliate-mobile-tab,
-    .affiliate-nav-tab,
-    .affiliate-section-tab {
-      flex: 0 1 auto;
-      max-width: 100%;
-      white-space: nowrap;
-      box-sizing: border-box;
-    }
-
-    .affiliate-dashboard-tab button,
-    .affiliate-tab button,
-    .affiliate-mobile-tab button,
-    .affiliate-nav-tab button,
-    .affiliate-section-tab button,
-    .affiliate-dashboard-tab,
-    .affiliate-tab,
-    .affiliate-mobile-tab,
-    .affiliate-nav-tab,
-    .affiliate-section-tab {
-      max-width: 100%;
-      box-sizing: border-box;
-    }
-
-    /* Keep cards inside viewport */
     .affiliate-card,
     .affiliate-auth-card,
     .affiliate-hero-card,
     #affiliateDashboardMount .affiliate-card,
-    #affiliateDashboardMount section {
+    #affiliateDashboardMount section,
+    #affiliateDashboardMount > div {
       width: 100%;
       max-width: 100%;
+      box-sizing: border-box;
       margin-left: auto;
       margin-right: auto;
+    }
+
+    /* dashboard nav buttons */
+    .affiliate-dashboard-tabs,
+    .affiliate-tabs,
+    .affiliate-dashboard-nav,
+    .affiliate-section-tabs,
+    .affiliate-mobile-tabs {
+      width: 100%;
+      max-width: 100%;
+      display: flex !important;
+      flex-wrap: wrap !important;
+      justify-content: center !important;
+      align-items: center;
+      gap: 12px !important;
+      margin: 0 0 22px !important;
+      padding: 0 !important;
       box-sizing: border-box;
+      overflow: visible !important;
+    }
+
+    .affiliate-dashboard-tabs > *,
+    .affiliate-tabs > *,
+    .affiliate-dashboard-nav > *,
+    .affiliate-section-tabs > *,
+    .affiliate-mobile-tabs > * {
+      flex: 0 1 auto;
+      max-width: 100%;
+      min-width: 0;
+      box-sizing: border-box;
+    }
+
+    .affiliate-dashboard-tabs button,
+    .affiliate-tabs button,
+    .affiliate-dashboard-nav button,
+    .affiliate-section-tabs button,
+    .affiliate-mobile-tabs button,
+    .affiliate-dashboard-tabs a,
+    .affiliate-tabs a,
+    .affiliate-dashboard-nav a,
+    .affiliate-section-tabs a,
+    .affiliate-mobile-tabs a {
+      max-width: 100%;
+      box-sizing: border-box;
+      white-space: nowrap;
     }
 
     @media (max-width: 640px) {
@@ -242,27 +243,35 @@
 
       .affiliate-dashboard-tabs,
       .affiliate-tabs,
-      .affiliate-mobile-tabs,
-      .affiliate-nav-tabs,
-      .affiliate-section-tabs {
-        gap: 8px;
+      .affiliate-dashboard-nav,
+      .affiliate-section-tabs,
+      .affiliate-mobile-tabs {
+        gap: 10px !important;
+        justify-content: center !important;
       }
 
-      .affiliate-dashboard-tab,
-      .affiliate-tab,
-      .affiliate-mobile-tab,
-      .affiliate-nav-tab,
-      .affiliate-section-tab {
-        flex: 1 1 calc(50% - 8px);
-        min-width: 0;
+      .affiliate-dashboard-tabs > *,
+      .affiliate-tabs > *,
+      .affiliate-dashboard-nav > *,
+      .affiliate-section-tabs > *,
+      .affiliate-mobile-tabs > * {
+        flex: 1 1 calc(50% - 10px) !important;
+        min-width: 140px !important;
+        max-width: calc(50% - 10px) !important;
       }
 
-      .affiliate-dashboard-tab button,
-      .affiliate-tab button,
-      .affiliate-mobile-tab button,
-      .affiliate-nav-tab button,
-      .affiliate-section-tab button {
-        width: 100%;
+      .affiliate-dashboard-tabs button,
+      .affiliate-tabs button,
+      .affiliate-dashboard-nav button,
+      .affiliate-section-tabs button,
+      .affiliate-mobile-tabs button,
+      .affiliate-dashboard-tabs a,
+      .affiliate-tabs a,
+      .affiliate-dashboard-nav a,
+      .affiliate-section-tabs a,
+      .affiliate-mobile-tabs a {
+        width: 100% !important;
+        text-align: center !important;
       }
     }
   </style>
