@@ -1,9 +1,10 @@
 (function () {
-  const VERSION = "20260328-401";
+  const VERSION = "20260328-402";
 
   const MODULES = [
     "dashboard-js/affiliate-dashboard-core.js",
     "dashboard-js/affiliate-dashboard-auth.js",
+    "dashboard-js/affiliate-dashboard-ui.js",
     "dashboard-js/affiliate-dashboard-data.js",
     "dashboard-js/affiliate-dashboard-claims.js",
     "dashboard-js/affiliate-dashboard-referral.js",
@@ -26,9 +27,11 @@
         }
 
         existing.addEventListener("load", () => resolve(), { once: true });
-        existing.addEventListener("error", () => reject(new Error("Failed to load " + src)), {
-          once: true
-        });
+        existing.addEventListener(
+          "error",
+          () => reject(new Error("Failed to load " + src)),
+          { once: true }
+        );
         return;
       }
 
