@@ -397,11 +397,21 @@
     setDetailText("affiliateDetailCode", safeSummary.referral_code || "—");
     setDetailText(
       "affiliateDetailCommission",
-      safeSummary ? String(Number(safeSummary.commission_value || 0)) + "%" : "—"
+      safeSummary
+        ? (
+            Number(safeSummary.commission_value || 0) +
+            (String(safeSummary.commission_type || "percent").toLowerCase() === "fixed" ? " fixed" : "%")
+          )
+        : "—"
     );
     setDetailText(
       "affiliateDetailDiscount",
-      safeSummary ? String(Number(safeSummary.discount_value || 0)) + "%" : "—"
+      safeSummary
+        ? (
+            Number(safeSummary.discount_value || 0) +
+            (String(safeSummary.discount_type || "percent").toLowerCase() === "fixed" ? " fixed" : "%")
+          )
+        : "—"
     );
     setDetailText("affiliateDetailClicks", String(getAffiliateClicks(safeSummary)));
     setDetailText("affiliateDetailConversions", String(getAffiliateConversions(safeSummary)));
@@ -413,6 +423,33 @@
 
     const payoutAffiliateId = document.getElementById("affiliatePayoutAffiliateId");
     if (payoutAffiliateId) payoutAffiliateId.value = safeSummary.id || "";
+
+    const compAffiliateId = document.getElementById("affiliateCompSettingsAffiliateId");
+    const commissionTypeInput = document.getElementById("affiliateCommissionType");
+    const commissionValueInput = document.getElementById("affiliateCommissionValue");
+    const discountTypeInput = document.getElementById("affiliateDiscountType");
+    const discountValueInput = document.getElementById("affiliateDiscountValue");
+    const compMessage = document.getElementById("affiliateCompSettingsMessage");
+
+    if (compAffiliateId) compAffiliateId.value = safeSummary.id || "";
+    if (commissionTypeInput) {
+      commissionTypeInput.value = String(safeSummary.commission_type || "percent").toLowerCase();
+    }
+    if (commissionValueInput) {
+      commissionValueInput.value = Number(safeSummary.commission_value || 0);
+    }
+    if (discountTypeInput) {
+      discountTypeInput.value = String(safeSummary.discount_type || "percent").toLowerCase();
+    }
+    if (discountValueInput) {
+      discountValueInput.value = Number(safeSummary.discount_value || 0);
+    }
+
+    if (compMessage) {
+      compMessage.hidden = true;
+      compMessage.textContent = "";
+      compMessage.className = "affiliates-admin-inline-message";
+    }
 
     const conversionsMount = document.getElementById("affiliateDetailConversionsList");
     const claimsMount = document.getElementById("affiliateDetailClaimsList");
