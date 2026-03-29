@@ -79,8 +79,8 @@ Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
         if (authEmail && profileEmail === authEmail) score += 40;
         if (profileStatus === "approved") score += 25;
         if (profileStatus === "pending") score += 10;
-        if (profile.referral_code) score += 5;
-        if (profile.updated_at) score += 2;
+        if (profile && profile.referral_code) score += 5;
+        if (profile && profile.updated_at) score += 2;
 
         return score;
       };
@@ -149,7 +149,7 @@ Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
     const reservingClaims = (Array.isArray(claimRows) ? claimRows : [])
       .filter((claim) => {
         const status = String(claim.status || "").trim().toLowerCase();
-        return status === "pending" || status === "approved";
+        return status === "pending";
       })
       .sort((a, b) => {
         const aTime = new Date(a.created_at || 0).getTime();
@@ -284,7 +284,7 @@ Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
 
       const clickRows = dedupeById(clicksResult.data);
       const conversionRows = dedupeById(conversionsResult.data);
-      const payoutRows = dedupeById(claimsResult.error ? [] : payoutsResult.data);
+      const payoutRows = dedupeById(payoutsResult.data);
       const claimRows = dedupeById(claimsResult.data);
 
       const clicks = clickRows.length;
@@ -326,14 +326,14 @@ Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
       });
 
       return {
-        clicks: clicks,
+        clicks,
         conversions: conversionRows.length,
         claimable: availableToClaim,
-        pendingClaims: pendingClaims,
-        approvedClaims: approvedClaims,
-        rejectedClaims: rejectedClaims,
-        availableToClaim: availableToClaim,
-        paid: paid,
+        pendingClaims,
+        approvedClaims,
+        rejectedClaims,
+        availableToClaim,
+        paid,
         recentCommissions: displayConversionRows.slice(0, 6),
         payouts: payoutRows.slice(0, 20),
         claims: claimRows.slice(0, 20)
