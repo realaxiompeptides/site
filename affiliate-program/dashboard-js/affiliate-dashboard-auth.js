@@ -231,7 +231,6 @@ Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
       this.authCard.style.display = "";
     }
 
-    this.hideDashboardSections();
     this.showLogin();
   },
 
@@ -242,8 +241,6 @@ Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
       this.authCard.hidden = true;
       this.authCard.style.display = "none";
     }
-
-    this.showDashboardSections();
 
     if (typeof this.renderDashboard !== "function") {
       throw new Error("renderDashboard is not defined.");
