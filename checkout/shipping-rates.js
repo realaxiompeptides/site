@@ -20,13 +20,13 @@ window.AXIOM_SHIPPING_RATES = (function () {
     {
       id: "intl_standard",
       label: "Standard International",
-      amount: 32.95,
+      amount: 28.99,
       eta: "7–14 business days"
     },
     {
       id: "intl_express",
       label: "Express International",
-      amount: 69.95,
+      amount: 59.95,
       eta: "4–8 business days"
     }
   ];
