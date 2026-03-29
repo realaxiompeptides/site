@@ -33,6 +33,11 @@
       item.claimable ??
       item.claimable_commission ??
       item.claimable_amount ??
+      item.total_commission_earned_live ??
+      item.total_commission_earned ??
+      item.total_earned ??
+      item.earned_amount ??
+      item.commission_amount ??
       0
     ) || 0;
   }
@@ -74,6 +79,9 @@
     return Number(
       item.total_commission_earned_live ??
       item.total_commission_earned ??
+      item.total_earned ??
+      item.earned_amount ??
+      item.commission_amount ??
       0
     ) || 0;
   }
@@ -211,7 +219,14 @@
     const approvedValue = getSummaryValue(summary, ["approved", "approved_affiliates"], 0);
     const claimableValue = getSummaryValue(
       summary,
-      ["claimable", "claimable_total", "total_claimable", "available_to_claim_total"],
+      [
+        "claimable",
+        "claimable_total",
+        "total_claimable",
+        "available_to_claim_total",
+        "total_commission_earned_live",
+        "total_commission_earned"
+      ],
       0
     );
 
