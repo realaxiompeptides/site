@@ -9,10 +9,42 @@ Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
         : [];
     }
 
-    const supabase = this.getSupabase();
     let products = [];
 
+    const normalizeProducts = function (rows) {
+      const seen = new Set();
+      const normalized = [];
+
+      (Array.isArray(rows) ? rows : []).forEach(function (item) {
+        const slug = String(item && item.slug ? item.slug : "").trim();
+        const name = String(item && item.name ? item.name : "").trim();
+        const sortOrder =
+          item && typeof item.sort_order === "number" ? item.sort_order : 0;
+
+        if (!slug || !name) return;
+        if (seen.has(slug)) return;
+
+        seen.add(slug);
+        normalized.push({
+          slug: slug,
+          name: name,
+          sort_order: sortOrder
+        });
+      });
+
+      normalized.sort(function (a, b) {
+        if (a.sort_order !== b.sort_order) {
+          return a.sort_order - b.sort_order;
+        }
+        return a.name.localeCompare(b.name);
+      });
+
+      return normalized;
+    };
+
     try {
+      const supabase = this.getSupabase();
+
       if (supabase) {
         const result = await supabase
           .from("products")
@@ -21,69 +53,60 @@ Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
           .order("sort_order", { ascending: true })
           .order("name", { ascending: true });
 
-        if (result.error) {
-          throw result.error;
+        if (!result.error && Array.isArray(result.data) && result.data.length) {
+          products = normalizeProducts(result.data);
+        } else if (result.error) {
+          console.error("[Affiliate Dashboard] Supabase products load failed:", result.error);
         }
-
-        products = Array.isArray(result.data) ? result.data : [];
       }
     } catch (error) {
-      console.error("[Affiliate Dashboard] Failed loading product options from Supabase:", error);
+      console.error("[Affiliate Dashboard] Supabase products exception:", error);
     }
 
     if (!products.length && Array.isArray(window.AXIOM_PRODUCTS)) {
-      products = window.AXIOM_PRODUCTS
-        .map(function (item) {
+      products = normalizeProducts(
+        window.AXIOM_PRODUCTS.map(function (item) {
           return {
             slug: item && item.slug ? item.slug : "",
             name: item && item.name ? item.name : "",
-            is_active: true,
-            sort_order: item && typeof item.sort_order === "number" ? item.sort_order : 0
+            sort_order:
+              item && typeof item.sort_order === "number" ? item.sort_order : 0
           };
         })
-        .filter(function (item) {
-          return item.slug && item.name;
-        });
+      );
     }
 
-    const deduped = [];
-    const seen = new Set();
+    if (!products.length) {
+      const productLinks = Array.from(
+        document.querySelectorAll('a[href*="product-page/product.html?slug="]')
+      );
 
-    products.forEach(function (item) {
-      const slug = String(item && item.slug ? item.slug : "").trim();
-      const name = String(item && item.name ? item.name : "").trim();
+      products = normalizeProducts(
+        productLinks.map(function (link) {
+          try {
+            const url = new URL(link.href, window.location.origin);
+            const slug = url.searchParams.get("slug") || "";
+            const name = String(link.textContent || "").trim();
+            return { slug: slug, name: name || slug, sort_order: 0 };
+          } catch (_error) {
+            return null;
+          }
+        }).filter(Boolean)
+      );
+    }
 
-      if (!slug || !name) return;
-      if (seen.has(slug)) return;
-
-      seen.add(slug);
-      deduped.push({
-        slug: slug,
-        name: name,
-        sort_order:
-          item && typeof item.sort_order === "number" ? item.sort_order : 0
-      });
-    });
-
-    deduped.sort(function (a, b) {
-      if (a.sort_order !== b.sort_order) {
-        return a.sort_order - b.sort_order;
-      }
-      return a.name.localeCompare(b.name);
-    });
-
-    this.affiliateProductOptions = deduped;
+    this.affiliateProductOptions = products;
 
     productSelect.innerHTML = "";
 
     const placeholderOption = document.createElement("option");
     placeholderOption.value = "";
-    placeholderOption.textContent = deduped.length
+    placeholderOption.textContent = products.length
       ? "Select product"
-      : "No active products found";
+      : "No products found";
     productSelect.appendChild(placeholderOption);
 
-    deduped.forEach(function (product) {
+    products.forEach(function (product) {
       const option = document.createElement("option");
       option.value = product.slug;
       option.textContent = product.name;
@@ -92,7 +115,7 @@ Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
 
     productSelect.dataset.loaded = "true";
 
-    return deduped;
+    return products;
   },
 
   async syncAffiliateLinkTargetPath() {
@@ -159,6 +182,7 @@ Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
 
     if (copyBtn) {
       copyBtn.dataset.affiliateCopy = finalUrl;
+      copyBtn.setAttribute("data-affiliate-copy", finalUrl);
     }
   },
 
