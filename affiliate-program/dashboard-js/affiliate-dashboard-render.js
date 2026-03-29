@@ -11,9 +11,28 @@ Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
         await this.loadAffiliateProfile();
       }
 
-      const stats = await this.fetchStats();
+      const statsRaw = await this.fetchStats();
+      const stats = {
+        clicks: this.toNumber(statsRaw && statsRaw.clicks, 0),
+        conversions: this.toNumber(statsRaw && statsRaw.conversions, 0),
+        availableToClaim: this.toNumber(statsRaw && statsRaw.availableToClaim, 0),
+        paid: this.toNumber(statsRaw && statsRaw.paid, 0),
+        pendingClaims: this.toNumber(statsRaw && statsRaw.pendingClaims, 0),
+        approvedClaims: this.toNumber(statsRaw && statsRaw.approvedClaims, 0),
+        rejectedClaims: this.toNumber(statsRaw && statsRaw.rejectedClaims, 0),
+        recentCommissions: Array.isArray(statsRaw && statsRaw.recentCommissions)
+          ? statsRaw.recentCommissions
+          : [],
+        payouts: Array.isArray(statsRaw && statsRaw.payouts)
+          ? statsRaw.payouts
+          : [],
+        claims: Array.isArray(statsRaw && statsRaw.claims)
+          ? statsRaw.claims
+          : []
+      };
 
       const profile = this.affiliateProfile || null;
+
       const email =
         (profile && profile.email) ||
         (this.currentUser && this.currentUser.email) ||
@@ -26,21 +45,20 @@ Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
           this.currentUser.user_metadata.full_name) ||
         "—";
 
-      const status =
-        (profile && profile.status) || "pending";
-
-      const referralCode =
-        (profile && profile.referral_code) || "—";
+      const status = (profile && profile.status) || "pending";
+      const referralCode = (profile && profile.referral_code) || "—";
 
       this.setText("affiliateDashboardEmail", email);
       this.setText("affiliateDashboardEmailRow", email);
       this.setText("affiliateDashboardFullName", fullName);
       this.setText("affiliateDashboardStatus", status);
       this.setText("affiliateDashboardCode", referralCode);
+
       this.setText(
         "affiliateDashboardCommissionRate",
         profile ? String(Number(profile.commission_value || 0)) + "%" : "—"
       );
+
       this.setText(
         "affiliateDashboardDiscountRate",
         profile ? String(Number(profile.discount_value || 0)) + "%" : "—"
@@ -49,13 +67,13 @@ Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
       this.syncReferralCodeUi((profile && profile.referral_code) || "");
       this.setReferralCodeStatus("", "");
 
-      this.setText("affiliateClicksCount", String(Number(stats.clicks || 0)));
-      this.setText("affiliateConversionsCount", String(Number(stats.conversions || 0)));
-      this.setText("affiliateClaimableAmount", this.formatMoney(stats.availableToClaim || 0));
-      this.setText("affiliatePaidAmount", this.formatMoney(stats.paid || 0));
-      this.setText("affiliatePendingClaimsAmount", this.formatMoney(stats.pendingClaims || 0));
-      this.setText("affiliateApprovedClaimsAmount", this.formatMoney(stats.approvedClaims || 0));
-      this.setText("affiliateRejectedClaimsAmount", this.formatMoney(stats.rejectedClaims || 0));
+      this.setText("affiliateClicksCount", String(stats.clicks));
+      this.setText("affiliateConversionsCount", String(stats.conversions));
+      this.setText("affiliateClaimableAmount", this.formatCurrency(stats.availableToClaim));
+      this.setText("affiliatePaidAmount", this.formatCurrency(stats.paid));
+      this.setText("affiliatePendingClaimsAmount", this.formatCurrency(stats.pendingClaims));
+      this.setText("affiliateApprovedClaimsAmount", this.formatCurrency(stats.approvedClaims));
+      this.setText("affiliateRejectedClaimsAmount", this.formatCurrency(stats.rejectedClaims));
 
       const claimAmountInput = this.getClaimAmountInput();
       if (claimAmountInput) {
@@ -94,25 +112,27 @@ Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
         payoutAddressInput.disabled = this.toNumber(stats.availableToClaim, 0) <= 0;
       }
 
-      const backupContactInput = this.getClaimBackupContactInput();
-      if (backupContactInput) {
-        backupContactInput.disabled = this.toNumber(stats.availableToClaim, 0) <= 0;
+      const payoutContactInput = this.getClaimPayoutContactInput();
+      if (payoutContactInput) {
+        payoutContactInput.disabled = this.toNumber(stats.availableToClaim, 0) <= 0;
       }
 
-      if (this.toNumber(stats.availableToClaim, 0) <= 0) {
-        this.setClaimButtonState("disabled");
-      } else {
-        this.setClaimButtonState("ready");
+      if (typeof this.setClaimButtonState === "function") {
+        if (this.toNumber(stats.availableToClaim, 0) <= 0) {
+          this.setClaimButtonState("disabled");
+        } else {
+          this.setClaimButtonState("ready");
+        }
       }
 
       const claimAvailableEl = document.getElementById("affiliateClaimAvailableAmount");
       if (claimAvailableEl) {
-        claimAvailableEl.textContent = this.formatMoney(stats.availableToClaim || 0);
+        claimAvailableEl.textContent = this.formatCurrency(stats.availableToClaim);
       }
 
       const claimReservedEl = document.getElementById("affiliateClaimReservedAmount");
       if (claimReservedEl) {
-        claimReservedEl.textContent = this.formatMoney(
+        claimReservedEl.textContent = this.formatCurrency(
           this.toNumber(stats.pendingClaims, 0) + this.toNumber(stats.approvedClaims, 0)
         );
       }
@@ -131,32 +151,39 @@ Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
       const generatedLinkInput = document.getElementById("affiliateGeneratedLink");
       if (generatedLinkInput) {
         generatedLinkInput.value =
-          profile && profile.referral_code ? this.buildAffiliateUrl("/") : "";
+          profile && profile.referral_code
+            ? this.buildAffiliateTrackingUrl("/", profile.referral_code)
+            : "";
       }
 
-      this.updateClaimPayoutFieldVisibility();
+      const copyGeneratedLinkBtn = document.getElementById("affiliateCopyGeneratedLinkBtn");
+      if (copyGeneratedLinkBtn && generatedLinkInput) {
+        copyGeneratedLinkBtn.setAttribute("data-affiliate-copy", generatedLinkInput.value || "");
+      }
 
-      const recentCommissions = Array.isArray(stats.recentCommissions)
-        ? stats.recentCommissions
-        : [];
-      const payouts = Array.isArray(stats.payouts) ? stats.payouts : [];
-      const claims = Array.isArray(stats.claims) ? stats.claims : [];
+      if (typeof this.updateClaimPayoutFieldVisibility === "function") {
+        this.updateClaimPayoutFieldVisibility();
+      }
 
       console.log("[Affiliate Dashboard] Rendering with:", {
         profile,
         clicks: stats.clicks,
         conversions: stats.conversions,
         claimable: stats.availableToClaim,
-        payoutsCount: payouts.length,
-        claimsCount: claims.length,
-        recentCommissionsCount: recentCommissions.length
+        payoutsCount: stats.payouts.length,
+        claimsCount: stats.claims.length,
+        recentCommissionsCount: stats.recentCommissions.length
       });
 
-      this.renderRecentCommissions(recentCommissions);
-      this.renderPayouts(payouts);
-      this.renderClaims(claims);
+      this.renderRecentCommissions(stats.recentCommissions);
+      this.renderPayouts(stats.payouts);
+      this.renderClaims(stats.claims);
     } catch (error) {
-      console.error("[Affiliate Dashboard] Render failed:", error?.message || error, error?.stack || "");
+      console.error(
+        "[Affiliate Dashboard] Render failed:",
+        error?.message || error,
+        error?.stack || ""
+      );
       this.setMessage("Failed to load affiliate dashboard data.", "error");
     } finally {
       this.isRenderingDashboard = false;
@@ -176,14 +203,23 @@ Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
 
     mount.innerHTML = safeRows
       .map((row) => {
-        const statusText = this.getCommissionStatusLabel(
-          row.display_status || row.commission_status || "pending"
-        );
+        const statusText =
+          typeof this.getCommissionStatusLabel === "function"
+            ? this.getCommissionStatusLabel(
+                row.display_status || row.commission_status || "pending"
+              )
+            : String(row.display_status || row.commission_status || "pending");
 
         return (
           '<div class="affiliate-data-row">' +
-            "<span>Order #" + this.escapeHtml(row.order_number || "—") + " · " + this.escapeHtml(statusText) + "</span>" +
-            "<strong>" + this.formatMoney(row.commission_amount || 0) + "</strong>" +
+          "<span>Order #" +
+          this.escapeHtml(row.order_number || "—") +
+          " · " +
+          this.escapeHtml(statusText) +
+          "</span>" +
+          "<strong>" +
+          this.formatCurrency(row.commission_amount || 0) +
+          "</strong>" +
           "</div>"
         );
       })
@@ -205,25 +241,46 @@ Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
 
     mount.innerHTML = safeRows
       .map((row) => {
-        const statusLabel = this.getPayoutStatusLabel(row.payout_status);
-        const statusClass = this.getPayoutStatusClass(row.payout_status);
+        const statusLabel =
+          typeof this.getPayoutStatusLabel === "function"
+            ? this.getPayoutStatusLabel(row.payout_status)
+            : this.escapeHtml(row.payout_status || "pending");
+
+        const statusClass =
+          typeof this.getPayoutStatusClass === "function"
+            ? this.getPayoutStatusClass(row.payout_status)
+            : "";
+
         const dateText = this.escapeHtml(this.formatDate(row.paid_at || row.created_at));
-        const amount = this.formatMoney(row.amount || 0);
+        const amount = this.formatCurrency(row.amount || 0);
         const methodText = row.payout_method ? this.escapeHtml(row.payout_method) : "Payout";
         const referenceText = row.payout_reference ? this.escapeHtml(row.payout_reference) : "";
         const notesText = row.notes ? this.escapeHtml(row.notes) : "";
 
         return (
           '<div class="affiliate-data-row affiliate-data-row--stacked">' +
-            '<div class="affiliate-data-row-main">' +
-              "<span>" + dateText + "</span>" +
-              "<strong>" + amount + "</strong>" +
-            "</div>" +
-            '<div class="affiliate-data-row-sub">' +
-              '<span class="affiliate-status-badge ' + statusClass + '">' + statusLabel + "</span>" +
-              '<span class="affiliate-data-note">' + methodText + (referenceText ? " · " + referenceText : "") + "</span>" +
-              (notesText ? '<span class="affiliate-data-note">' + notesText + "</span>" : "") +
-            "</div>" +
+          '<div class="affiliate-data-row-main">' +
+          "<span>" +
+          dateText +
+          "</span>" +
+          "<strong>" +
+          amount +
+          "</strong>" +
+          "</div>" +
+          '<div class="affiliate-data-row-sub">' +
+          '<span class="affiliate-status-badge ' +
+          statusClass +
+          '">' +
+          statusLabel +
+          "</span>" +
+          '<span class="affiliate-data-note">' +
+          methodText +
+          (referenceText ? " · " + referenceText : "") +
+          "</span>" +
+          (notesText
+            ? '<span class="affiliate-data-note">' + notesText + "</span>"
+            : "") +
+          "</div>" +
           "</div>"
         );
       })
@@ -262,10 +319,18 @@ Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
 
     mount.innerHTML = safeRows
       .map((row) => {
-        const statusLabel = this.getClaimStatusLabel(row.status);
-        const statusClass = this.getClaimStatusClass(row.status);
+        const statusLabel =
+          typeof this.getClaimStatusLabel === "function"
+            ? this.getClaimStatusLabel(row.status)
+            : this.escapeHtml(row.status || "pending");
+
+        const statusClass =
+          typeof this.getClaimStatusClass === "function"
+            ? this.getClaimStatusClass(row.status)
+            : "";
+
         const dateText = this.escapeHtml(this.formatDate(row.created_at));
-        const amount = this.formatMoney(row.amount || 0);
+        const amount = this.formatCurrency(row.amount || 0);
         const noteText = row.message ? this.escapeHtml(row.message) : "";
         const payoutMethodText = row.payout_method ? this.escapeHtml(row.payout_method) : "";
         const payoutNetworkText = row.payout_network ? this.escapeHtml(row.payout_network) : "";
@@ -274,18 +339,36 @@ Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
 
         return (
           '<div class="affiliate-data-row affiliate-data-row--stacked">' +
-            '<div class="affiliate-data-row-main">' +
-              "<span>" + dateText + "</span>" +
-              "<strong>" + amount + "</strong>" +
-            "</div>" +
-            '<div class="affiliate-data-row-sub">' +
-              '<span class="affiliate-status-badge ' + statusClass + '">' + statusLabel + "</span>" +
-              (noteText ? '<span class="affiliate-data-note">Note: ' + noteText + "</span>" : "") +
-              (payoutMethodText ? '<span class="affiliate-data-note">Method: ' + payoutMethodText + "</span>" : "") +
-              (payoutNetworkText ? '<span class="affiliate-data-note">Network: ' + payoutNetworkText + "</span>" : "") +
-              (payoutAddressText ? '<span class="affiliate-data-note">Address: ' + payoutAddressText + "</span>" : "") +
-              (payoutContactText ? '<span class="affiliate-data-note">Contact: ' + payoutContactText + "</span>" : "") +
-            "</div>" +
+          '<div class="affiliate-data-row-main">' +
+          "<span>" +
+          dateText +
+          "</span>" +
+          "<strong>" +
+          amount +
+          "</strong>" +
+          "</div>" +
+          '<div class="affiliate-data-row-sub">' +
+          '<span class="affiliate-status-badge ' +
+          statusClass +
+          '">' +
+          statusLabel +
+          "</span>" +
+          (noteText
+            ? '<span class="affiliate-data-note">Note: ' + noteText + "</span>"
+            : "") +
+          (payoutMethodText
+            ? '<span class="affiliate-data-note">Method: ' + payoutMethodText + "</span>"
+            : "") +
+          (payoutNetworkText
+            ? '<span class="affiliate-data-note">Network: ' + payoutNetworkText + "</span>"
+            : "") +
+          (payoutAddressText
+            ? '<span class="affiliate-data-note">Address: ' + payoutAddressText + "</span>"
+            : "") +
+          (payoutContactText
+            ? '<span class="affiliate-data-note">Contact: ' + payoutContactText + "</span>"
+            : "") +
+          "</div>" +
           "</div>"
         );
       })
