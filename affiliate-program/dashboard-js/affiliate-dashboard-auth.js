@@ -13,6 +13,7 @@ Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
         if (!this.currentUser) {
           this.affiliateProfile = null;
           this.affiliateProfileIds = [];
+          this.hideDashboardSections();
           this.showAuth();
           this.setMessage("");
           this.setReferralCodeStatus("", "");
@@ -229,6 +230,7 @@ Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
 
   showAuth() {
     this.refreshDomReferences();
+    this.hideDashboardSections();
     this.showGuestView();
 
     if (this.authCard) {
@@ -242,6 +244,7 @@ Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
   async showDashboard() {
     this.refreshDomReferences();
     this.showApprovedDashboardView();
+    this.showDashboardSections();
 
     if (this.authCard) {
       this.authCard.hidden = true;
@@ -261,6 +264,7 @@ Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
     const supabase = this.getSupabase();
 
     if (!supabase || !supabase.auth) {
+      this.hideDashboardSections();
       this.setMessage("Supabase auth is not available.", "error");
       this.showAuth();
       return;
@@ -269,7 +273,10 @@ Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
     try {
       const sessionResult = await supabase.auth.getSession();
       this.currentUser =
-        sessionResult && sessionResult.data && sessionResult.data.session && sessionResult.data.session.user
+        sessionResult &&
+        sessionResult.data &&
+        sessionResult.data.session &&
+        sessionResult.data.session.user
           ? sessionResult.data.session.user
           : null;
     } catch (error) {
@@ -280,6 +287,7 @@ Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
     if (!this.currentUser) {
       this.affiliateProfile = null;
       this.affiliateProfileIds = [];
+      this.hideDashboardSections();
       this.showAuth();
       return;
     }
@@ -287,6 +295,7 @@ Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
     await this.loadAffiliateProfile();
 
     if (!this.affiliateProfile) {
+      this.hideDashboardSections();
       this.showAuth();
       this.showSignup();
       this.setMessage(
