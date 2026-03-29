@@ -1,54 +1,41 @@
 Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
-  buildAffiliateTrackingUrl(targetPath, referralCode) {
-    const normalizedCode = this.normalizeCode(referralCode);
-    const rawPath = String(targetPath || "").trim();
-    const baseOrigin = window.location.origin;
+  generateTrackingLink() {
+    const pathEl = document.getElementById('affiliateTargetPath');
+    const output = document.getElementById('affiliateGeneratedLink');
+    const copyBtn = document.getElementById('affiliateCopyGeneratedLinkBtn');
+    const code = (this.affiliateProfile && this.affiliateProfile.referral_code) || '';
 
-    let resolvedUrl;
+    const customPath = pathEl && pathEl.value ? pathEl.value.trim() : '/';
+    const finalUrl = code ? this.buildAffiliateTrackingUrl(customPath, code) : '';
 
-    try {
-      if (!rawPath) {
-        resolvedUrl = new URL("../index.html", window.location.href);
-      } else if (/^https?:\/\//i.test(rawPath)) {
-        resolvedUrl = new URL(rawPath);
-      } else {
-        const prefixedPath = rawPath.startsWith("/") ? rawPath : "/" + rawPath.replace(/^\.\//, "");
-        resolvedUrl = new URL(prefixedPath, baseOrigin);
-      }
-    } catch (error) {
-      resolvedUrl = new URL("../index.html", window.location.href);
+    if (output) {
+      output.value = finalUrl;
     }
 
-    if (normalizedCode) {
-      resolvedUrl.searchParams.set("ref", normalizedCode);
+    if (copyBtn) {
+      copyBtn.dataset.affiliateCopy = finalUrl;
     }
-
-    return resolvedUrl.toString();
   },
 
-  generateTrackingLink() {
-    const targetInput = document.getElementById("affiliateTargetPath");
-    const outputInput = document.getElementById("affiliateGeneratedLink");
-    const referralCode =
-      (this.affiliateProfile && this.affiliateProfile.referral_code) ||
-      (this.getReferralCodeInput() && this.getReferralCodeInput().value) ||
-      "";
+  buildAffiliateTrackingUrl(targetPath, referralCode) {
+    const normalizedCode = this.normalizeCode(referralCode);
+    const baseOrigin = window.location.origin;
 
-    if (!outputInput) {
-      return;
+    let resolvedPath = '/';
+    if (typeof targetPath === 'string' && targetPath.trim()) {
+      resolvedPath = targetPath.trim();
     }
 
-    const url = this.buildAffiliateTrackingUrl(
-      targetInput ? targetInput.value : "",
-      referralCode
-    );
-
-    outputInput.value = url;
-
-    const copyBtn = document.getElementById("affiliateCopyGeneratedLinkBtn");
-    if (copyBtn) {
-      copyBtn.setAttribute("data-affiliate-copy", url);
+    if (!resolvedPath.startsWith('/')) {
+      resolvedPath = '/' + resolvedPath.replace(/^\.?\//, '');
     }
+
+    const url = new URL(resolvedPath, baseOrigin);
+    if (normalizedCode) {
+      url.searchParams.set('ref', normalizedCode);
+    }
+
+    return url.toString();
   },
 
   async updateOwnReferralCode() {
@@ -56,133 +43,53 @@ Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
     const input = this.getReferralCodeInput();
     const saveBtn = this.getReferralCodeSaveButton();
 
-    if (!supabase) {
-      this.setReferralCodeStatus("Supabase is not available.", "error");
-      return false;
+    if (!supabase || !this.affiliateProfile || !this.affiliateProfile.id || !input) {
+      this.setReferralCodeStatus('Unable to update code right now.', 'error');
+      return;
     }
 
-    if (!this.affiliateProfile || !this.affiliateProfile.id) {
-      this.setReferralCodeStatus("Affiliate profile not found.", "error");
-      return false;
-    }
+    const nextCode = this.normalizeCode(input.value);
 
-    const nextCode = this.normalizeCode(input ? input.value : "");
-
-    if (!nextCode || nextCode.length < 4 || nextCode.length > 12) {
-      this.setReferralCodeStatus("Code must be 4 to 12 characters.", "error");
-      return false;
+    if (!nextCode || nextCode.length < 4) {
+      this.setReferralCodeStatus('Code must be at least 4 characters.', 'error');
+      return;
     }
 
     if (saveBtn) {
       saveBtn.disabled = true;
+      saveBtn.textContent = 'Saving...';
     }
 
-    this.setReferralCodeStatus("Saving code...", "info");
+    this.setReferralCodeStatus('Saving code...', '');
 
-    const rpcAttempts = [
-      {
-        name: "affiliate_update_own_referral_code",
-        args: { p_referral_code: nextCode }
-      },
-      {
-        name: "affiliate_update_own_referral_code",
-        args: { new_referral_code: nextCode }
-      },
-      {
-        name: "admin_update_affiliate_referral_code",
-        args: {
-          p_affiliate_id: this.affiliateProfile.id,
-          p_referral_code: nextCode
-        }
-      },
-      {
-        name: "admin_update_affiliate_referral_code",
-        args: {
-          affiliate_id_input: this.affiliateProfile.id,
-          new_referral_code: nextCode
-        }
-      }
-    ];
+    try {
+      const { error } = await supabase
+        .from('affiliates')
+        .update({
+          referral_code: nextCode,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', this.affiliateProfile.id);
 
-    let saved = false;
-
-    for (const attempt of rpcAttempts) {
-      try {
-        const rpcResult = await supabase.rpc(attempt.name, attempt.args);
-        if (!rpcResult.error) {
-          saved = true;
-          break;
-        }
-
-        console.warn(
-          "[Affiliate Dashboard] Referral code RPC failed:",
-          attempt.name,
-          rpcResult.error
-        );
-      } catch (error) {
-        console.warn(
-          "[Affiliate Dashboard] Referral code RPC exception:",
-          attempt.name,
-          error
-        );
-      }
-    }
-
-    if (!saved) {
-      try {
-        const updateResult = await supabase
-          .from("affiliates")
-          .update({
-            referral_code: nextCode,
-            updated_at: new Date().toISOString()
-          })
-          .eq("id", this.affiliateProfile.id)
-          .select("*")
-          .maybeSingle();
-
-        if (!updateResult.error && updateResult.data) {
-          saved = true;
-          this.affiliateProfile = updateResult.data;
-        } else if (updateResult.error) {
-          console.error(
-            "[Affiliate Dashboard] Direct referral code update failed:",
-            updateResult.error
-          );
-        }
-      } catch (error) {
-        console.error("[Affiliate Dashboard] Direct referral code update exception:", error);
-      }
-    }
-
-    if (saved) {
-      if (!this.affiliateProfile) {
-        await this.loadAffiliateProfile();
-      } else {
-        this.affiliateProfile.referral_code = nextCode;
+      if (error) {
+        throw error;
       }
 
-      const profileCodeEl = document.getElementById("affiliateDashboardCode");
-      if (profileCodeEl) {
-        profileCodeEl.textContent = nextCode;
-      }
-
-      if (input) {
-        input.value = nextCode;
-      }
-
-      this.setReferralCodeStatus("Referral code updated.", "success");
-      this.generateTrackingLink();
-    } else {
+      this.affiliateProfile.referral_code = nextCode;
+      this.setText('affiliateDashboardCode', nextCode);
+      this.syncReferralCodeUi(nextCode);
+      this.setReferralCodeStatus('Code updated successfully.', '');
+    } catch (error) {
+      console.error('[Affiliate Dashboard] updateOwnReferralCode failed:', error);
       this.setReferralCodeStatus(
-        "Could not save the referral code. One of the RPC functions is probably missing in Supabase, or direct table updates are blocked by RLS.",
-        "error"
+        error.message || 'Unable to update referral code.',
+        'error'
       );
+    } finally {
+      if (saveBtn) {
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Save Code';
+      }
     }
-
-    if (saveBtn) {
-      saveBtn.disabled = false;
-    }
-
-    return saved;
   }
 });
