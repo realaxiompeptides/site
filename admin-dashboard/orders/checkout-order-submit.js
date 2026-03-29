@@ -205,16 +205,12 @@ document.addEventListener("DOMContentLoaded", function () {
       null;
 
     const existingAffiliateDiscountAmount = toNumber(
-      (liveAttribution && liveAttribution.affiliate_discount_amount) !== undefined
-        ? liveAttribution.affiliate_discount_amount
-        : currentSession?.affiliate_discount_amount,
+      liveAttribution?.affiliate_discount_amount ?? currentSession?.affiliate_discount_amount,
       0
     );
 
     const existingAffiliateCommissionAmount = toNumber(
-      (liveAttribution && liveAttribution.affiliate_commission_amount) !== undefined
-        ? liveAttribution.affiliate_commission_amount
-        : currentSession?.affiliate_commission_amount,
+      liveAttribution?.affiliate_commission_amount ?? currentSession?.affiliate_commission_amount,
       0
     );
 
