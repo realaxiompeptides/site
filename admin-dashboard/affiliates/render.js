@@ -33,11 +33,6 @@
       item.claimable ??
       item.claimable_commission ??
       item.claimable_amount ??
-      item.total_commission_earned_live ??
-      item.total_commission_earned ??
-      item.total_earned ??
-      item.earned_amount ??
-      item.commission_amount ??
       0
     ) || 0;
   }
@@ -219,14 +214,7 @@
     const approvedValue = getSummaryValue(summary, ["approved", "approved_affiliates"], 0);
     const claimableValue = getSummaryValue(
       summary,
-      [
-        "claimable",
-        "claimable_total",
-        "total_claimable",
-        "available_to_claim_total",
-        "total_commission_earned_live",
-        "total_commission_earned"
-      ],
+      ["claimable", "claimable_total", "total_claimable", "available_to_claim_total"],
       0
     );
 
@@ -242,7 +230,7 @@
     const dom = domApi.get();
 
     if (dom.tableBody) {
-      domApi.setHTML(dom.tableBody, '<tr><td colspan="10">Loading affiliates...</td></tr>');
+      domApi.setHTML(dom.tableBody, '<tr><td colspan="11">Loading affiliates...</td></tr>');
     }
 
     const payoutRequestsTableBody =
@@ -264,7 +252,7 @@
     if (dom.tableBody) {
       domApi.setHTML(
         dom.tableBody,
-        '<tr><td colspan="10">Failed to load affiliates: ' +
+        '<tr><td colspan="11">Failed to load affiliates: ' +
           utils.escapeHtml(message || "Unknown error") +
           '</td></tr>'
       );
@@ -288,7 +276,7 @@
   function renderEmpty() {
     const dom = domApi.get();
     if (!dom.tableBody) return;
-    domApi.setHTML(dom.tableBody, '<tr><td colspan="10">No affiliates found.</td></tr>');
+    domApi.setHTML(dom.tableBody, '<tr><td colspan="11">No affiliates found.</td></tr>');
   }
 
   function renderTable() {
@@ -310,26 +298,29 @@
           const statusClass = "affiliate-admin-status-" + statusValue;
           const clicks = getAffiliateClicks(item);
           const conversions = getAffiliateConversions(item);
+          const earned = getAffiliateEarned(item);
           const claimable = getAffiliateClaimable(item);
           const pendingClaimRequests = getPendingClaimRequestCount(item);
+          const affiliateId = utils.escapeHtml(item.id || "");
 
           return (
             '<tr>' +
-              '<td>' + utils.escapeHtml(item.full_name || "—") + '</td>' +
-              '<td>' + utils.escapeHtml(item.email || "—") + '</td>' +
-              '<td>' + utils.escapeHtml(item.discord_username || "—") + '</td>' +
-              '<td><span class="affiliate-admin-status ' + statusClass + '">' + statusValue + '</span></td>' +
-              '<td>' + utils.escapeHtml(item.referral_code || "—") + '</td>' +
-              '<td>' + clicks + '</td>' +
-              '<td>' + conversions + '</td>' +
-              '<td>' + utils.formatCurrency(claimable) + '</td>' +
-              '<td>' + pendingClaimRequests + '</td>' +
-              '<td>' +
+              '<td data-label="Name">' + utils.escapeHtml(item.full_name || "—") + '</td>' +
+              '<td data-label="Email">' + utils.escapeHtml(item.email || "—") + '</td>' +
+              '<td data-label="Discord">' + utils.escapeHtml(item.discord_username || "—") + '</td>' +
+              '<td data-label="Status"><span class="affiliate-admin-status ' + statusClass + '">' + statusValue + '</span></td>' +
+              '<td data-label="Code">' + utils.escapeHtml(item.referral_code || "—") + '</td>' +
+              '<td data-label="Clicks">' + clicks + '</td>' +
+              '<td data-label="Conversions">' + conversions + '</td>' +
+              '<td data-label="Earned">' + utils.formatCurrency(earned) + '</td>' +
+              '<td data-label="Claimable">' + utils.formatCurrency(claimable) + '</td>' +
+              '<td data-label="Pending Claims">' + pendingClaimRequests + '</td>' +
+              '<td data-label="Actions">' +
                 '<div class="affiliates-admin-actions">' +
-                  '<button type="button" class="affiliates-admin-action-btn" data-action="view" data-affiliate-id="' + utils.escapeHtml(item.id) + '">View</button>' +
-                  '<button type="button" class="affiliates-admin-action-btn affiliates-admin-action-btn-approve" data-action="approve" data-affiliate-id="' + utils.escapeHtml(item.id) + '">Approve</button>' +
-                  '<button type="button" class="affiliates-admin-action-btn affiliates-admin-action-btn-reject" data-action="reject" data-affiliate-id="' + utils.escapeHtml(item.id) + '">Reject</button>' +
-                  '<button type="button" class="affiliates-admin-action-btn affiliates-admin-action-btn-suspend" data-action="suspend" data-affiliate-id="' + utils.escapeHtml(item.id) + '">Suspend</button>' +
+                  '<button type="button" class="affiliates-admin-action-btn" data-action="view" data-affiliate-id="' + affiliateId + '">View</button>' +
+                  '<button type="button" class="affiliates-admin-action-btn affiliates-admin-action-btn-approve" data-action="approve" data-affiliate-id="' + affiliateId + '">Approve</button>' +
+                  '<button type="button" class="affiliates-admin-action-btn affiliates-admin-action-btn-reject" data-action="reject" data-affiliate-id="' + affiliateId + '">Reject</button>' +
+                  '<button type="button" class="affiliates-admin-action-btn affiliates-admin-action-btn-suspend" data-action="suspend" data-affiliate-id="' + affiliateId + '">Suspend</button>' +
                 '</div>' +
               '</td>' +
             '</tr>'
