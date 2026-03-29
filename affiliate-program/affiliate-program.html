@@ -123,6 +123,45 @@
       display: none !important;
     }
 
+    .affiliate-dashboard-tabs {
+      display: flex;
+      gap: 10px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 0 0 8px;
+      margin: 0 0 18px;
+      scrollbar-width: none;
+    }
+
+    .affiliate-dashboard-tabs::-webkit-scrollbar {
+      display: none;
+    }
+
+    .affiliate-dashboard-tab {
+      appearance: none;
+      border: 1px solid #dbe4ee;
+      background: #ffffff;
+      color: #0f172a;
+      border-radius: 999px;
+      padding: 10px 14px;
+      font: inherit;
+      font-weight: 700;
+      white-space: nowrap;
+      cursor: pointer;
+      flex: 0 0 auto;
+      transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+    }
+
+    .affiliate-dashboard-tab.is-active {
+      background: #0f172a;
+      color: #ffffff;
+      border-color: #0f172a;
+    }
+
+    .affiliate-dashboard-panel[hidden] {
+      display: none !important;
+    }
+
     @media (max-width: 640px) {
       .header-inner {
         padding-left: 12px !important;
@@ -148,6 +187,15 @@
       .site-logo img {
         width: 66px !important;
         height: 66px !important;
+      }
+
+      .affiliate-dashboard-tabs {
+        margin-bottom: 14px;
+      }
+
+      .affiliate-dashboard-tab {
+        padding: 9px 12px;
+        font-size: 14px;
       }
     }
   </style>
@@ -270,7 +318,97 @@
       </div>
 
       <div id="affiliateDashboardView" hidden>
-        <div id="affiliateDashboardMount"></div>
+        <div class="affiliate-dashboard-tabs" id="affiliateDashboardTabs" hidden>
+          <button
+            type="button"
+            class="affiliate-dashboard-tab is-active"
+            data-affiliate-tab="overview"
+          >
+            Overview
+          </button>
+          <button
+            type="button"
+            class="affiliate-dashboard-tab"
+            data-affiliate-tab="links"
+          >
+            Links
+          </button>
+          <button
+            type="button"
+            class="affiliate-dashboard-tab"
+            data-affiliate-tab="commissions"
+          >
+            Commissions
+          </button>
+          <button
+            type="button"
+            class="affiliate-dashboard-tab"
+            data-affiliate-tab="claims"
+          >
+            Claims
+          </button>
+          <button
+            type="button"
+            class="affiliate-dashboard-tab"
+            data-affiliate-tab="payouts"
+          >
+            Payouts
+          </button>
+          <button
+            type="button"
+            class="affiliate-dashboard-tab"
+            data-affiliate-tab="help"
+          >
+            Help
+          </button>
+        </div>
+
+        <div id="affiliateDashboardMount">
+          <section class="affiliate-dashboard-shell">
+            <div class="affiliate-dashboard-layout">
+              <div
+                id="affiliateOverviewMount"
+                class="affiliate-dashboard-panel"
+                data-affiliate-panel="overview"
+              ></div>
+
+              <div
+                id="affiliateLinksMount"
+                class="affiliate-dashboard-panel"
+                data-affiliate-panel="links"
+                hidden
+              ></div>
+
+              <div
+                id="affiliateCommissionsMount"
+                class="affiliate-dashboard-panel"
+                data-affiliate-panel="commissions"
+                hidden
+              ></div>
+
+              <div
+                id="affiliateClaimsMount"
+                class="affiliate-dashboard-panel"
+                data-affiliate-panel="claims"
+                hidden
+              ></div>
+
+              <div
+                id="affiliatePayoutsMount"
+                class="affiliate-dashboard-panel"
+                data-affiliate-panel="payouts"
+                hidden
+              ></div>
+
+              <div
+                id="affiliateHelpMount"
+                class="affiliate-dashboard-panel"
+                data-affiliate-panel="help"
+                hidden
+              ></div>
+            </div>
+          </section>
+        </div>
       </div>
     </div>
   </main>
@@ -309,6 +447,52 @@
         .catch(function (error) {
           console.error("Footer load failed:", error);
         });
+
+      const dashboardTabs = document.getElementById("affiliateDashboardTabs");
+      const dashboardView = document.getElementById("affiliateDashboardView");
+
+      function showAffiliatePanel(panelName) {
+        const tabs = document.querySelectorAll("[data-affiliate-tab]");
+        const panels = document.querySelectorAll("[data-affiliate-panel]");
+
+        tabs.forEach(function (tab) {
+          const isActive = tab.getAttribute("data-affiliate-tab") === panelName;
+          tab.classList.toggle("is-active", isActive);
+        });
+
+        panels.forEach(function (panel) {
+          const isActive = panel.getAttribute("data-affiliate-panel") === panelName;
+          panel.hidden = !isActive;
+        });
+      }
+
+      if (dashboardTabs) {
+        document.addEventListener("click", function (event) {
+          const tab = event.target.closest("[data-affiliate-tab]");
+          if (!tab) return;
+
+          event.preventDefault();
+          showAffiliatePanel(tab.getAttribute("data-affiliate-tab"));
+        });
+      }
+
+      const observer = new MutationObserver(function () {
+        if (!dashboardView) return;
+        if (dashboardView.hidden) return;
+
+        if (dashboardTabs) {
+          dashboardTabs.hidden = false;
+        }
+
+        showAffiliatePanel("overview");
+      });
+
+      if (dashboardView) {
+        observer.observe(dashboardView, {
+          attributes: true,
+          attributeFilter: ["hidden"]
+        });
+      }
     });
   </script>
 </body>
