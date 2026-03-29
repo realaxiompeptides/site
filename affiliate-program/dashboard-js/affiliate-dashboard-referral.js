@@ -1,5 +1,101 @@
 Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
-  syncAffiliateLinkTargetPath() {
+  async loadAffiliateProductOptions() {
+    const productSelect = document.getElementById("affiliateProductSlug");
+    if (!productSelect) return [];
+
+    if (productSelect.dataset.loaded === "true") {
+      return Array.isArray(this.affiliateProductOptions)
+        ? this.affiliateProductOptions
+        : [];
+    }
+
+    const supabase = this.getSupabase();
+    let products = [];
+
+    try {
+      if (supabase) {
+        const result = await supabase
+          .from("products")
+          .select("slug, name, is_active, sort_order")
+          .eq("is_active", true)
+          .order("sort_order", { ascending: true })
+          .order("name", { ascending: true });
+
+        if (result.error) {
+          throw result.error;
+        }
+
+        products = Array.isArray(result.data) ? result.data : [];
+      }
+    } catch (error) {
+      console.error("[Affiliate Dashboard] Failed loading product options from Supabase:", error);
+    }
+
+    if (!products.length && Array.isArray(window.AXIOM_PRODUCTS)) {
+      products = window.AXIOM_PRODUCTS
+        .map(function (item) {
+          return {
+            slug: item && item.slug ? item.slug : "",
+            name: item && item.name ? item.name : "",
+            is_active: true,
+            sort_order: item && typeof item.sort_order === "number" ? item.sort_order : 0
+          };
+        })
+        .filter(function (item) {
+          return item.slug && item.name;
+        });
+    }
+
+    const deduped = [];
+    const seen = new Set();
+
+    products.forEach(function (item) {
+      const slug = String(item && item.slug ? item.slug : "").trim();
+      const name = String(item && item.name ? item.name : "").trim();
+
+      if (!slug || !name) return;
+      if (seen.has(slug)) return;
+
+      seen.add(slug);
+      deduped.push({
+        slug: slug,
+        name: name,
+        sort_order:
+          item && typeof item.sort_order === "number" ? item.sort_order : 0
+      });
+    });
+
+    deduped.sort(function (a, b) {
+      if (a.sort_order !== b.sort_order) {
+        return a.sort_order - b.sort_order;
+      }
+      return a.name.localeCompare(b.name);
+    });
+
+    this.affiliateProductOptions = deduped;
+
+    productSelect.innerHTML = "";
+
+    const placeholderOption = document.createElement("option");
+    placeholderOption.value = "";
+    placeholderOption.textContent = deduped.length
+      ? "Select product"
+      : "No active products found";
+    productSelect.appendChild(placeholderOption);
+
+    deduped.forEach(function (product) {
+      const option = document.createElement("option");
+      option.value = product.slug;
+      option.textContent = product.name;
+      productSelect.appendChild(option);
+    });
+
+    productSelect.dataset.loaded = "true";
+
+    return deduped;
+  },
+
+  async syncAffiliateLinkTargetPath() {
     const targetPathInput = document.getElementById("affiliateTargetPath");
     const linkTypeSelect = document.getElementById("affiliateLinkType");
     const productField = document.getElementById("affiliateProductField");
@@ -12,6 +108,10 @@ Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
     }
 
     const linkType = String(linkTypeSelect.value || "home").trim().toLowerCase();
+
+    if (linkType === "product") {
+      await this.loadAffiliateProductOptions();
+    }
 
     if (productField) {
       productField.hidden = linkType !== "product";
@@ -31,7 +131,9 @@ Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
       finalPath = "/catalog.html";
     } else if (linkType === "product") {
       const slug = productSelect ? String(productSelect.value || "").trim() : "";
-      finalPath = slug ? "/product-page/product.html?slug=" + encodeURIComponent(slug) : "";
+      finalPath = slug
+        ? "/product-page/product.html?slug=" + encodeURIComponent(slug)
+        : "";
     } else if (linkType === "custom") {
       finalPath = customPathInput ? String(customPathInput.value || "").trim() : "";
     }
@@ -40,12 +142,12 @@ Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
     return finalPath;
   },
 
-  generateTrackingLink() {
+  async generateTrackingLink() {
     const output = document.getElementById("affiliateGeneratedLink");
     const copyBtn = document.getElementById("affiliateCopyGeneratedLinkBtn");
     const code = (this.affiliateProfile && this.affiliateProfile.referral_code) || "";
 
-    this.syncAffiliateLinkTargetPath();
+    await this.syncAffiliateLinkTargetPath();
 
     const targetPathInput = document.getElementById("affiliateTargetPath");
     const finalPath = targetPathInput ? String(targetPathInput.value || "").trim() : "";
@@ -122,7 +224,7 @@ Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
       this.affiliateProfile.referral_code = nextCode;
       this.setText("affiliateDashboardCode", nextCode);
       this.syncReferralCodeUi(nextCode);
-      this.generateTrackingLink();
+      await this.generateTrackingLink();
       this.setReferralCodeStatus("Code updated successfully.", "");
     } catch (error) {
       console.error("[Affiliate Dashboard] updateOwnReferralCode failed:", error);
