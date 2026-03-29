@@ -19,8 +19,16 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
     const self = this;
 
     this.initPromise = (async function () {
-      await self.waitForBaseDom(80, 125);
-      await self.loadDashboardPartialsOnce();
+      const baseDomReady = await self.waitForBaseDom(120, 100);
+      if (!baseDomReady) {
+        throw new Error("Affiliate dashboard shell did not load in time.");
+      }
+
+      const partialsReady = await self.loadDashboardPartialsOnce();
+      if (!partialsReady) {
+        throw new Error("Affiliate dashboard partials did not load in time.");
+      }
+
       self.cacheDom();
       self.bindAuthEvents();
 
@@ -39,7 +47,11 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
       }
 
       await self.restoreSessionAndRender();
-    })();
+    })().catch(function (error) {
+      console.error("[Affiliate Dashboard] init failed:", error);
+      self.initPromise = null;
+      throw error;
+    });
 
     return this.initPromise;
   },
@@ -62,10 +74,20 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
   async waitForBaseDom(maxAttempts = 80, delayMs = 125) {
     for (let i = 0; i < maxAttempts; i += 1) {
       const hasGuest = !!document.getElementById("affiliateGuestView");
-      const hasDashboard = !!document.getElementById("affiliateDashboardView");
-      const hasWrap = !!document.getElementById("affiliateDashboardWrap");
+      const hasDashboardView = !!document.getElementById("affiliateDashboardView");
+      const hasAuthMount = !!document.getElementById("affiliateAuthMount");
+      const hasDashboardMount = !!document.getElementById("affiliateDashboardMount");
+      const hasAuthForm = !!document.getElementById("affiliateLoginForm");
+      const hasOverviewMount = !!document.getElementById("affiliateOverviewMount");
 
-      if (hasGuest || hasDashboard || hasWrap) {
+      if (
+        hasGuest &&
+        hasDashboardView &&
+        hasAuthMount &&
+        hasDashboardMount &&
+        hasAuthForm &&
+        hasOverviewMount
+      ) {
         return true;
       }
 
@@ -76,10 +98,6 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
   },
 
   async loadDashboardPartialsOnce() {
-    if (this.partialsLoaded) {
-      return;
-    }
-
     const mounts = [
       { id: "affiliateOverviewMount", file: "partials/affiliate-overview.html" },
       { id: "affiliateLinksMount", file: "partials/affiliate-links.html" },
@@ -89,29 +107,39 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
       { id: "affiliateHelpMount", file: "partials/affiliate-help.html" }
     ];
 
-    await Promise.all(
-      mounts.map(async (item) => {
-        const mount = document.getElementById(item.id);
-        if (!mount) return;
+    let foundAllMounts = true;
+    let loadedAllMounts = true;
 
-        if (mount.dataset.loaded === "true") {
-          return;
+    for (const item of mounts) {
+      const mount = document.getElementById(item.id);
+
+      if (!mount) {
+        foundAllMounts = false;
+        loadedAllMounts = false;
+        console.warn("[Affiliate Dashboard] Missing partial mount:", item.id);
+        continue;
+      }
+
+      if (mount.dataset.loaded === "true") {
+        continue;
+      }
+
+      try {
+        const response = await fetch(item.file, { cache: "no-store" });
+        if (!response.ok) {
+          throw new Error("Failed to load " + item.file + " (" + response.status + ")");
         }
+        mount.innerHTML = await response.text();
+        mount.dataset.loaded = "true";
+      } catch (error) {
+        loadedAllMounts = false;
+        mount.dataset.loaded = "false";
+        console.error("[Affiliate Dashboard] Partial load failed:", item.file, error);
+      }
+    }
 
-        try {
-          const response = await fetch(item.file, { cache: "no-store" });
-          if (!response.ok) {
-            throw new Error("Failed to load " + item.file);
-          }
-          mount.innerHTML = await response.text();
-          mount.dataset.loaded = "true";
-        } catch (error) {
-          console.error("[Affiliate Dashboard] Partial load failed:", item.file, error);
-        }
-      })
-    );
-
-    this.partialsLoaded = true;
+    this.partialsLoaded = foundAllMounts && loadedAllMounts;
+    return this.partialsLoaded;
   },
 
   cacheDom() {
@@ -139,6 +167,11 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
     ];
 
     this.domCached = true;
+  },
+
+  refreshDomReferences() {
+    this.cacheDom();
+    return this;
   },
 
   getSupabase() {
@@ -203,7 +236,7 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
     return document.getElementById("affiliateClaimPayoutAddress");
   },
 
-  getClaimBackupContactInput() {
+  getClaimPayoutContactInput() {
     return (
       document.getElementById("affiliateClaimPayoutContact") ||
       document.getElementById("affiliateClaimBackupContact") ||
@@ -215,250 +248,227 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
     return document.getElementById("submitAffiliateClaimBtn");
   },
 
-  normalizeCode(value) {
-    return String(value || "")
-      .trim()
-      .toUpperCase()
-      .replace(/[^A-Z0-9_-]/g, "")
-      .slice(0, 12);
+  getApprovedStatus() {
+    const rawStatus =
+      this.affiliateProfile &&
+      typeof this.affiliateProfile.status === "string"
+        ? this.affiliateProfile.status
+        : "";
+
+    return rawStatus.trim().toLowerCase();
   },
 
-  toNumber(value, fallback = 0) {
-    const num = Number(value);
-    return Number.isFinite(num) ? num : fallback;
+  isApprovedAffiliate() {
+    return this.getApprovedStatus() === "approved";
   },
 
-  getSafeAffiliateId() {
-    return this.affiliateProfile && this.affiliateProfile.id
-      ? String(this.affiliateProfile.id)
-      : "";
+  isPendingAffiliate() {
+    return this.getApprovedStatus() === "pending";
   },
 
-  getSafeDiscordContact() {
-    return this.affiliateProfile && this.affiliateProfile.discord_username
-      ? String(this.affiliateProfile.discord_username).trim()
-      : "";
+  isRejectedAffiliate() {
+    return this.getApprovedStatus() === "rejected";
   },
 
-  getClaimStatusLabel(status) {
-    const value = String(status || "").trim().toLowerCase();
-    if (value === "approved") return "Approved";
-    if (value === "paid") return "Paid";
-    if (value === "rejected") return "Rejected";
-    return "Pending";
+  isSuspendedAffiliate() {
+    return this.getApprovedStatus() === "suspended";
   },
 
-  getClaimStatusClass(status) {
-    const value = String(status || "").trim().toLowerCase();
-    if (value === "approved") return "is-approved";
-    if (value === "paid") return "is-paid";
-    if (value === "rejected") return "is-rejected";
-    return "is-pending";
-  },
+  hideAllPrimaryViews() {
+    const views = [
+      document.getElementById("affiliateGuestView"),
+      document.getElementById("affiliateDashboardView"),
+      document.getElementById("affiliatePendingView"),
+      document.getElementById("affiliateRejectedView"),
+      document.getElementById("affiliateSuspendedView")
+    ];
 
-  getPayoutStatusLabel(status) {
-    const value = String(status || "").trim().toLowerCase();
-    if (value === "paid") return "Paid";
-    if (value === "cancelled") return "Cancelled";
-    return "Pending";
-  },
-
-  getPayoutStatusClass(status) {
-    const value = String(status || "").trim().toLowerCase();
-    if (value === "paid") return "is-paid";
-    if (value === "cancelled") return "is-rejected";
-    return "is-pending";
-  },
-
-  getCommissionStatusLabel(status) {
-    const value = String(status || "").trim().toLowerCase();
-    if (value === "claimable") return "Claimable";
-    if (value === "claimed") return "Claimed";
-    if (value === "paid") return "Paid";
-    if (value === "voided") return "Voided";
-    return "Pending";
-  },
-
-  escapeHtml(value) {
-    return String(value == null ? "" : value)
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#039;");
-  },
-
-  getSiteRootPath() {
-    let pathname = window.location.pathname || "/";
-
-    pathname = pathname.replace(/\/+$/, "");
-
-    pathname = pathname
-      .replace(/\/affiliate-program\/affiliate-dashboard\.html$/i, "")
-      .replace(/\/affiliate-program\/affiliate-program\.html$/i, "")
-      .replace(/affiliate-program\/affiliate-dashboard\.html$/i, "")
-      .replace(/affiliate-program\/affiliate-program\.html$/i, "");
-
-    if (!pathname) return "";
-
-    return pathname.endsWith("/") ? pathname.slice(0, -1) : pathname;
-  },
-
-  buildAffiliateUrl(customPath = "/") {
-    const code = (this.affiliateProfile && this.affiliateProfile.referral_code) || "";
-    if (!code) return "";
-
-    const origin = window.location.origin;
-    const siteRoot = this.getSiteRootPath();
-
-    let normalizedPath = String(customPath || "/").trim();
-    if (!normalizedPath) normalizedPath = "/";
-    if (!normalizedPath.startsWith("/")) {
-      normalizedPath = "/" + normalizedPath;
-    }
-
-    return origin + siteRoot + normalizedPath + "?ref=" + encodeURIComponent(code);
-  },
-
-  setReferralCodeStatus(message, type) {
-    const el = this.getReferralCodeStatusEl();
-    if (!el) return;
-
-    el.textContent = message || "";
-    el.classList.remove("is-active", "success", "error");
-
-    if (message) {
-      el.classList.add("is-active", type === "error" ? "error" : "success");
-    }
-  },
-
-  syncReferralCodeUi(code) {
-    const cleanCode = this.normalizeCode(code || "");
-
-    const input = this.getReferralCodeInput();
-    if (input) {
-      input.value = cleanCode;
-    }
-
-    this.setText("affiliateDashboardCode", cleanCode || "—");
-
-    const generatedLinkInput = document.getElementById("affiliateGeneratedLink");
-    if (generatedLinkInput) {
-      generatedLinkInput.value = cleanCode ? this.buildAffiliateUrl("/") : "";
-    }
-  },
-
-  setMessage(message, type) {
-    if (!this.messageEl) return;
-
-    this.messageEl.textContent = message || "";
-    this.messageEl.classList.remove("is-active", "success", "error");
-
-    if (message) {
-      this.messageEl.classList.add("is-active", type || "success");
-    }
-  },
-
-  setClaimButtonState(mode) {
-    const claimButton = this.getClaimSubmitButton();
-    if (!claimButton) return;
-
-    if (!claimButton.dataset.defaultText) {
-      claimButton.dataset.defaultText = claimButton.textContent || "Submit Claim Request";
-    }
-
-    if (mode === "loading") {
-      claimButton.disabled = true;
-      claimButton.dataset.loading = "true";
-      claimButton.textContent = "Submitting...";
-      return;
-    }
-
-    delete claimButton.dataset.loading;
-
-    if (mode === "disabled") {
-      claimButton.disabled = true;
-      claimButton.textContent = "No Claimable Balance Available";
-      return;
-    }
-
-    claimButton.disabled = false;
-    claimButton.textContent = claimButton.dataset.defaultText || "Submit Claim Request";
-  },
-
-  setPageMode(mode) {
-    const isDashboard = mode === "dashboard";
-
-    if (this.guestView) {
-      this.guestView.hidden = isDashboard;
-      this.guestView.style.display = isDashboard ? "none" : "";
-    }
-
-    if (this.dashboardView) {
-      this.dashboardView.hidden = !isDashboard;
-      this.dashboardView.style.display = isDashboard ? "" : "none";
-    }
+    views.forEach((view) => {
+      if (!view) return;
+      view.hidden = true;
+      view.style.display = "none";
+    });
   },
 
   showGuestView() {
-    this.setPageMode("guest");
+    this.hideAllPrimaryViews();
+
+    const view = document.getElementById("affiliateGuestView");
+    if (view) {
+      view.hidden = false;
+      view.style.display = "";
+    }
   },
 
   showApprovedDashboardView() {
-    this.setPageMode("dashboard");
+    this.hideAllPrimaryViews();
+
+    const view = document.getElementById("affiliateDashboardView");
+    if (view) {
+      view.hidden = false;
+      view.style.display = "";
+    }
   },
 
-  hideDashboardSections() {
-    this.dashboardSectionIds.forEach((id) => {
-      const el = document.getElementById(id);
-      if (el) {
-        el.hidden = true;
-        el.style.display = "none";
-      }
-    });
+  showPendingView() {
+    this.hideAllPrimaryViews();
 
-    if (this.dashboardWrap) {
-      this.dashboardWrap.hidden = true;
-      this.dashboardWrap.style.display = "none";
+    const view = document.getElementById("affiliatePendingView");
+    if (view) {
+      view.hidden = false;
+      view.style.display = "";
+    }
+  },
+
+  showRejectedView() {
+    this.hideAllPrimaryViews();
+
+    const view = document.getElementById("affiliateRejectedView");
+    if (view) {
+      view.hidden = false;
+      view.style.display = "";
+    }
+  },
+
+  showSuspendedView() {
+    this.hideAllPrimaryViews();
+
+    const view = document.getElementById("affiliateSuspendedView");
+    if (view) {
+      view.hidden = false;
+      view.style.display = "";
     }
   },
 
   showDashboardSections() {
-    this.dashboardSectionIds.forEach((id) => {
-      const el = document.getElementById(id);
-      if (el) {
-        el.hidden = false;
-        el.style.display = "";
-      }
-    });
+    this.refreshDomReferences();
 
     if (this.dashboardWrap) {
       this.dashboardWrap.hidden = false;
       this.dashboardWrap.style.display = "";
     }
-  },
 
-  formatMoney(value) {
-    return "$" + Number(value || 0).toFixed(2);
-  },
-
-  formatDate(value) {
-    if (!value) return "—";
-
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return "—";
-
-    return date.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric"
+    (this.dashboardSectionIds || []).forEach((id) => {
+      const section = document.getElementById(id);
+      if (!section) return;
+      section.hidden = false;
+      section.style.display = "";
     });
   },
 
   setText(id, value) {
-    const el = document.getElementById(id);
-    if (el) {
-      el.textContent = value;
+    const element = document.getElementById(id);
+    if (element) {
+      element.textContent = value == null || value === "" ? "—" : String(value);
+    }
+  },
+
+  setHtml(id, value) {
+    const element = document.getElementById(id);
+    if (element) {
+      element.innerHTML = value == null || value === "" ? "—" : String(value);
+    }
+  },
+
+  formatCurrency(value) {
+    const amount = Number(value || 0);
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD"
+    }).format(Number.isFinite(amount) ? amount : 0);
+  },
+
+  formatNumber(value) {
+    const amount = Number(value || 0);
+    return new Intl.NumberFormat("en-US").format(Number.isFinite(amount) ? amount : 0);
+  },
+
+  formatDate(value) {
+    if (!value) return "—";
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) return "—";
+    return parsed.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric"
+    });
+  },
+
+  setMessage(message, type) {
+    this.refreshDomReferences();
+
+    if (!this.messageEl) return;
+
+    const normalized = typeof message === "string" ? message.trim() : "";
+
+    if (!normalized) {
+      this.messageEl.hidden = true;
+      this.messageEl.textContent = "";
+      this.messageEl.className = "affiliate-auth-message";
+      return;
+    }
+
+    this.messageEl.hidden = false;
+    this.messageEl.textContent = normalized;
+    this.messageEl.className = "affiliate-auth-message" + (type ? " is-" + type : "");
+  },
+
+  setReferralCodeStatus(message, type) {
+    const statusEl = this.getReferralCodeStatusEl();
+    if (!statusEl) return;
+
+    const normalized = typeof message === "string" ? message.trim() : "";
+
+    if (!normalized) {
+      statusEl.hidden = true;
+      statusEl.textContent = "";
+      statusEl.className = "affiliate-inline-message";
+      return;
+    }
+
+    statusEl.hidden = false;
+    statusEl.textContent = normalized;
+    statusEl.className = "affiliate-inline-message" + (type ? " is-" + type : "");
+  },
+
+  normalizeCode(value) {
+    return String(value || "")
+      .toUpperCase()
+      .replace(/[^A-Z0-9_-]/g, "")
+      .slice(0, 12);
+  },
+
+  async copyValue(value, triggerEl) {
+    const text = String(value || "").trim();
+    if (!text) return false;
+
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        const temp = document.createElement("textarea");
+        temp.value = text;
+        temp.setAttribute("readonly", "readonly");
+        temp.style.position = "absolute";
+        temp.style.left = "-9999px";
+        document.body.appendChild(temp);
+        temp.select();
+        document.execCommand("copy");
+        document.body.removeChild(temp);
+      }
+
+      if (triggerEl) {
+        const original = triggerEl.textContent;
+        triggerEl.textContent = "Copied";
+        setTimeout(() => {
+          triggerEl.textContent = original;
+        }, 1200);
+      }
+
+      return true;
+    } catch (error) {
+      console.error("[Affiliate Dashboard] Copy failed:", error);
+      return false;
     }
   }
 };
