@@ -165,6 +165,52 @@
     return true;
   }
 
+  async function updateAffiliateCompensation(affiliateId, payload) {
+    const supabase = getSupabase();
+
+    if (!affiliateId) {
+      throw new Error("Missing affiliate id.");
+    }
+
+    const commissionType = normalizeStatus(payload && payload.commission_type, "percent");
+    const discountType = normalizeStatus(payload && payload.discount_type, "percent");
+    const commissionValue = toNumber(payload && payload.commission_value, 0);
+    const discountValue = toNumber(payload && payload.discount_value, 0);
+
+    if (!["percent", "fixed"].includes(commissionType)) {
+      throw new Error("Invalid commission type.");
+    }
+
+    if (!["percent", "fixed"].includes(discountType)) {
+      throw new Error("Invalid discount type.");
+    }
+
+    if (commissionValue < 0) {
+      throw new Error("Commission value cannot be negative.");
+    }
+
+    if (discountValue < 0) {
+      throw new Error("Discount value cannot be negative.");
+    }
+
+    const { error } = await supabase
+      .from("affiliates")
+      .update({
+        commission_type: commissionType,
+        commission_value: commissionValue,
+        discount_type: discountType,
+        discount_value: discountValue,
+        updated_at: new Date().toISOString()
+      })
+      .eq("id", affiliateId);
+
+    if (error) {
+      throw error;
+    }
+
+    return true;
+  }
+
   async function ensurePayoutRowExists(supabase, claimRow, options) {
     const payoutMethod =
       normalizeText(options.method) ||
@@ -606,6 +652,7 @@
     markClaimPaid: markClaimPaid,
     markClaimUnpaid: markClaimUnpaid,
     recordPayout: recordPayout,
-    updateAffiliateReferralCode: updateAffiliateReferralCode
+    updateAffiliateReferralCode: updateAffiliateReferralCode,
+    updateAffiliateCompensation: updateAffiliateCompensation
   };
 })();
