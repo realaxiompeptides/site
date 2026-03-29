@@ -149,7 +149,7 @@ Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
     const reservingClaims = (Array.isArray(claimRows) ? claimRows : [])
       .filter((claim) => {
         const status = String(claim.status || "").trim().toLowerCase();
-        return status === "pending";
+        return status === "pending" || status === "approved";
       })
       .sort((a, b) => {
         const aTime = new Date(a.created_at || 0).getTime();
@@ -162,7 +162,9 @@ Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
     }, 0);
 
     const claimableRowsOrdered = rows
-      .filter((row) => String(row.commission_status || "").trim().toLowerCase() === "claimable")
+      .filter((row) => {
+        return String(row.commission_status || "").trim().toLowerCase() === "claimable";
+      })
       .sort((a, b) => {
         const aTime = new Date(a.claimable_at || a.created_at || 0).getTime();
         const bTime = new Date(b.claimable_at || b.created_at || 0).getTime();
@@ -212,6 +214,7 @@ Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
     };
 
     if (!supabase) {
+      console.error("[Affiliate Dashboard] fetchStats: Supabase client missing.");
       return emptyStats;
     }
 
@@ -274,6 +277,7 @@ Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
 
       const dedupeById = (rows) => {
         const seen = new Set();
+
         return (Array.isArray(rows) ? rows : []).filter((row) => {
           const id = row && row.id ? String(row.id) : "";
           if (!id || seen.has(id)) return false;
@@ -288,6 +292,7 @@ Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
       const claimRows = dedupeById(claimsResult.data);
 
       const clicks = clickRows.length;
+      const conversions = conversionRows.length;
 
       const pendingClaims = claimRows
         .filter((item) => String(item.status || "").trim().toLowerCase() === "pending")
@@ -318,16 +323,20 @@ Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
       console.log("[Affiliate Dashboard] Stats loaded:", {
         affiliateIds,
         clicks,
-        conversions: conversionRows.length,
+        conversions,
         payouts: payoutRows.length,
         claims: claimRows.length,
+        pendingClaims,
+        approvedClaims,
+        rejectedClaims,
         availableToClaim,
-        paid
+        paid,
+        recentCommissionsPreview: displayConversionRows.slice(0, 3)
       });
 
       return {
         clicks,
-        conversions: conversionRows.length,
+        conversions,
         claimable: availableToClaim,
         pendingClaims,
         approvedClaims,
