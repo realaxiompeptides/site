@@ -11,7 +11,7 @@
   let toggleBtn = null;
   let logs = [];
   let isVisible = false;
-  let isEnabledForAffiliate = false;
+  let isAffiliateDebugAllowed = false;
 
   function getSupabase() {
     return window.axiomSupabase || window.AXIOM_SUPABASE || window.supabaseClient || null;
@@ -88,14 +88,6 @@
     });
   }
 
-  function renderVisibility() {
-    if (!panel) return;
-    panel.style.display = isEnabledForAffiliate && isVisible ? "block" : "none";
-    if (toggleBtn) {
-      toggleBtn.textContent = isVisible ? "Hide" : "Show";
-    }
-  }
-
   function renderLogs() {
     if (!body || !countEl) return;
 
@@ -113,6 +105,22 @@
       .join("");
   }
 
+  function renderVisibility() {
+    if (!panel) return;
+    panel.style.display = isAffiliateDebugAllowed && isVisible ? "block" : "none";
+    if (toggleBtn) {
+      toggleBtn.textContent = isVisible ? "Hide" : "Show";
+    }
+  }
+
+  function hidePanelNow() {
+    isAffiliateDebugAllowed = false;
+    isVisible = false;
+    if (panel) {
+      panel.style.display = "none";
+    }
+  }
+
   function pushLog(level, args) {
     const message = formatArgs(args);
 
@@ -126,25 +134,28 @@
       logs.shift();
     }
 
-    if (isEnabledForAffiliate) {
+    if (isAffiliateDebugAllowed) {
       ensurePanel();
       renderLogs();
       renderVisibility();
     }
   }
 
-  async function shouldEnableForAffiliate() {
+  async function userHasAffiliateProfile() {
     const supabase = getSupabase();
     if (!supabase || !supabase.auth) return false;
 
     try {
       const userResult = await supabase.auth.getUser();
       const user = userResult && userResult.data ? userResult.data.user : null;
-      if (!user || !user.id) return false;
+
+      if (!user || !user.id) {
+        return false;
+      }
 
       const byAuth = await supabase
         .from("affiliates")
-        .select("id,status")
+        .select("id")
         .eq("auth_user_id", user.id)
         .maybeSingle();
 
@@ -157,32 +168,29 @@
 
       const byEmail = await supabase
         .from("affiliates")
-        .select("id,status")
+        .select("id")
         .ilike("email", email)
         .maybeSingle();
 
-      if (!byEmail.error && byEmail.data) {
-        return true;
-      }
-    } catch (error) {
-      console.error("[Axiom Debug] affiliate check failed:", error);
+      return !byEmail.error && !!byEmail.data;
+    } catch (_error) {
+      return false;
     }
-
-    return false;
   }
 
-  async function refreshDebugVisibility() {
-    isEnabledForAffiliate = await shouldEnableForAffiliate();
+  async function refreshVisibilityFromAuth() {
+    const allowed = await userHasAffiliateProfile();
 
-    if (isEnabledForAffiliate) {
-      ensurePanel();
-      isVisible = true;
-      renderLogs();
-      renderVisibility();
-    } else if (panel) {
-      isVisible = false;
-      renderVisibility();
+    if (!allowed) {
+      hidePanelNow();
+      return;
     }
+
+    isAffiliateDebugAllowed = true;
+    isVisible = true;
+    ensurePanel();
+    renderLogs();
+    renderVisibility();
   }
 
   const originalLog = console.log;
@@ -214,20 +222,29 @@
   });
 
   window.addEventListener("unhandledrejection", function (event) {
-    const reason = event && event.reason ? event.reason : "Unhandled promise rejection";
-    pushLog("error", [reason]);
+    pushLog("error", [event && event.reason ? event.reason : "Unhandled promise rejection"]);
   });
 
   document.addEventListener("DOMContentLoaded", function () {
-    refreshDebugVisibility();
+    hidePanelNow();
 
     const supabase = getSupabase();
-    if (supabase && supabase.auth) {
-      try {
-        supabase.auth.onAuthStateChange(function () {
-          refreshDebugVisibility();
-        });
-      } catch (_error) {}
+    if (!supabase || !supabase.auth) {
+      return;
+    }
+
+    refreshVisibilityFromAuth();
+
+    try {
+      supabase.auth.onAuthStateChange(function (_event, session) {
+        if (!session || !session.user) {
+          hidePanelNow();
+          return;
+        }
+        refreshVisibilityFromAuth();
+      });
+    } catch (_error) {
+      hidePanelNow();
     }
   });
 })();
