@@ -4,67 +4,140 @@ Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
 
     if (!supabase || !this.currentUser) {
       this.affiliateProfile = null;
+      this.affiliateProfileIds = [];
       return null;
     }
 
-    const authUserId = this.currentUser.id ? String(this.currentUser.id) : "";
-    const authEmail = this.currentUser.email ? String(this.currentUser.email).trim().toLowerCase() : "";
+    const authUserId = this.currentUser.id ? String(this.currentUser.id).trim() : "";
+    const authEmail = this.currentUser.email
+      ? String(this.currentUser.email).trim().toLowerCase()
+      : "";
 
     try {
-      let profile = null;
+      const candidateProfiles = [];
 
       if (authUserId) {
         const byAuthUserId = await supabase
           .from("affiliates")
           .select("*")
-          .eq("auth_user_id", authUserId)
-          .maybeSingle();
+          .eq("auth_user_id", authUserId);
 
         if (byAuthUserId.error) {
-          console.error("[Affiliate Dashboard] loadAffiliateProfile by auth_user_id failed:", byAuthUserId.error);
-        } else if (byAuthUserId.data) {
-          profile = byAuthUserId.data;
+          console.error(
+            "[Affiliate Dashboard] loadAffiliateProfile by auth_user_id failed:",
+            byAuthUserId.error
+          );
+        } else if (Array.isArray(byAuthUserId.data)) {
+          candidateProfiles.push(...byAuthUserId.data);
         }
       }
 
-      if (!profile && authEmail) {
+      if (authEmail) {
         const byEmail = await supabase
           .from("affiliates")
           .select("*")
-          .ilike("email", authEmail)
-          .maybeSingle();
+          .ilike("email", authEmail);
 
         if (byEmail.error) {
-          console.error("[Affiliate Dashboard] loadAffiliateProfile by email failed:", byEmail.error);
-        } else if (byEmail.data) {
-          profile = byEmail.data;
+          console.error(
+            "[Affiliate Dashboard] loadAffiliateProfile by email failed:",
+            byEmail.error
+          );
+        } else if (Array.isArray(byEmail.data)) {
+          candidateProfiles.push(...byEmail.data);
+        }
+      }
 
-          if (!profile.auth_user_id && authUserId) {
-            const patched = await supabase
-              .from("affiliates")
-              .update({
-                auth_user_id: authUserId,
-                updated_at: new Date().toISOString()
-              })
-              .eq("id", profile.id)
-              .select("*")
-              .maybeSingle();
+      const dedupedProfiles = [];
+      const seenIds = new Set();
 
-            if (patched.error) {
-              console.error("[Affiliate Dashboard] Failed linking profile to auth user:", patched.error);
-            } else if (patched.data) {
-              profile = patched.data;
-            }
+      candidateProfiles.forEach((profile) => {
+        const id = profile && profile.id ? String(profile.id) : "";
+        if (!id || seenIds.has(id)) return;
+        seenIds.add(id);
+        dedupedProfiles.push(profile);
+      });
+
+      if (!dedupedProfiles.length) {
+        this.affiliateProfile = null;
+        this.affiliateProfileIds = [];
+        console.warn("[Affiliate Dashboard] No affiliate profile matched current user.");
+        return null;
+      }
+
+      const scoreProfile = (profile) => {
+        let score = 0;
+
+        const profileAuthUserId = profile && profile.auth_user_id ? String(profile.auth_user_id) : "";
+        const profileEmail = profile && profile.email
+          ? String(profile.email).trim().toLowerCase()
+          : "";
+        const profileStatus = profile && profile.status
+          ? String(profile.status).trim().toLowerCase()
+          : "";
+
+        if (authUserId && profileAuthUserId === authUserId) score += 100;
+        if (authEmail && profileEmail === authEmail) score += 40;
+        if (profileStatus === "approved") score += 25;
+        if (profileStatus === "pending") score += 10;
+        if (profile.referral_code) score += 5;
+        if (profile.updated_at) score += 2;
+
+        return score;
+      };
+
+      dedupedProfiles.sort((a, b) => {
+        const scoreDiff = scoreProfile(b) - scoreProfile(a);
+        if (scoreDiff !== 0) return scoreDiff;
+
+        const aTime = new Date(a.updated_at || a.created_at || 0).getTime();
+        const bTime = new Date(b.updated_at || b.created_at || 0).getTime();
+        return bTime - aTime;
+      });
+
+      let profile = dedupedProfiles[0] || null;
+
+      if (profile && !profile.auth_user_id && authUserId) {
+        try {
+          const patched = await supabase
+            .from("affiliates")
+            .update({
+              auth_user_id: authUserId,
+              updated_at: new Date().toISOString()
+            })
+            .eq("id", profile.id)
+            .select("*")
+            .maybeSingle();
+
+          if (patched.error) {
+            console.error(
+              "[Affiliate Dashboard] Failed linking profile to auth user:",
+              patched.error
+            );
+          } else if (patched.data) {
+            profile = patched.data;
           }
+        } catch (patchError) {
+          console.error(
+            "[Affiliate Dashboard] Exception linking profile to auth user:",
+            patchError
+          );
         }
       }
 
       this.affiliateProfile = profile || null;
+      this.affiliateProfileIds = dedupedProfiles
+        .map((item) => (item && item.id ? String(item.id) : ""))
+        .filter(Boolean);
+
       console.log("[Affiliate Dashboard] Loaded affiliate profile:", this.affiliateProfile);
+      console.log("[Affiliate Dashboard] All matched affiliate ids:", this.affiliateProfileIds);
+
       return this.affiliateProfile;
     } catch (error) {
       console.error("[Affiliate Dashboard] Failed loading affiliate profile:", error);
       this.affiliateProfile = null;
+      this.affiliateProfileIds = [];
       return null;
     }
   },
@@ -100,15 +173,19 @@ Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
     claimableRowsOrdered.forEach((row) => {
       row.display_status = "claimable";
 
-      if (reservedAmount > 0) {
+      const commissionAmount = Number(row.commission_amount || 0);
+
+      if (reservedAmount > 0 && commissionAmount > 0) {
         row.display_status = "claimed";
-        reservedAmount -= Number(row.commission_amount || 0);
+        reservedAmount = Math.max(0, reservedAmount - commissionAmount);
       }
     });
 
     rows.forEach((row) => {
       if (!row.display_status) {
-        row.display_status = String(row.commission_status || "").trim().toLowerCase();
+        row.display_status = String(row.commission_status || "")
+          .trim()
+          .toLowerCase() || "pending";
       }
     });
 
@@ -122,20 +199,22 @@ Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
   async fetchStats() {
     const supabase = this.getSupabase();
 
+    const emptyStats = {
+      clicks: 0,
+      conversions: 0,
+      claimable: 0,
+      pendingClaims: 0,
+      approvedClaims: 0,
+      rejectedClaims: 0,
+      availableToClaim: 0,
+      paid: 0,
+      recentCommissions: [],
+      payouts: [],
+      claims: []
+    };
+
     if (!supabase) {
-      return {
-        clicks: 0,
-        conversions: 0,
-        claimable: 0,
-        pendingClaims: 0,
-        approvedClaims: 0,
-        rejectedClaims: 0,
-        availableToClaim: 0,
-        paid: 0,
-        recentCommissions: [],
-        payouts: [],
-        claims: []
-      };
+      return emptyStats;
     }
 
     if (!this.affiliateProfile || !this.affiliateProfile.id) {
@@ -144,23 +223,24 @@ Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
 
     if (!this.affiliateProfile || !this.affiliateProfile.id) {
       console.error("[Affiliate Dashboard] No affiliate profile found for current user.");
-      return {
-        clicks: 0,
-        conversions: 0,
-        claimable: 0,
-        pendingClaims: 0,
-        approvedClaims: 0,
-        rejectedClaims: 0,
-        availableToClaim: 0,
-        paid: 0,
-        recentCommissions: [],
-        payouts: [],
-        claims: []
-      };
+      return emptyStats;
     }
 
     try {
-      const affiliateId = String(this.affiliateProfile.id);
+      const profileIdsRaw = Array.isArray(this.affiliateProfileIds)
+        ? this.affiliateProfileIds
+        : [];
+
+      const affiliateIds = Array.from(
+        new Set(
+          [String(this.affiliateProfile.id), ...profileIdsRaw.map((id) => String(id))]
+            .filter(Boolean)
+        )
+      );
+
+      const affiliateEmail = this.affiliateProfile.email
+        ? String(this.affiliateProfile.email).trim().toLowerCase()
+        : "";
 
       const [
         clicksResult,
@@ -170,26 +250,26 @@ Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
       ] = await Promise.all([
         supabase
           .from("affiliate_clicks")
-          .select("id", { count: "exact", head: true })
-          .eq("affiliate_id", affiliateId),
+          .select("id, affiliate_id")
+          .in("affiliate_id", affiliateIds),
 
         supabase
           .from("affiliate_conversions")
           .select("*")
-          .eq("affiliate_id", affiliateId)
+          .in("affiliate_id", affiliateIds)
           .order("created_at", { ascending: false }),
 
         supabase
           .from("affiliate_payouts")
           .select("*")
-          .eq("affiliate_id", affiliateId)
+          .in("affiliate_id", affiliateIds)
           .order("paid_at", { ascending: false })
           .order("created_at", { ascending: false }),
 
         supabase
           .from("affiliate_claim_requests")
           .select("*")
-          .eq("affiliate_id", affiliateId)
+          .in("affiliate_id", affiliateIds)
           .order("created_at", { ascending: false })
       ]);
 
@@ -198,10 +278,43 @@ Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
       if (payoutsResult.error) throw payoutsResult.error;
       if (claimsResult.error) throw claimsResult.error;
 
-      const clicks = Number(clicksResult.count || 0);
-      const conversionRows = Array.isArray(conversionsResult.data) ? conversionsResult.data : [];
-      const payoutRows = Array.isArray(payoutsResult.data) ? payoutsResult.data : [];
-      const claimRows = Array.isArray(claimsResult.data) ? claimsResult.data : [];
+      let clickRows = Array.isArray(clicksResult.data) ? clicksResult.data : [];
+      let conversionRows = Array.isArray(conversionsResult.data) ? conversionsResult.data : [];
+      let payoutRows = Array.isArray(payoutsResult.data) ? payoutsResult.data : [];
+      let claimRows = Array.isArray(claimsResult.data) ? claimsResult.data : [];
+
+      if (!conversionRows.length && affiliateEmail) {
+        try {
+          const fallbackConversions = await supabase
+            .from("affiliate_conversions")
+            .select("*")
+            .ilike("customer_email", affiliateEmail)
+            .order("created_at", { ascending: false });
+
+          if (!fallbackConversions.error && Array.isArray(fallbackConversions.data)) {
+            console.warn(
+              "[Affiliate Dashboard] Fallback customer_email conversion load was used."
+            );
+          }
+        } catch (_ignore) {}
+      }
+
+      const dedupeById = (rows) => {
+        const seen = new Set();
+        return rows.filter((row) => {
+          const id = row && row.id ? String(row.id) : "";
+          if (!id || seen.has(id)) return false;
+          seen.add(id);
+          return true;
+        });
+      };
+
+      clickRows = dedupeById(clickRows);
+      conversionRows = dedupeById(conversionRows);
+      payoutRows = dedupeById(payoutRows);
+      claimRows = dedupeById(claimRows);
+
+      const clicks = clickRows.length;
 
       const pendingClaims = claimRows
         .filter((item) => String(item.status || "").trim().toLowerCase() === "pending")
@@ -222,13 +335,19 @@ Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
       const displayConversionRows = this.getDisplayCommissionRows(conversionRows, claimRows);
 
       const availableToClaim = displayConversionRows
-        .filter((item) => String(item.display_status || item.commission_status || "").trim().toLowerCase() === "claimable")
+        .filter((item) => {
+          return String(item.display_status || item.commission_status || "")
+            .trim()
+            .toLowerCase() === "claimable";
+        })
         .reduce((sum, item) => sum + Number(item.commission_amount || 0), 0);
 
       console.log("[Affiliate Dashboard] Stats loaded:", {
-        affiliateId,
+        affiliateIds,
         clicks,
         conversions: conversionRows.length,
+        payouts: payoutRows.length,
+        claims: claimRows.length,
         availableToClaim,
         paid
       });
@@ -248,19 +367,7 @@ Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
       };
     } catch (error) {
       console.error("[Affiliate Dashboard] Fetch stats failed:", error);
-      return {
-        clicks: 0,
-        conversions: 0,
-        claimable: 0,
-        pendingClaims: 0,
-        approvedClaims: 0,
-        rejectedClaims: 0,
-        availableToClaim: 0,
-        paid: 0,
-        recentCommissions: [],
-        payouts: [],
-        claims: []
-      };
+      return emptyStats;
     }
   }
 });
