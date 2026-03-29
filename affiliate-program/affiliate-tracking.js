@@ -477,7 +477,7 @@
     };
 
     await insertWithoutSelect("affiliate_clicks", payload);
-    debug("Tracked affiliate click:", clickId, affiliate.referral_code);
+    debug("Tracked affiliate click:", clickId, affiliate.referral_code, payload.landing_page);
 
     return { id: clickId };
   }
@@ -573,12 +573,24 @@
     const visitorId = getVisitorId();
     const existing = getStoredAttribution();
 
+    const affiliate = await fetchAffiliateByCode(cleanCode);
+
+    if (!affiliate) {
+      warn("Affiliate referral code not found or not approved:", cleanCode);
+      maybeStripReferralParamFromUrl();
+      return null;
+    }
+
+    let referralSessionId = null;
+
     if (
       existing &&
       normalizeCode(existing.affiliate_code) === cleanCode &&
       existing.affiliate_id &&
       existing.affiliate_referral_session_id
     ) {
+      referralSessionId = existing.affiliate_referral_session_id;
+
       const refreshedPayload = normalizeStoredAttribution(
         Object.assign({}, existing, {
           current_page: getCurrentUrl(),
@@ -591,23 +603,28 @@
         setStoredAttribution(refreshedPayload);
         await refreshTrackedSession(refreshedPayload);
       }
+    } else {
+      const referralSession = await createReferralSession(affiliate, visitorId, {
+        landing_page: getCurrentUrl()
+      });
 
-      maybeStripReferralParamFromUrl();
-      return refreshedPayload;
+      referralSessionId = referralSession ? referralSession.id : null;
     }
 
-    const affiliate = await fetchAffiliateByCode(cleanCode);
+    const click = await createAffiliateClick(affiliate, visitorId, {
+      landing_page: getCurrentUrl()
+    });
 
-    if (!affiliate) {
-      warn("Affiliate referral code not found or not approved:", cleanCode);
-      maybeStripReferralParamFromUrl();
-      return null;
-    }
-
-    const payload = await buildAffiliateAttributionForAffiliate(affiliate, {
-      visitorId: visitorId,
+    const payload = buildAttributionPayload({
+      affiliate_id: affiliate.id,
+      affiliate_code: affiliate.referral_code,
+      affiliate_click_id: click ? click.id : null,
+      affiliate_referral_session_id: referralSessionId,
       landing_page: getCurrentUrl(),
-      affiliate_landing_page: getCurrentUrl()
+      affiliate_landing_page: getCurrentUrl(),
+      visitor_id: visitorId,
+      affiliate_discount_amount: Number(affiliate.discount_value || 0),
+      affiliate_commission_amount: Number(affiliate.commission_value || 0)
     });
 
     if (payload) {
