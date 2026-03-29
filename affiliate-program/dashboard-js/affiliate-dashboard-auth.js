@@ -1,34 +1,34 @@
 Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
   bindAuthEvents() {
     if (this.loginTab && !this.loginTab.dataset.bound) {
-      this.loginTab.dataset.bound = 'true';
-      this.loginTab.addEventListener('click', () => this.showLogin());
+      this.loginTab.dataset.bound = "true";
+      this.loginTab.addEventListener("click", () => this.showLogin());
     }
 
     if (this.signupTab && !this.signupTab.dataset.bound) {
-      this.signupTab.dataset.bound = 'true';
-      this.signupTab.addEventListener('click', () => this.showSignup());
+      this.signupTab.dataset.bound = "true";
+      this.signupTab.addEventListener("click", () => this.showSignup());
     }
 
     if (this.loginForm && !this.loginForm.dataset.bound) {
-      this.loginForm.dataset.bound = 'true';
-      this.loginForm.addEventListener('submit', async (event) => {
+      this.loginForm.dataset.bound = "true";
+      this.loginForm.addEventListener("submit", async (event) => {
         event.preventDefault();
         await this.signIn();
       });
     }
 
     if (this.signupForm && !this.signupForm.dataset.bound) {
-      this.signupForm.dataset.bound = 'true';
-      this.signupForm.addEventListener('submit', async (event) => {
+      this.signupForm.dataset.bound = "true";
+      this.signupForm.addEventListener("submit", async (event) => {
         event.preventDefault();
         await this.signUp();
       });
     }
 
     if (this.logoutBtn && !this.logoutBtn.dataset.bound) {
-      this.logoutBtn.dataset.bound = 'true';
-      this.logoutBtn.addEventListener('click', async () => {
+      this.logoutBtn.dataset.bound = "true";
+      this.logoutBtn.addEventListener("click", async () => {
         await this.signOut();
       });
     }
@@ -36,12 +36,12 @@ Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
     if (!this._delegatedBound) {
       this._delegatedBound = true;
 
-      document.addEventListener('click', (event) => {
-        const generateBtn = event.target.closest('#generateAffiliateLinkBtn');
-        const copyBtn = event.target.closest('[data-affiliate-copy]');
-        const claimBtn = event.target.closest('#submitAffiliateClaimBtn');
-        const saveCodeBtn = event.target.closest('#affiliateSaveReferralCodeBtn');
-        const copyCodeBtn = event.target.closest('#affiliateCopyReferralCodeBtn');
+      document.addEventListener("click", (event) => {
+        const generateBtn = event.target.closest("#generateAffiliateLinkBtn");
+        const copyBtn = event.target.closest("[data-affiliate-copy]");
+        const claimBtn = event.target.closest("#submitAffiliateClaimBtn");
+        const saveCodeBtn = event.target.closest("#affiliateSaveReferralCodeBtn");
+        const copyCodeBtn = event.target.closest("#affiliateCopyReferralCodeBtn");
 
         if (generateBtn) {
           event.preventDefault();
@@ -51,7 +51,7 @@ Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
 
         if (copyBtn) {
           event.preventDefault();
-          const value = copyBtn.getAttribute('data-affiliate-copy') || '';
+          const value = copyBtn.getAttribute("data-affiliate-copy") || "";
           this.copyValue(value, copyBtn);
           return;
         }
@@ -71,28 +71,28 @@ Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
         if (copyCodeBtn) {
           event.preventDefault();
           this.copyValue(
-            (this.affiliateProfile && this.affiliateProfile.referral_code) || '',
+            (this.affiliateProfile && this.affiliateProfile.referral_code) || "",
             copyCodeBtn
           );
         }
       });
 
-      document.addEventListener('input', (event) => {
+      document.addEventListener("input", (event) => {
         const target = event.target;
 
-        if (target && target.id === 'affiliateReferralCodeInput') {
+        if (target && target.id === "affiliateReferralCodeInput") {
           const normalized = this.normalizeCode(target.value);
           if (normalized !== target.value) {
             target.value = normalized;
           }
-          this.setReferralCodeStatus('', '');
+          this.setReferralCodeStatus("", "");
         }
 
-        if (target && target.id === 'affiliateTargetPath') {
+        if (target && target.id === "affiliateTargetPath") {
           this.generateTrackingLink();
         }
 
-        if (target && target.id === 'affiliateClaimPayoutMethod') {
+        if (target && target.id === "affiliateClaimPayoutMethod") {
           this.updateClaimPayoutFieldVisibility();
         }
       });
@@ -127,34 +127,34 @@ Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
   showLogin() {
     this.refreshDomReferences();
 
-    if (this.loginTab) this.loginTab.classList.add('is-active');
-    if (this.signupTab) this.signupTab.classList.remove('is-active');
+    if (this.loginTab) this.loginTab.classList.add("is-active");
+    if (this.signupTab) this.signupTab.classList.remove("is-active");
 
     if (this.loginForm) {
       this.loginForm.hidden = false;
-      this.loginForm.style.display = '';
+      this.loginForm.style.display = "";
     }
 
     if (this.signupForm) {
       this.signupForm.hidden = true;
-      this.signupForm.style.display = 'none';
+      this.signupForm.style.display = "none";
     }
   },
 
   showSignup() {
     this.refreshDomReferences();
 
-    if (this.signupTab) this.signupTab.classList.add('is-active');
-    if (this.loginTab) this.loginTab.classList.remove('is-active');
+    if (this.signupTab) this.signupTab.classList.add("is-active");
+    if (this.loginTab) this.loginTab.classList.remove("is-active");
 
     if (this.signupForm) {
       this.signupForm.hidden = false;
-      this.signupForm.style.display = '';
+      this.signupForm.style.display = "";
     }
 
     if (this.loginForm) {
       this.loginForm.hidden = true;
-      this.loginForm.style.display = 'none';
+      this.loginForm.style.display = "none";
     }
   },
 
@@ -165,7 +165,7 @@ Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
 
     if (this.authCard) {
       this.authCard.hidden = false;
-      this.authCard.style.display = '';
+      this.authCard.style.display = "";
     }
 
     this.showLogin();
@@ -178,7 +178,7 @@ Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
 
     if (this.authCard) {
       this.authCard.hidden = true;
-      this.authCard.style.display = 'none';
+      this.authCard.style.display = "none";
     }
 
     await this.renderDashboard();
@@ -189,7 +189,7 @@ Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
 
     if (!supabase || !supabase.auth) {
       this.showAuth();
-      this.setMessage('Supabase auth is not available.', 'error');
+      this.setMessage("Supabase auth is not available.", "error");
       return;
     }
 
@@ -214,27 +214,27 @@ Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
       this.showAuth();
       this.showSignup();
       this.setMessage(
-        'Your account is signed in, but no affiliate profile was found. Submit the sign-up form or contact support.',
-        'error'
+        "Your account is signed in, but no affiliate profile was found. Submit the sign-up form or contact support.",
+        "error"
       );
       return;
     }
 
-    const status = String(this.affiliateProfile.status || '').trim().toLowerCase();
+    const status = String(this.affiliateProfile.status || "").trim().toLowerCase();
 
-    if (status === 'pending') {
+    if (status === "pending") {
       this.hideDashboardSections();
       this.showPendingView();
       return;
     }
 
-    if (status === 'rejected') {
+    if (status === "rejected") {
       this.hideDashboardSections();
       this.showRejectedView();
       return;
     }
 
-    if (status === 'suspended') {
+    if (status === "suspended") {
       this.hideDashboardSections();
       this.showSuspendedView();
       return;
@@ -246,22 +246,29 @@ Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
   async signIn() {
     const supabase = this.getSupabase();
     if (!supabase || !supabase.auth || !this.loginForm) {
-      this.setMessage('Sign in is temporarily unavailable.', 'error');
+      this.setMessage("Sign in is temporarily unavailable.", "error");
       return;
     }
 
-    const emailEl = this.loginForm.querySelector('input[name="email"]');
-    const passwordEl = this.loginForm.querySelector('input[name="password"]');
+    const emailEl =
+      document.getElementById("affiliateLoginEmail") ||
+      this.loginForm.querySelector("#affiliateLoginEmail") ||
+      this.loginForm.querySelector('input[name="email"]');
 
-    const email = emailEl ? String(emailEl.value || '').trim() : '';
-    const password = passwordEl ? String(passwordEl.value || '') : '';
+    const passwordEl =
+      document.getElementById("affiliateLoginPassword") ||
+      this.loginForm.querySelector("#affiliateLoginPassword") ||
+      this.loginForm.querySelector('input[name="password"]');
+
+    const email = emailEl ? String(emailEl.value || "").trim() : "";
+    const password = passwordEl ? String(passwordEl.value || "") : "";
 
     if (!email || !password) {
-      this.setMessage('Enter your email and password.', 'error');
+      this.setMessage("Enter your email and password.", "error");
       return;
     }
 
-    this.setMessage('Signing in...', '');
+    this.setMessage("Signing in...", "");
 
     const { error } = await supabase.auth.signInWithPassword({
       email,
@@ -269,37 +276,52 @@ Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
     });
 
     if (error) {
-      this.setMessage(error.message || 'Unable to sign in.', 'error');
+      this.setMessage(error.message || "Unable to sign in.", "error");
       return;
     }
 
-    this.setMessage('');
+    this.setMessage("", "");
     await this.restoreSessionAndRender();
   },
 
   async signUp() {
     const supabase = this.getSupabase();
     if (!supabase || !supabase.auth || !this.signupForm) {
-      this.setMessage('Sign up is temporarily unavailable.', 'error');
+      this.setMessage("Sign up is temporarily unavailable.", "error");
       return;
     }
 
-    const nameEl = this.signupForm.querySelector('input[name="full_name"]');
-    const emailEl = this.signupForm.querySelector('input[name="email"]');
-    const passwordEl = this.signupForm.querySelector('input[name="password"]');
-    const discordEl = this.signupForm.querySelector('input[name="discord_username"]');
+    const nameEl =
+      document.getElementById("affiliateSignupName") ||
+      this.signupForm.querySelector("#affiliateSignupName") ||
+      this.signupForm.querySelector('input[name="full_name"]');
 
-    const fullName = nameEl ? String(nameEl.value || '').trim() : '';
-    const email = emailEl ? String(emailEl.value || '').trim() : '';
-    const password = passwordEl ? String(passwordEl.value || '') : '';
-    const discordUsername = discordEl ? String(discordEl.value || '').trim() : '';
+    const emailEl =
+      document.getElementById("affiliateSignupEmail") ||
+      this.signupForm.querySelector("#affiliateSignupEmail") ||
+      this.signupForm.querySelector('input[name="email"]');
+
+    const passwordEl =
+      document.getElementById("affiliateSignupPassword") ||
+      this.signupForm.querySelector("#affiliateSignupPassword") ||
+      this.signupForm.querySelector('input[name="password"]');
+
+    const discordEl =
+      document.getElementById("affiliateSignupDiscord") ||
+      this.signupForm.querySelector("#affiliateSignupDiscord") ||
+      this.signupForm.querySelector('input[name="discord_username"]');
+
+    const fullName = nameEl ? String(nameEl.value || "").trim() : "";
+    const email = emailEl ? String(emailEl.value || "").trim() : "";
+    const password = passwordEl ? String(passwordEl.value || "") : "";
+    const discordUsername = discordEl ? String(discordEl.value || "").trim() : "";
 
     if (!fullName || !email || !password) {
-      this.setMessage('Complete all required sign-up fields.', 'error');
+      this.setMessage("Complete all required sign-up fields.", "error");
       return;
     }
 
-    this.setMessage('Creating your account...', '');
+    this.setMessage("Creating your account...", "");
 
     const authResult = await supabase.auth.signUp({
       email,
@@ -312,7 +334,7 @@ Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
     });
 
     if (authResult.error) {
-      this.setMessage(authResult.error.message || 'Unable to sign up.', 'error');
+      this.setMessage(authResult.error.message || "Unable to sign up.", "error");
       return;
     }
 
@@ -329,21 +351,21 @@ Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
         email: email.toLowerCase(),
         full_name: fullName,
         discord_username: discordUsername || null,
-        status: 'pending'
+        status: "pending"
       };
 
-      const { error: insertError } = await supabase.from('affiliates').insert(insertPayload);
+      const { error: insertError } = await supabase.from("affiliates").insert(insertPayload);
 
       if (insertError) {
-        console.error('[Affiliate Dashboard] Affiliate insert failed:', insertError);
+        console.error("[Affiliate Dashboard] Affiliate insert failed:", insertError);
       }
     } catch (error) {
-      console.error('[Affiliate Dashboard] Affiliate insert exception:', error);
+      console.error("[Affiliate Dashboard] Affiliate insert exception:", error);
     }
 
     this.setMessage(
-      'Your affiliate account was created. If email confirmation is enabled, confirm your email before signing in.',
-      ''
+      "Your affiliate account was created. If email confirmation is enabled, confirm your email before signing in.",
+      ""
     );
 
     this.showLogin();
