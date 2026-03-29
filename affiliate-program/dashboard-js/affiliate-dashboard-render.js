@@ -11,11 +11,14 @@ Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
         await this.loadAffiliateProfile();
       }
 
+      const stats = await this.fetchStats();
+
       const profile = this.affiliateProfile || null;
       const email =
         (profile && profile.email) ||
         (this.currentUser && this.currentUser.email) ||
         "—";
+
       const fullName =
         (profile && profile.full_name) ||
         (this.currentUser &&
@@ -23,11 +26,17 @@ Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
           this.currentUser.user_metadata.full_name) ||
         "—";
 
+      const status =
+        (profile && profile.status) || "pending";
+
+      const referralCode =
+        (profile && profile.referral_code) || "—";
+
       this.setText("affiliateDashboardEmail", email);
       this.setText("affiliateDashboardEmailRow", email);
       this.setText("affiliateDashboardFullName", fullName);
-      this.setText("affiliateDashboardStatus", (profile && profile.status) || "pending");
-      this.setText("affiliateDashboardCode", (profile && profile.referral_code) || "—");
+      this.setText("affiliateDashboardStatus", status);
+      this.setText("affiliateDashboardCode", referralCode);
       this.setText(
         "affiliateDashboardCommissionRate",
         profile ? String(Number(profile.commission_value || 0)) + "%" : "—"
@@ -40,37 +49,28 @@ Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
       this.syncReferralCodeUi((profile && profile.referral_code) || "");
       this.setReferralCodeStatus("", "");
 
-      const defaultLink =
-        profile && profile.referral_code
-          ? this.buildAffiliateUrl("/")
-          : "";
-
-      const generatedLinkInput = document.getElementById("affiliateGeneratedLink");
-      if (generatedLinkInput) {
-        generatedLinkInput.value = defaultLink;
-      }
-
-      const stats = await this.fetchStats();
-
-      this.setText("affiliateClicksCount", String(stats.clicks));
-      this.setText("affiliateConversionsCount", String(stats.conversions));
-      this.setText("affiliateClaimableAmount", this.formatMoney(stats.availableToClaim));
-      this.setText("affiliatePaidAmount", this.formatMoney(stats.paid));
-      this.setText("affiliatePendingClaimsAmount", this.formatMoney(stats.pendingClaims));
-      this.setText("affiliateApprovedClaimsAmount", this.formatMoney(stats.approvedClaims));
-      this.setText("affiliateRejectedClaimsAmount", this.formatMoney(stats.rejectedClaims));
+      this.setText("affiliateClicksCount", String(Number(stats.clicks || 0)));
+      this.setText("affiliateConversionsCount", String(Number(stats.conversions || 0)));
+      this.setText("affiliateClaimableAmount", this.formatMoney(stats.availableToClaim || 0));
+      this.setText("affiliatePaidAmount", this.formatMoney(stats.paid || 0));
+      this.setText("affiliatePendingClaimsAmount", this.formatMoney(stats.pendingClaims || 0));
+      this.setText("affiliateApprovedClaimsAmount", this.formatMoney(stats.approvedClaims || 0));
+      this.setText("affiliateRejectedClaimsAmount", this.formatMoney(stats.rejectedClaims || 0));
 
       const claimAmountInput = this.getClaimAmountInput();
       if (claimAmountInput) {
-        claimAmountInput.max = String(this.toNumber(stats.availableToClaim, 0).toFixed(2));
-        claimAmountInput.placeholder =
-          this.toNumber(stats.availableToClaim, 0) > 0
-            ? this.toNumber(stats.availableToClaim, 0).toFixed(2)
-            : "0.00";
-        claimAmountInput.disabled = this.toNumber(stats.availableToClaim, 0) <= 0;
+        const maxClaimable = this.toNumber(stats.availableToClaim, 0);
 
-        if (this.toNumber(stats.availableToClaim, 0) > 0 && !claimAmountInput.value) {
-          claimAmountInput.value = this.toNumber(stats.availableToClaim, 0).toFixed(2);
+        claimAmountInput.max = String(maxClaimable.toFixed(2));
+        claimAmountInput.placeholder = maxClaimable > 0 ? maxClaimable.toFixed(2) : "0.00";
+        claimAmountInput.disabled = maxClaimable <= 0;
+
+        if (maxClaimable > 0 && !claimAmountInput.value) {
+          claimAmountInput.value = maxClaimable.toFixed(2);
+        }
+
+        if (maxClaimable <= 0) {
+          claimAmountInput.value = "";
         }
       }
 
@@ -107,37 +107,56 @@ Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
 
       const claimAvailableEl = document.getElementById("affiliateClaimAvailableAmount");
       if (claimAvailableEl) {
-        claimAvailableEl.textContent = this.formatMoney(stats.availableToClaim);
+        claimAvailableEl.textContent = this.formatMoney(stats.availableToClaim || 0);
       }
 
       const claimReservedEl = document.getElementById("affiliateClaimReservedAmount");
       if (claimReservedEl) {
-        claimReservedEl.textContent = this.formatMoney(stats.pendingClaims + stats.approvedClaims);
+        claimReservedEl.textContent = this.formatMoney(
+          this.toNumber(stats.pendingClaims, 0) + this.toNumber(stats.approvedClaims, 0)
+        );
       }
 
       const claimHelperText = document.getElementById("affiliateClaimHelperText");
       if (claimHelperText) {
+        const reservedTotal =
+          this.toNumber(stats.pendingClaims, 0) + this.toNumber(stats.approvedClaims, 0);
+
         claimHelperText.textContent =
-          stats.pendingClaims > 0 || stats.approvedClaims > 0
+          reservedTotal > 0
             ? "Pending and approved claim requests are temporarily reserved until reviewed or paid."
             : "You can only submit up to your currently available claimable balance.";
       }
 
-      this.updateClaimPayoutFieldVisibility();
-      this.renderRecentCommissions(stats.recentCommissions);
-      this.renderPayouts(stats.payouts);
-      this.renderClaims(stats.claims);
+      const generatedLinkInput = document.getElementById("affiliateGeneratedLink");
+      if (generatedLinkInput) {
+        generatedLinkInput.value =
+          profile && profile.referral_code ? this.buildAffiliateUrl("/") : "";
+      }
 
-      console.log("[Affiliate Dashboard] renderDashboard complete", {
-        affiliateProfileId: profile && profile.id ? profile.id : null,
-        referralCode: profile && profile.referral_code ? profile.referral_code : null,
+      this.updateClaimPayoutFieldVisibility();
+
+      const recentCommissions = Array.isArray(stats.recentCommissions)
+        ? stats.recentCommissions
+        : [];
+      const payouts = Array.isArray(stats.payouts) ? stats.payouts : [];
+      const claims = Array.isArray(stats.claims) ? stats.claims : [];
+
+      console.log("[Affiliate Dashboard] Rendering with:", {
+        profile,
         clicks: stats.clicks,
         conversions: stats.conversions,
-        payouts: stats.payouts.length,
-        claims: stats.claims.length
+        claimable: stats.availableToClaim,
+        payoutsCount: payouts.length,
+        claimsCount: claims.length,
+        recentCommissionsCount: recentCommissions.length
       });
+
+      this.renderRecentCommissions(recentCommissions);
+      this.renderPayouts(payouts);
+      this.renderClaims(claims);
     } catch (error) {
-      console.error("[Affiliate Dashboard] Render failed:", error);
+      console.error("[Affiliate Dashboard] Render failed:", error?.message || error, error?.stack || "");
       this.setMessage("Failed to load affiliate dashboard data.", "error");
     } finally {
       this.isRenderingDashboard = false;
@@ -148,12 +167,14 @@ Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
     const mount = document.getElementById("affiliateRecentCommissionsList");
     if (!mount) return;
 
-    if (!rows || !rows.length) {
+    const safeRows = Array.isArray(rows) ? rows : [];
+
+    if (!safeRows.length) {
       mount.innerHTML = '<div class="affiliate-empty-state">No commissions yet.</div>';
       return;
     }
 
-    mount.innerHTML = rows
+    mount.innerHTML = safeRows
       .map((row) => {
         const statusText = this.getCommissionStatusLabel(
           row.display_status || row.commission_status || "pending"
@@ -161,7 +182,7 @@ Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
 
         return (
           '<div class="affiliate-data-row">' +
-            "<span>Order #" + (row.order_number || "—") + " · " + statusText + "</span>" +
+            "<span>Order #" + this.escapeHtml(row.order_number || "—") + " · " + this.escapeHtml(statusText) + "</span>" +
             "<strong>" + this.formatMoney(row.commission_amount || 0) + "</strong>" +
           "</div>"
         );
@@ -173,12 +194,16 @@ Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
     const mount = document.getElementById("affiliatePayoutsList");
     if (!mount) return;
 
-    if (!rows || !rows.length) {
+    const safeRows = Array.isArray(rows) ? rows : [];
+
+    console.log("[Affiliate Dashboard] renderPayouts rows:", safeRows);
+
+    if (!safeRows.length) {
       mount.innerHTML = '<div class="affiliate-empty-state">No payouts yet.</div>';
       return;
     }
 
-    mount.innerHTML = rows
+    mount.innerHTML = safeRows
       .map((row) => {
         const statusLabel = this.getPayoutStatusLabel(row.payout_status);
         const statusClass = this.getPayoutStatusClass(row.payout_status);
@@ -210,28 +235,32 @@ Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
     if (!mount) return;
 
     const summaryEl = document.getElementById("affiliateClaimsSummary");
+    const safeRows = Array.isArray(rows) ? rows : [];
+
+    console.log("[Affiliate Dashboard] renderClaims rows:", safeRows);
+
     if (summaryEl) {
-      if (!rows || !rows.length) {
+      if (!safeRows.length) {
         summaryEl.textContent = "No claim requests submitted yet.";
       } else {
-        const pendingCount = rows.filter((row) => {
-          const status = String(row.status || "").toLowerCase();
+        const reservedCount = safeRows.filter((row) => {
+          const status = String(row.status || "").trim().toLowerCase();
           return status === "pending" || status === "approved";
         }).length;
 
         summaryEl.textContent =
-          pendingCount > 0
+          reservedCount > 0
             ? "Pending and approved claim requests stay reserved until they are reviewed or paid."
             : "Your past and current claim requests are shown below.";
       }
     }
 
-    if (!rows || !rows.length) {
+    if (!safeRows.length) {
       mount.innerHTML = '<div class="affiliate-empty-state">No claim requests yet.</div>';
       return;
     }
 
-    mount.innerHTML = rows
+    mount.innerHTML = safeRows
       .map((row) => {
         const statusLabel = this.getClaimStatusLabel(row.status);
         const statusClass = this.getClaimStatusClass(row.status);
