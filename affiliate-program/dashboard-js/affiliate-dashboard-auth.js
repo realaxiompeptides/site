@@ -1,6 +1,7 @@
 Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
   bindSupabaseAuthListener() {
     const supabase = this.getSupabase();
+
     if (!supabase || !supabase.auth || this.authSubscription) {
       return;
     }
@@ -11,13 +12,22 @@ Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
 
         if (!this.currentUser) {
           this.affiliateProfile = null;
+          this.affiliateProfileIds = [];
           this.showAuth();
           this.setMessage("");
           this.setReferralCodeStatus("", "");
           return;
         }
 
-        await this.restoreSessionAndRender();
+        try {
+          await this.restoreSessionAndRender();
+        } catch (error) {
+          console.error(
+            "[Affiliate Dashboard] Auth state restore failed:",
+            error?.message || error,
+            error?.stack || ""
+          );
+        }
       });
 
       this.authSubscription =
@@ -25,7 +35,11 @@ Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
           ? authListener.data.subscription
           : null;
     } catch (error) {
-      console.error("[Affiliate Dashboard] Failed to bind auth listener:", error);
+      console.error(
+        "[Affiliate Dashboard] Failed to bind auth listener:",
+        error?.message || error,
+        error?.stack || ""
+      );
     }
   },
 
@@ -209,56 +223,35 @@ Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
     }
   },
 
-  setPageMode(mode) {
-    const isDashboard = mode === "dashboard";
+  showAuth() {
+    this.showGuestView();
 
-    if (this.guestView) {
-      this.guestView.hidden = isDashboard;
-      this.guestView.style.display = isDashboard ? "none" : "";
+    if (this.authCard) {
+      this.authCard.hidden = false;
+      this.authCard.style.display = "";
     }
 
-    if (this.dashboardView) {
-      this.dashboardView.hidden = !isDashboard;
-      this.dashboardView.style.display = isDashboard ? "" : "none";
+    this.hideDashboardSections();
+    this.showLogin();
+  },
+
+  async showDashboard() {
+    this.showApprovedDashboardView();
+
+    if (this.authCard) {
+      this.authCard.hidden = true;
+      this.authCard.style.display = "none";
     }
-  },
 
-  showGuestView() {
-    this.setPageMode("guest");
-  },
+    this.showDashboardSections();
 
-  showApprovedDashboardView() {
-    this.setPageMode("dashboard");
-  },
-
-  hideDashboardSections() {
-    this.dashboardSectionIds.forEach((id) => {
-      const el = document.getElementById(id);
-      if (el) {
-        el.hidden = true;
-        el.style.display = "none";
-      }
-    });
-
-    if (this.dashboardWrap) {
-      this.dashboardWrap.hidden = true;
-      this.dashboardWrap.style.display = "none";
+    if (typeof this.renderDashboard !== "function") {
+      throw new Error("renderDashboard is not defined.");
     }
-  },
 
-  showDashboardSections() {
-    this.dashboardSectionIds.forEach((id) => {
-      const el = document.getElementById(id);
-      if (el) {
-        el.hidden = false;
-        el.style.display = "";
-      }
-    });
-
-    if (this.dashboardWrap) {
-      this.dashboardWrap.hidden = false;
-      this.dashboardWrap.style.display = "";
-    }
+    console.log("[Affiliate Dashboard] Calling renderDashboard...");
+    await this.renderDashboard();
+    console.log("[Affiliate Dashboard] renderDashboard finished.");
   },
 
   async restoreSessionAndRender() {
@@ -271,11 +264,16 @@ Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
     }
 
     try {
-      const result = await supabase.auth.getUser();
-      const user = result && result.data ? result.data.user || null : null;
-      this.currentUser = user;
+      const sessionResult = await supabase.auth.getSession();
+      const session =
+        sessionResult && sessionResult.data ? sessionResult.data.session || null : null;
 
-      if (!user) {
+      const userResult = await supabase.auth.getUser();
+      const user = userResult && userResult.data ? userResult.data.user || null : null;
+
+      this.currentUser = user || (session ? session.user : null);
+
+      if (!this.currentUser) {
         this.showAuth();
         return;
       }
@@ -284,7 +282,10 @@ Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
 
       if (!this.affiliateProfile) {
         this.showAuth();
-        this.setMessage("Affiliate profile not found. Please sign up for the affiliate program.", "error");
+        this.setMessage(
+          "Affiliate profile not found. Please sign up for the affiliate program.",
+          "error"
+        );
         this.showSignup();
         return;
       }
@@ -304,7 +305,11 @@ Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
       await this.showDashboard();
       this.setMessage("");
     } catch (error) {
-      console.error("[Affiliate Dashboard] Restore session failed:", error);
+      console.error(
+        "[Affiliate Dashboard] Restore session failed:",
+        error?.message || error,
+        error?.stack || ""
+      );
       this.showAuth();
       this.setMessage("Could not restore your affiliate session.", "error");
     }
@@ -337,11 +342,15 @@ Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
       if (result.error) throw result.error;
 
       this.currentUser = result.data ? result.data.user || null : null;
+
       await this.loadAffiliateProfile();
 
       if (!this.affiliateProfile) {
         this.showAuth();
-        this.setMessage("Affiliate profile not found. Please create an affiliate account first.", "error");
+        this.setMessage(
+          "Affiliate profile not found. Please create an affiliate account first.",
+          "error"
+        );
         this.showSignup();
         return;
       }
@@ -361,14 +370,19 @@ Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
       await this.showDashboard();
       this.setMessage("");
     } catch (error) {
-      console.error("[Affiliate Dashboard] Sign in failed:", error);
-      this.setMessage(error.message || "Sign in failed.", "error");
+      console.error(
+        "[Affiliate Dashboard] Sign in failed:",
+        error?.message || error,
+        error?.stack || ""
+      );
+      this.setMessage(error?.message || "Sign in failed.", "error");
     }
   },
 
   async generateUniqueReferralCode(name, email) {
     const supabase = this.getSupabase();
-    const baseSeed = (name + email).replace(/[^a-zA-Z0-9]/g, "").toUpperCase() || "AXIOMAFFILIATE";
+    const baseSeed =
+      (name + email).replace(/[^a-zA-Z0-9]/g, "").toUpperCase() || "AXIOMAFFILIATE";
     const base = baseSeed.slice(0, 8) || "AXIOMAFF";
 
     for (let attempt = 0; attempt < 12; attempt += 1) {
@@ -485,8 +499,12 @@ Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
         this.signupForm.reset();
       }
     } catch (error) {
-      console.error("[Affiliate Dashboard] Sign up failed:", error);
-      this.setMessage(error.message || "Sign up failed.", "error");
+      console.error(
+        "[Affiliate Dashboard] Sign up failed:",
+        error?.message || error,
+        error?.stack || ""
+      );
+      this.setMessage(error?.message || "Sign up failed.", "error");
     }
   },
 
@@ -503,56 +521,9 @@ Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
 
     this.currentUser = null;
     this.affiliateProfile = null;
+    this.affiliateProfileIds = [];
     this.showAuth();
     this.setMessage("");
     this.setReferralCodeStatus("", "");
-  },
-
-  async loadAffiliateProfile() {
-    const supabase = this.getSupabase();
-
-    if (!supabase || !this.currentUser || !this.currentUser.id) {
-      this.affiliateProfile = null;
-      return;
-    }
-
-    try {
-      const result = await supabase
-        .from("affiliates")
-        .select("*")
-        .eq("auth_user_id", this.currentUser.id)
-        .maybeSingle();
-
-      if (result.error) throw result.error;
-
-      this.affiliateProfile = result.data || null;
-    } catch (error) {
-      console.error("[Affiliate Dashboard] Failed loading affiliate profile:", error);
-      this.affiliateProfile = null;
-    }
-  },
-
-  showAuth() {
-    this.showGuestView();
-
-    if (this.authCard) {
-      this.authCard.hidden = false;
-      this.authCard.style.display = "";
-    }
-
-    this.hideDashboardSections();
-    this.showLogin();
-  },
-
-  async showDashboard() {
-    this.showApprovedDashboardView();
-
-    if (this.authCard) {
-      this.authCard.hidden = true;
-      this.authCard.style.display = "none";
-    }
-
-    this.showDashboardSections();
-    await this.renderDashboard();
   }
 });
