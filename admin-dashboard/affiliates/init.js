@@ -134,11 +134,11 @@
           event.target.closest("#closeAffiliateDetailModal");
 
         const payoutReviewClose =
-          event.target.closest("[data-affiliate-payout-review-close]") ||
+          event.target.closest("[data-payout-review-close]") ||
           event.target.closest("#closeAffiliatePayoutReviewModal");
 
         const payoutReviewBackdrop =
-          event.target.closest("#affiliatePayoutReviewModal [data-affiliate-payout-review-close]");
+          event.target.closest("#affiliatePayoutReviewModal [data-payout-review-close]");
 
         if (refreshBtn || refreshTopBtn || refreshSidebarBtn) {
           event.preventDefault();
