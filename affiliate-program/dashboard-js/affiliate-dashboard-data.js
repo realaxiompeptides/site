@@ -68,13 +68,12 @@ Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
       const scoreProfile = (profile) => {
         let score = 0;
 
-        const profileAuthUserId = profile && profile.auth_user_id ? String(profile.auth_user_id) : "";
-        const profileEmail = profile && profile.email
-          ? String(profile.email).trim().toLowerCase()
-          : "";
-        const profileStatus = profile && profile.status
-          ? String(profile.status).trim().toLowerCase()
-          : "";
+        const profileAuthUserId =
+          profile && profile.auth_user_id ? String(profile.auth_user_id).trim() : "";
+        const profileEmail =
+          profile && profile.email ? String(profile.email).trim().toLowerCase() : "";
+        const profileStatus =
+          profile && profile.status ? String(profile.status).trim().toLowerCase() : "";
 
         if (authUserId && profileAuthUserId === authUserId) score += 100;
         if (authEmail && profileEmail === authEmail) score += 40;
@@ -183,9 +182,8 @@ Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
 
     rows.forEach((row) => {
       if (!row.display_status) {
-        row.display_status = String(row.commission_status || "")
-          .trim()
-          .toLowerCase() || "pending";
+        row.display_status =
+          String(row.commission_status || "").trim().toLowerCase() || "pending";
       }
     });
 
@@ -238,10 +236,6 @@ Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
         )
       );
 
-      const affiliateEmail = this.affiliateProfile.email
-        ? String(this.affiliateProfile.email).trim().toLowerCase()
-        : "";
-
       const [
         clicksResult,
         conversionsResult,
@@ -278,30 +272,9 @@ Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
       if (payoutsResult.error) throw payoutsResult.error;
       if (claimsResult.error) throw claimsResult.error;
 
-      let clickRows = Array.isArray(clicksResult.data) ? clicksResult.data : [];
-      let conversionRows = Array.isArray(conversionsResult.data) ? conversionsResult.data : [];
-      let payoutRows = Array.isArray(payoutsResult.data) ? payoutsResult.data : [];
-      let claimRows = Array.isArray(claimsResult.data) ? claimsResult.data : [];
-
-      if (!conversionRows.length && affiliateEmail) {
-        try {
-          const fallbackConversions = await supabase
-            .from("affiliate_conversions")
-            .select("*")
-            .ilike("customer_email", affiliateEmail)
-            .order("created_at", { ascending: false });
-
-          if (!fallbackConversions.error && Array.isArray(fallbackConversions.data)) {
-            console.warn(
-              "[Affiliate Dashboard] Fallback customer_email conversion load was used."
-            );
-          }
-        } catch (_ignore) {}
-      }
-
       const dedupeById = (rows) => {
         const seen = new Set();
-        return rows.filter((row) => {
+        return (Array.isArray(rows) ? rows : []).filter((row) => {
           const id = row && row.id ? String(row.id) : "";
           if (!id || seen.has(id)) return false;
           seen.add(id);
@@ -309,10 +282,10 @@ Object.assign(window.AXIOM_AFFILIATE_DASHBOARD, {
         });
       };
 
-      clickRows = dedupeById(clickRows);
-      conversionRows = dedupeById(conversionRows);
-      payoutRows = dedupeById(payoutRows);
-      claimRows = dedupeById(claimRows);
+      const clickRows = dedupeById(clicksResult.data);
+      const conversionRows = dedupeById(conversionsResult.data);
+      const payoutRows = dedupeById(claimsResult.error ? [] : payoutsResult.data);
+      const claimRows = dedupeById(claimsResult.data);
 
       const clicks = clickRows.length;
 
