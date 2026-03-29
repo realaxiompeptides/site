@@ -386,6 +386,58 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
     claimButton.textContent = claimButton.dataset.defaultText || "Submit Claim Request";
   },
 
+  setPageMode(mode) {
+    const isDashboard = mode === "dashboard";
+
+    if (this.guestView) {
+      this.guestView.hidden = isDashboard;
+      this.guestView.style.display = isDashboard ? "none" : "";
+    }
+
+    if (this.dashboardView) {
+      this.dashboardView.hidden = !isDashboard;
+      this.dashboardView.style.display = isDashboard ? "" : "none";
+    }
+  },
+
+  showGuestView() {
+    this.setPageMode("guest");
+  },
+
+  showApprovedDashboardView() {
+    this.setPageMode("dashboard");
+  },
+
+  hideDashboardSections() {
+    this.dashboardSectionIds.forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.hidden = true;
+        el.style.display = "none";
+      }
+    });
+
+    if (this.dashboardWrap) {
+      this.dashboardWrap.hidden = true;
+      this.dashboardWrap.style.display = "none";
+    }
+  },
+
+  showDashboardSections() {
+    this.dashboardSectionIds.forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.hidden = false;
+        el.style.display = "";
+      }
+    });
+
+    if (this.dashboardWrap) {
+      this.dashboardWrap.hidden = false;
+      this.dashboardWrap.style.display = "";
+    }
+  },
+
   formatMoney(value) {
     return "$" + Number(value || 0).toFixed(2);
   },
