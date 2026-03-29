@@ -1,5 +1,5 @@
 (function () {
-  const VERSION = "20260328-640";
+  const VERSION = "20260328-999";
 
   const MODULES = [
     "dashboard-js/affiliate-dashboard-core.js",
@@ -26,16 +26,13 @@
         }
 
         existing.addEventListener("load", () => resolve(), { once: true });
-        existing.addEventListener("error", () => reject(new Error("Failed to load " + src)), {
-          once: true
-        });
+        existing.addEventListener("error", () => reject(new Error("Failed to load " + src)), { once: true });
         return;
       }
 
       const script = document.createElement("script");
       script.src = withVersion(src);
-      script.defer = false;
-      script.async = false;
+      script.defer = true;
       script.dataset.affiliateModule = src;
 
       script.addEventListener("load", () => {
@@ -55,15 +52,6 @@
     try {
       for (const src of MODULES) {
         await loadScript(src);
-      }
-
-      if (
-        window.AXIOM_AFFILIATE_DASHBOARD &&
-        typeof window.AXIOM_AFFILIATE_DASHBOARD.init === "function"
-      ) {
-        await window.AXIOM_AFFILIATE_DASHBOARD.init();
-      } else {
-        console.error("[Affiliate Dashboard] init() not found after module load.");
       }
     } catch (error) {
       console.error("[Affiliate Dashboard] Module loader failed:", error);
