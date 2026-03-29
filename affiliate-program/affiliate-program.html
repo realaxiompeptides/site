@@ -123,43 +123,90 @@
       display: none !important;
     }
 
-    .affiliate-dashboard-tabs {
+    body.affiliate-program-page {
+      overflow-x: hidden;
+    }
+
+    .affiliate-program-main {
+      width: 100%;
+      max-width: 100%;
+      overflow-x: hidden;
+    }
+
+    .affiliate-program-container {
+      width: 100%;
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: 20px 14px 40px;
+      box-sizing: border-box;
+      overflow-x: hidden;
+    }
+
+    #affiliateGuestView,
+    #affiliateDashboardView,
+    #affiliateHeroMount,
+    #affiliateAuthMount,
+    #affiliateDashboardMount {
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
+    }
+
+    /* Mobile-safe tab bar */
+    .affiliate-dashboard-tabs,
+    .affiliate-tabs,
+    .affiliate-mobile-tabs,
+    .affiliate-nav-tabs,
+    .affiliate-section-tabs {
+      width: 100%;
+      max-width: 100%;
       display: flex;
+      flex-wrap: wrap;
       gap: 10px;
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
-      padding: 0 0 8px;
+      justify-content: flex-start;
+      align-items: center;
       margin: 0 0 18px;
-      scrollbar-width: none;
+      padding: 0;
+      box-sizing: border-box;
+      overflow: visible !important;
     }
 
-    .affiliate-dashboard-tabs::-webkit-scrollbar {
-      display: none;
-    }
-
-    .affiliate-dashboard-tab {
-      appearance: none;
-      border: 1px solid #dbe4ee;
-      background: #ffffff;
-      color: #0f172a;
-      border-radius: 999px;
-      padding: 10px 14px;
-      font: inherit;
-      font-weight: 700;
+    .affiliate-dashboard-tab,
+    .affiliate-tab,
+    .affiliate-mobile-tab,
+    .affiliate-nav-tab,
+    .affiliate-section-tab {
+      flex: 0 1 auto;
+      max-width: 100%;
       white-space: nowrap;
-      cursor: pointer;
-      flex: 0 0 auto;
-      transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+      box-sizing: border-box;
     }
 
-    .affiliate-dashboard-tab.is-active {
-      background: #0f172a;
-      color: #ffffff;
-      border-color: #0f172a;
+    .affiliate-dashboard-tab button,
+    .affiliate-tab button,
+    .affiliate-mobile-tab button,
+    .affiliate-nav-tab button,
+    .affiliate-section-tab button,
+    .affiliate-dashboard-tab,
+    .affiliate-tab,
+    .affiliate-mobile-tab,
+    .affiliate-nav-tab,
+    .affiliate-section-tab {
+      max-width: 100%;
+      box-sizing: border-box;
     }
 
-    .affiliate-dashboard-panel[hidden] {
-      display: none !important;
+    /* Keep cards inside viewport */
+    .affiliate-card,
+    .affiliate-auth-card,
+    .affiliate-hero-card,
+    #affiliateDashboardMount .affiliate-card,
+    #affiliateDashboardMount section {
+      width: 100%;
+      max-width: 100%;
+      margin-left: auto;
+      margin-right: auto;
+      box-sizing: border-box;
     }
 
     @media (max-width: 640px) {
@@ -189,13 +236,33 @@
         height: 66px !important;
       }
 
-      .affiliate-dashboard-tabs {
-        margin-bottom: 14px;
+      .affiliate-program-container {
+        padding: 14px 12px 32px;
       }
 
-      .affiliate-dashboard-tab {
-        padding: 9px 12px;
-        font-size: 14px;
+      .affiliate-dashboard-tabs,
+      .affiliate-tabs,
+      .affiliate-mobile-tabs,
+      .affiliate-nav-tabs,
+      .affiliate-section-tabs {
+        gap: 8px;
+      }
+
+      .affiliate-dashboard-tab,
+      .affiliate-tab,
+      .affiliate-mobile-tab,
+      .affiliate-nav-tab,
+      .affiliate-section-tab {
+        flex: 1 1 calc(50% - 8px);
+        min-width: 0;
+      }
+
+      .affiliate-dashboard-tab button,
+      .affiliate-tab button,
+      .affiliate-mobile-tab button,
+      .affiliate-nav-tab button,
+      .affiliate-section-tab button {
+        width: 100%;
       }
     }
   </style>
@@ -318,97 +385,7 @@
       </div>
 
       <div id="affiliateDashboardView" hidden>
-        <div class="affiliate-dashboard-tabs" id="affiliateDashboardTabs" hidden>
-          <button
-            type="button"
-            class="affiliate-dashboard-tab is-active"
-            data-affiliate-tab="overview"
-          >
-            Overview
-          </button>
-          <button
-            type="button"
-            class="affiliate-dashboard-tab"
-            data-affiliate-tab="links"
-          >
-            Links
-          </button>
-          <button
-            type="button"
-            class="affiliate-dashboard-tab"
-            data-affiliate-tab="commissions"
-          >
-            Commissions
-          </button>
-          <button
-            type="button"
-            class="affiliate-dashboard-tab"
-            data-affiliate-tab="claims"
-          >
-            Claims
-          </button>
-          <button
-            type="button"
-            class="affiliate-dashboard-tab"
-            data-affiliate-tab="payouts"
-          >
-            Payouts
-          </button>
-          <button
-            type="button"
-            class="affiliate-dashboard-tab"
-            data-affiliate-tab="help"
-          >
-            Help
-          </button>
-        </div>
-
-        <div id="affiliateDashboardMount">
-          <section class="affiliate-dashboard-shell">
-            <div class="affiliate-dashboard-layout">
-              <div
-                id="affiliateOverviewMount"
-                class="affiliate-dashboard-panel"
-                data-affiliate-panel="overview"
-              ></div>
-
-              <div
-                id="affiliateLinksMount"
-                class="affiliate-dashboard-panel"
-                data-affiliate-panel="links"
-                hidden
-              ></div>
-
-              <div
-                id="affiliateCommissionsMount"
-                class="affiliate-dashboard-panel"
-                data-affiliate-panel="commissions"
-                hidden
-              ></div>
-
-              <div
-                id="affiliateClaimsMount"
-                class="affiliate-dashboard-panel"
-                data-affiliate-panel="claims"
-                hidden
-              ></div>
-
-              <div
-                id="affiliatePayoutsMount"
-                class="affiliate-dashboard-panel"
-                data-affiliate-panel="payouts"
-                hidden
-              ></div>
-
-              <div
-                id="affiliateHelpMount"
-                class="affiliate-dashboard-panel"
-                data-affiliate-panel="help"
-                hidden
-              ></div>
-            </div>
-          </section>
-        </div>
+        <div id="affiliateDashboardMount"></div>
       </div>
     </div>
   </main>
@@ -447,52 +424,6 @@
         .catch(function (error) {
           console.error("Footer load failed:", error);
         });
-
-      const dashboardTabs = document.getElementById("affiliateDashboardTabs");
-      const dashboardView = document.getElementById("affiliateDashboardView");
-
-      function showAffiliatePanel(panelName) {
-        const tabs = document.querySelectorAll("[data-affiliate-tab]");
-        const panels = document.querySelectorAll("[data-affiliate-panel]");
-
-        tabs.forEach(function (tab) {
-          const isActive = tab.getAttribute("data-affiliate-tab") === panelName;
-          tab.classList.toggle("is-active", isActive);
-        });
-
-        panels.forEach(function (panel) {
-          const isActive = panel.getAttribute("data-affiliate-panel") === panelName;
-          panel.hidden = !isActive;
-        });
-      }
-
-      if (dashboardTabs) {
-        document.addEventListener("click", function (event) {
-          const tab = event.target.closest("[data-affiliate-tab]");
-          if (!tab) return;
-
-          event.preventDefault();
-          showAffiliatePanel(tab.getAttribute("data-affiliate-tab"));
-        });
-      }
-
-      const observer = new MutationObserver(function () {
-        if (!dashboardView) return;
-        if (dashboardView.hidden) return;
-
-        if (dashboardTabs) {
-          dashboardTabs.hidden = false;
-        }
-
-        showAffiliatePanel("overview");
-      });
-
-      if (dashboardView) {
-        observer.observe(dashboardView, {
-          attributes: true,
-          attributeFilter: ["hidden"]
-        });
-      }
     });
   </script>
 </body>
