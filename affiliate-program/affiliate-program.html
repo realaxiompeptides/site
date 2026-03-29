@@ -165,49 +165,42 @@
       margin-right: auto;
     }
 
-    /* dashboard nav buttons */
-    .affiliate-dashboard-tabs,
-    .affiliate-tabs,
-    .affiliate-dashboard-nav,
-    .affiliate-section-tabs,
-    .affiliate-mobile-tabs {
+    .affiliate-dashboard-page-tabs {
       width: 100%;
       max-width: 100%;
-      display: flex !important;
-      flex-wrap: wrap !important;
-      justify-content: center !important;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
       align-items: center;
-      gap: 12px !important;
-      margin: 0 0 22px !important;
-      padding: 0 !important;
-      box-sizing: border-box;
-      overflow: visible !important;
-    }
-
-    .affiliate-dashboard-tabs > *,
-    .affiliate-tabs > *,
-    .affiliate-dashboard-nav > *,
-    .affiliate-section-tabs > *,
-    .affiliate-mobile-tabs > * {
-      flex: 0 1 auto;
-      max-width: 100%;
-      min-width: 0;
+      gap: 12px;
+      margin: 0 0 22px;
+      padding: 0;
       box-sizing: border-box;
     }
 
-    .affiliate-dashboard-tabs button,
-    .affiliate-tabs button,
-    .affiliate-dashboard-nav button,
-    .affiliate-section-tabs button,
-    .affiliate-mobile-tabs button,
-    .affiliate-dashboard-tabs a,
-    .affiliate-tabs a,
-    .affiliate-dashboard-nav a,
-    .affiliate-section-tabs a,
-    .affiliate-mobile-tabs a {
-      max-width: 100%;
+    .affiliate-dashboard-page-tab {
+      appearance: none;
+      -webkit-appearance: none;
+      border: 1px solid #d7dfeb;
+      background: #ffffff;
+      color: #0f214f;
+      border-radius: 999px;
+      min-height: 52px;
+      padding: 0 20px;
+      font: inherit;
+      font-weight: 700;
+      line-height: 1;
+      cursor: pointer;
       box-sizing: border-box;
       white-space: nowrap;
+      transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .affiliate-dashboard-page-tab.is-active {
+      background: #0f214f;
+      color: #ffffff;
+      border-color: #0f214f;
+      box-shadow: 0 8px 24px rgba(15, 33, 79, 0.12);
     }
 
     @media (max-width: 640px) {
@@ -241,37 +234,18 @@
         padding: 14px 12px 32px;
       }
 
-      .affiliate-dashboard-tabs,
-      .affiliate-tabs,
-      .affiliate-dashboard-nav,
-      .affiliate-section-tabs,
-      .affiliate-mobile-tabs {
-        gap: 10px !important;
-        justify-content: center !important;
+      .affiliate-dashboard-page-tabs {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
       }
 
-      .affiliate-dashboard-tabs > *,
-      .affiliate-tabs > *,
-      .affiliate-dashboard-nav > *,
-      .affiliate-section-tabs > *,
-      .affiliate-mobile-tabs > * {
-        flex: 1 1 calc(50% - 10px) !important;
-        min-width: 140px !important;
-        max-width: calc(50% - 10px) !important;
-      }
-
-      .affiliate-dashboard-tabs button,
-      .affiliate-tabs button,
-      .affiliate-dashboard-nav button,
-      .affiliate-section-tabs button,
-      .affiliate-mobile-tabs button,
-      .affiliate-dashboard-tabs a,
-      .affiliate-tabs a,
-      .affiliate-dashboard-nav a,
-      .affiliate-section-tabs a,
-      .affiliate-mobile-tabs a {
-        width: 100% !important;
-        text-align: center !important;
+      .affiliate-dashboard-page-tab {
+        width: 100%;
+        min-width: 0;
+        padding: 0 14px;
+        font-size: 15px;
+        text-align: center;
       }
     }
   </style>
@@ -394,6 +368,51 @@
       </div>
 
       <div id="affiliateDashboardView" hidden>
+        <div class="affiliate-dashboard-page-tabs" id="affiliateDashboardPageTabs">
+          <button
+            type="button"
+            class="affiliate-dashboard-page-tab is-active"
+            data-affiliate-top-tab="overview"
+          >
+            Overview
+          </button>
+          <button
+            type="button"
+            class="affiliate-dashboard-page-tab"
+            data-affiliate-top-tab="links"
+          >
+            Links
+          </button>
+          <button
+            type="button"
+            class="affiliate-dashboard-page-tab"
+            data-affiliate-top-tab="commissions"
+          >
+            Commissions
+          </button>
+          <button
+            type="button"
+            class="affiliate-dashboard-page-tab"
+            data-affiliate-top-tab="claims"
+          >
+            Claims
+          </button>
+          <button
+            type="button"
+            class="affiliate-dashboard-page-tab"
+            data-affiliate-top-tab="payouts"
+          >
+            Payouts
+          </button>
+          <button
+            type="button"
+            class="affiliate-dashboard-page-tab"
+            data-affiliate-top-tab="help"
+          >
+            Help
+          </button>
+        </div>
+
         <div id="affiliateDashboardMount"></div>
       </div>
     </div>
