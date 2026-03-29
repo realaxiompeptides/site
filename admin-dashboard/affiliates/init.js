@@ -75,6 +75,32 @@
       });
     }
 
+    const affiliateCompSettingsForm = document.getElementById("affiliateCompSettingsForm");
+    if (affiliateCompSettingsForm && !affiliateCompSettingsForm.dataset.bound) {
+      affiliateCompSettingsForm.dataset.bound = "true";
+      affiliateCompSettingsForm.addEventListener("submit", async function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+
+        if (typeof actions.saveAffiliateCompSettings === "function") {
+          await actions.saveAffiliateCompSettings();
+        }
+      });
+    }
+
+    const saveAffiliateCompSettingsBtn = document.getElementById("saveAffiliateCompSettingsBtn");
+    if (saveAffiliateCompSettingsBtn && !saveAffiliateCompSettingsBtn.dataset.bound) {
+      saveAffiliateCompSettingsBtn.dataset.bound = "true";
+      saveAffiliateCompSettingsBtn.addEventListener("click", async function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+
+        if (typeof actions.saveAffiliateCompSettings === "function") {
+          await actions.saveAffiliateCompSettings();
+        }
+      });
+    }
+
     const payoutReviewModal = document.getElementById("affiliatePayoutReviewModal");
     const payoutReviewConfirmBtn = document.getElementById("affiliatePayoutConfirmPaidBtn");
     const payoutReviewCopyBtn = document.getElementById("affiliatePayoutCopyAddressBtn");
@@ -253,6 +279,10 @@
       openAffiliateDetails: actions.openAffiliateDetails.bind(actions),
       closeModal: actions.closeModal.bind(actions),
       updateClaimStatus: actions.updateClaimStatus.bind(actions),
+      saveAffiliateCompSettings:
+        typeof actions.saveAffiliateCompSettings === "function"
+          ? actions.saveAffiliateCompSettings.bind(actions)
+          : null,
       submitAffiliateClaimReview:
         typeof actions.submitAffiliateClaimReview === "function"
           ? actions.submitAffiliateClaimReview.bind(actions)
