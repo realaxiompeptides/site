@@ -109,7 +109,7 @@
     getPayoutReviewModalElements: function getPayoutReviewModalElements() {
       return {
         modal: document.getElementById("affiliatePayoutReviewModal"),
-        affiliate: document.getElementById("affiliatePayoutReviewAffiliate"),
+        affiliate: document.getElementById("affiliatePayoutReviewName"),
         email: document.getElementById("affiliatePayoutReviewEmail"),
         discord: document.getElementById("affiliatePayoutReviewDiscord"),
         amount: document.getElementById("affiliatePayoutReviewAmount"),
@@ -117,7 +117,7 @@
         network: document.getElementById("affiliatePayoutReviewNetwork"),
         address: document.getElementById("affiliatePayoutReviewAddress"),
         contact: document.getElementById("affiliatePayoutReviewContact"),
-        note: document.getElementById("affiliatePayoutReviewNote"),
+        note: document.getElementById("affiliatePayoutReviewClaimNote"),
         txid: document.getElementById("affiliatePayoutReviewTxId"),
         notes: document.getElementById("affiliatePayoutReviewNotes"),
         copyAddressBtn: document.getElementById("affiliatePayoutCopyAddressBtn"),
@@ -284,7 +284,7 @@
       if (els.amount) els.amount.textContent = utils.formatCurrency(summary.amount || 0);
       if (els.method) els.method.textContent = summary.payoutMethod || "manual";
       if (els.network) els.network.textContent = summary.payoutNetwork || "—";
-      if (els.address) els.address.textContent = summary.payoutAddress || "—";
+      if (els.address) els.address.value = summary.payoutAddress || "";
       if (els.contact) els.contact.textContent = summary.payoutContact || "—";
       if (els.note) els.note.textContent = summary.claimNote || "—";
 
@@ -299,6 +299,11 @@
       if (els.copyAddressBtn) {
         els.copyAddressBtn.disabled = !summary.payoutAddress;
         els.copyAddressBtn.setAttribute("data-copy-value", summary.payoutAddress || "");
+      }
+
+      if (els.confirmBtn) {
+        els.confirmBtn.disabled = false;
+        els.confirmBtn.textContent = "Confirm Mark Paid";
       }
 
       els.modal.hidden = false;
@@ -322,6 +327,11 @@
         els.notes.value = "";
       }
 
+      if (els.confirmBtn) {
+        els.confirmBtn.disabled = false;
+        els.confirmBtn.textContent = "Confirm Mark Paid";
+      }
+
       if (els.modal) {
         els.modal.hidden = true;
         els.modal.style.display = "";
@@ -334,7 +344,7 @@
       const els = this.getPayoutReviewModalElements();
       const value =
         cleanText(els.copyAddressBtn?.getAttribute("data-copy-value")) ||
-        cleanText(els.address?.textContent);
+        cleanText(els.address?.value);
 
       if (!value || value === "—") {
         alert("No payout address to copy.");
@@ -348,7 +358,7 @@
           const original = els.copyAddressBtn.textContent;
           els.copyAddressBtn.textContent = "Copied";
           setTimeout(function () {
-            els.copyAddressBtn.textContent = original || "Copy Address";
+            els.copyAddressBtn.textContent = original || "Copy";
           }, 1200);
         }
       } catch (error) {
@@ -401,6 +411,11 @@
           return;
         }
 
+        if (els.confirmBtn) {
+          els.confirmBtn.disabled = true;
+          els.confirmBtn.textContent = "Saving...";
+        }
+
         await dataApi.markClaimPaid(claimId, {
           method: payoutMethod,
           reference: payoutReference,
@@ -415,6 +430,12 @@
       } catch (error) {
         console.error("Failed to confirm payout review:", error);
         alert(error.message || "Failed to mark payout request paid.");
+      } finally {
+        const els = this.getPayoutReviewModalElements();
+        if (els.confirmBtn) {
+          els.confirmBtn.disabled = false;
+          els.confirmBtn.textContent = "Confirm Mark Paid";
+        }
       }
     },
 
