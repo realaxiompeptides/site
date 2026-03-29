@@ -454,5 +454,124 @@
         });
     });
   </script>
+
+  <script>
+    (function () {
+      function getTabButtons() {
+        return Array.from(document.querySelectorAll("[data-affiliate-top-tab]"));
+      }
+
+      function getMountMap() {
+        return {
+          overview: document.getElementById("affiliateOverviewMount"),
+          links: document.getElementById("affiliateLinksMount"),
+          commissions: document.getElementById("affiliateCommissionsMount"),
+          claims: document.getElementById("affiliateClaimsMount"),
+          payouts: document.getElementById("affiliatePayoutsMount"),
+          help: document.getElementById("affiliateHelpMount")
+        };
+      }
+
+      function setActiveTab(tabName) {
+        getTabButtons().forEach(function (button) {
+          const isActive = button.getAttribute("data-affiliate-top-tab") === tabName;
+          button.classList.toggle("is-active", isActive);
+          button.setAttribute("aria-pressed", isActive ? "true" : "false");
+        });
+      }
+
+      function showSection(tabName) {
+        const map = getMountMap();
+
+        Object.keys(map).forEach(function (key) {
+          const el = map[key];
+          if (!el) return;
+
+          if (key === tabName) {
+            el.hidden = false;
+            el.style.display = "";
+          } else {
+            el.hidden = true;
+            el.style.display = "none";
+          }
+        });
+      }
+
+      function activateAffiliateTopTab(tabName, shouldScroll) {
+        const map = getMountMap();
+        if (!map[tabName]) {
+          tabName = "overview";
+        }
+
+        setActiveTab(tabName);
+        showSection(tabName);
+
+        if (shouldScroll) {
+          const target = document.getElementById("affiliateDashboardPageTabs");
+          if (target) {
+            target.scrollIntoView({
+              behavior: "smooth",
+              block: "start"
+            });
+          }
+        }
+      }
+
+      function bindAffiliateTopTabs() {
+        const buttons = getTabButtons();
+        if (!buttons.length) return false;
+
+        if (document.body.dataset.affiliateTopTabsBound === "true") {
+          return true;
+        }
+
+        document.body.dataset.affiliateTopTabsBound = "true";
+
+        buttons.forEach(function (button) {
+          button.addEventListener("click", function () {
+            const tabName = button.getAttribute("data-affiliate-top-tab") || "overview";
+            activateAffiliateTopTab(tabName, true);
+          });
+        });
+
+        return true;
+      }
+
+      function initAffiliateTopTabs() {
+        const dashboardView = document.getElementById("affiliateDashboardView");
+        if (!dashboardView || dashboardView.hidden) return false;
+
+        const map = getMountMap();
+        if (!map.overview) return false;
+
+        bindAffiliateTopTabs();
+        activateAffiliateTopTab("overview", false);
+        return true;
+      }
+
+      function waitForAffiliateMounts() {
+        let attempts = 0;
+        const maxAttempts = 60;
+
+        const timer = setInterval(function () {
+          attempts += 1;
+
+          if (initAffiliateTopTabs() || attempts >= maxAttempts) {
+            clearInterval(timer);
+          }
+        }, 250);
+      }
+
+      document.addEventListener("DOMContentLoaded", function () {
+        waitForAffiliateMounts();
+      });
+
+      window.addEventListener("axiom:affiliate-dashboard-rendered", function () {
+        initAffiliateTopTabs();
+      });
+
+      window.activateAffiliateTopTab = activateAffiliateTopTab;
+    })();
+  </script>
 </body>
 </html>
