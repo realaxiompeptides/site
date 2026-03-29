@@ -1,67 +1,24 @@
 (function () {
-  if (window.AXIOM_DEBUG_OVERLAY_LOADED) return;
-  window.AXIOM_DEBUG_OVERLAY_LOADED = true;
+  const PANEL_ID = "axiomDebugPanel";
+  const BODY_ID = "axiomDebugBody";
+  const COUNT_ID = "axiomDebugCount";
+  const CLEAR_ID = "axiomDebugClear";
+  const TOGGLE_ID = "axiomDebugToggle";
 
-  const logs = [];
-  const MAX_LOGS = 100;
+  let panel = null;
+  let body = null;
+  let countEl = null;
+  let toggleBtn = null;
+  let logs = [];
+  let isVisible = false;
+  let isEnabledForAffiliate = false;
 
-  function formatValue(value) {
-    if (value instanceof Error) {
-      return value.stack || value.message || String(value);
-    }
-
-    if (typeof value === "object" && value !== null) {
-      try {
-        return JSON.stringify(value, null, 2);
-      } catch (_error) {
-        return String(value);
-      }
-    }
-
-    return String(value);
-  }
-
-  function addLog(level, parts) {
-    const time = new Date().toLocaleTimeString();
-    const message = parts.map(formatValue).join(" ");
-    logs.push({ time, level, message });
-
-    while (logs.length > MAX_LOGS) {
-      logs.shift();
-    }
-
-    render();
-  }
-
-  function render() {
-    const body = document.getElementById("axiomDebugOverlayBody");
-    const badge = document.getElementById("axiomDebugOverlayCount");
-    if (!body || !badge) return;
-
-    badge.textContent = String(logs.length);
-
-    body.innerHTML = logs
-      .slice()
-      .reverse()
-      .map((item) => {
-        return (
-          '<div style="padding:8px 10px;border-bottom:1px solid rgba(255,255,255,.08);">' +
-            '<div style="font-size:11px;opacity:.7;margin-bottom:4px;">[' +
-              item.time +
-              "] " +
-              item.level.toUpperCase() +
-            "</div>" +
-            '<pre style="margin:0;white-space:pre-wrap;word-break:break-word;font:12px/1.45 monospace;color:#fff;">' +
-              escapeHtml(item.message) +
-            "</pre>" +
-          "</div>"
-        );
-      })
-      .join("");
+  function getSupabase() {
+    return window.axiomSupabase || window.AXIOM_SUPABASE || window.supabaseClient || null;
   }
 
   function escapeHtml(value) {
-    return String(value)
+    return String(value == null ? "" : value)
       .replace(/&/g, "&amp;")
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;")
@@ -69,94 +26,208 @@
       .replace(/'/g, "&#039;");
   }
 
-  function createUi() {
-    const wrap = document.createElement("div");
-    wrap.id = "axiomDebugOverlay";
-    wrap.style.cssText = [
+  function formatArgs(args) {
+    return args
+      .map((item) => {
+        if (typeof item === "string") return item;
+        try {
+          return JSON.stringify(item, null, 2);
+        } catch (_error) {
+          return String(item);
+        }
+      })
+      .join(" ");
+  }
+
+  function ensurePanel() {
+    if (panel) return;
+
+    panel = document.createElement("div");
+    panel.id = PANEL_ID;
+    panel.style.cssText = [
       "position:fixed",
+      "left:12px",
       "right:12px",
       "bottom:12px",
-      "width:360px",
-      "max-width:calc(100vw - 24px)",
-      "max-height:60vh",
-      "background:#0b1220",
-      "color:#fff",
-      "border:1px solid rgba(255,255,255,.12)",
-      "border-radius:12px",
-      "box-shadow:0 10px 30px rgba(0,0,0,.35)",
       "z-index:999999",
+      "background:#06152f",
+      "color:#fff",
+      "border:1px solid rgba(255,255,255,0.14)",
+      "border-radius:18px",
+      "box-shadow:0 18px 48px rgba(0,0,0,0.4)",
       "overflow:hidden",
-      "font-family:Inter,Arial,sans-serif"
+      "display:none",
+      "max-height:55vh"
     ].join(";");
 
-    wrap.innerHTML =
-      '<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:#111a2b;border-bottom:1px solid rgba(255,255,255,.08);">' +
-        '<strong style="font-size:13px;">Axiom Debug</strong>' +
-        '<div style="display:flex;gap:8px;align-items:center;">' +
-          '<span id="axiomDebugOverlayCount" style="font-size:12px;opacity:.8;">0</span>' +
-          '<button id="axiomDebugOverlayClear" type="button" style="background:#1f2a44;color:#fff;border:0;border-radius:8px;padding:6px 8px;cursor:pointer;">Clear</button>' +
-          '<button id="axiomDebugOverlayToggle" type="button" style="background:#1f2a44;color:#fff;border:0;border-radius:8px;padding:6px 8px;cursor:pointer;">Hide</button>' +
+    panel.innerHTML =
+      '<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid rgba(255,255,255,0.12);">' +
+        '<strong style="font-size:18px;">Axiom Debug</strong>' +
+        '<div style="display:flex;align-items:center;gap:10px;">' +
+          '<span id="' + COUNT_ID + '" style="opacity:.8;">0</span>' +
+          '<button id="' + CLEAR_ID + '" type="button" style="border:0;background:#1d3566;color:#fff;padding:10px 14px;border-radius:14px;font-weight:700;">Clear</button>' +
+          '<button id="' + TOGGLE_ID + '" type="button" style="border:0;background:#1d3566;color:#fff;padding:10px 14px;border-radius:14px;font-weight:700;">Hide</button>' +
         "</div>" +
       "</div>" +
-      '<div id="axiomDebugOverlayBody" style="overflow:auto;max-height:calc(60vh - 48px);"></div>';
+      '<div id="' + BODY_ID + '" style="padding:0;overflow:auto;max-height:calc(55vh - 70px);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;line-height:1.45;"></div>';
 
-    document.body.appendChild(wrap);
+    document.body.appendChild(panel);
 
-    const clearBtn = document.getElementById("axiomDebugOverlayClear");
-    const toggleBtn = document.getElementById("axiomDebugOverlayToggle");
-    const body = document.getElementById("axiomDebugOverlayBody");
+    body = document.getElementById(BODY_ID);
+    countEl = document.getElementById(COUNT_ID);
+    toggleBtn = document.getElementById(TOGGLE_ID);
 
-    clearBtn.addEventListener("click", function () {
-      logs.length = 0;
-      render();
+    document.getElementById(CLEAR_ID).addEventListener("click", function () {
+      logs = [];
+      renderLogs();
     });
 
     toggleBtn.addEventListener("click", function () {
-      const isHidden = body.style.display === "none";
-      body.style.display = isHidden ? "block" : "none";
-      toggleBtn.textContent = isHidden ? "Hide" : "Show";
+      isVisible = !isVisible;
+      renderVisibility();
     });
-
-    render();
   }
 
-  const originalConsoleLog = console.log;
-  const originalConsoleWarn = console.warn;
-  const originalConsoleError = console.error;
+  function renderVisibility() {
+    if (!panel) return;
+    panel.style.display = isEnabledForAffiliate && isVisible ? "block" : "none";
+    if (toggleBtn) {
+      toggleBtn.textContent = isVisible ? "Hide" : "Show";
+    }
+  }
 
-  console.log = function (...args) {
-    addLog("log", args);
-    originalConsoleLog.apply(console, args);
+  function renderLogs() {
+    if (!body || !countEl) return;
+
+    countEl.textContent = String(logs.length);
+
+    body.innerHTML = logs
+      .map(function (entry) {
+        return (
+          '<div style="padding:12px 16px;border-top:1px solid rgba(255,255,255,0.08);">' +
+            '<div style="opacity:.75;margin-bottom:6px;">[' + escapeHtml(entry.time) + "] " + escapeHtml(entry.level) + "</div>" +
+            '<div style="white-space:pre-wrap;word-break:break-word;">' + escapeHtml(entry.message) + "</div>" +
+          "</div>"
+        );
+      })
+      .join("");
+  }
+
+  function pushLog(level, args) {
+    const message = formatArgs(args);
+
+    logs.push({
+      level: String(level || "LOG").toUpperCase(),
+      time: new Date().toLocaleTimeString(),
+      message: message
+    });
+
+    if (logs.length > 100) {
+      logs.shift();
+    }
+
+    if (isEnabledForAffiliate) {
+      ensurePanel();
+      renderLogs();
+      renderVisibility();
+    }
+  }
+
+  async function shouldEnableForAffiliate() {
+    const supabase = getSupabase();
+    if (!supabase || !supabase.auth) return false;
+
+    try {
+      const userResult = await supabase.auth.getUser();
+      const user = userResult && userResult.data ? userResult.data.user : null;
+      if (!user || !user.id) return false;
+
+      const byAuth = await supabase
+        .from("affiliates")
+        .select("id,status")
+        .eq("auth_user_id", user.id)
+        .maybeSingle();
+
+      if (!byAuth.error && byAuth.data) {
+        return true;
+      }
+
+      const email = user.email ? String(user.email).trim().toLowerCase() : "";
+      if (!email) return false;
+
+      const byEmail = await supabase
+        .from("affiliates")
+        .select("id,status")
+        .ilike("email", email)
+        .maybeSingle();
+
+      if (!byEmail.error && byEmail.data) {
+        return true;
+      }
+    } catch (error) {
+      console.error("[Axiom Debug] affiliate check failed:", error);
+    }
+
+    return false;
+  }
+
+  async function refreshDebugVisibility() {
+    isEnabledForAffiliate = await shouldEnableForAffiliate();
+
+    if (isEnabledForAffiliate) {
+      ensurePanel();
+      isVisible = true;
+      renderLogs();
+      renderVisibility();
+    } else if (panel) {
+      isVisible = false;
+      renderVisibility();
+    }
+  }
+
+  const originalLog = console.log;
+  const originalWarn = console.warn;
+  const originalError = console.error;
+
+  console.log = function () {
+    originalLog.apply(console, arguments);
+    pushLog("log", Array.from(arguments));
   };
 
-  console.warn = function (...args) {
-    addLog("warn", args);
-    originalConsoleWarn.apply(console, args);
+  console.warn = function () {
+    originalWarn.apply(console, arguments);
+    pushLog("warn", Array.from(arguments));
   };
 
-  console.error = function (...args) {
-    addLog("error", args);
-    originalConsoleError.apply(console, args);
+  console.error = function () {
+    originalError.apply(console, arguments);
+    pushLog("error", Array.from(arguments));
   };
 
   window.addEventListener("error", function (event) {
-    addLog("error", [
-      "window.error:",
-      event.message,
-      "at",
-      event.filename + ":" + event.lineno + ":" + event.colno
+    pushLog("error", [
+      event.message || "Window error",
+      event.filename || "",
+      event.lineno ? "line " + event.lineno : "",
+      event.colno ? "col " + event.colno : ""
     ]);
   });
 
   window.addEventListener("unhandledrejection", function (event) {
-    addLog("error", ["unhandledrejection:", event.reason]);
+    const reason = event && event.reason ? event.reason : "Unhandled promise rejection";
+    pushLog("error", [reason]);
   });
 
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", createUi, { once: true });
-  } else {
-    createUi();
-  }
+  document.addEventListener("DOMContentLoaded", function () {
+    refreshDebugVisibility();
 
-  addLog("log", ["Debug overlay started"]);
+    const supabase = getSupabase();
+    if (supabase && supabase.auth) {
+      try {
+        supabase.auth.onAuthStateChange(function () {
+          refreshDebugVisibility();
+        });
+      } catch (_error) {}
+    }
+  });
 })();
