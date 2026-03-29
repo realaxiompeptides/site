@@ -125,6 +125,25 @@
       };
     },
 
+    setAffiliateCompMessage: function setAffiliateCompMessage(message, type) {
+      const el = document.getElementById("affiliateCompSettingsMessage");
+      if (!el) return;
+
+      const normalized = cleanText(message);
+
+      if (!normalized) {
+        el.hidden = true;
+        el.textContent = "";
+        el.className = "affiliates-admin-inline-message";
+        return;
+      }
+
+      el.hidden = false;
+      el.textContent = normalized;
+      el.className =
+        "affiliates-admin-inline-message" + (type ? " is-" + type : "");
+    },
+
     applyFilters: function applyFilters() {
       const dom = this.dom || domApi.get();
 
@@ -260,6 +279,75 @@
       }
 
       document.body.style.overflow = "";
+    },
+
+    saveAffiliateCompSettings: async function saveAffiliateCompSettings() {
+      const affiliateId =
+        cleanText(document.getElementById("affiliateCompSettingsAffiliateId")?.value) || "";
+      const commissionType =
+        cleanText(document.getElementById("affiliateCommissionType")?.value).toLowerCase() || "percent";
+      const commissionValue = toNumber(
+        document.getElementById("affiliateCommissionValue")?.value,
+        0
+      );
+      const discountType =
+        cleanText(document.getElementById("affiliateDiscountType")?.value).toLowerCase() || "percent";
+      const discountValue = toNumber(
+        document.getElementById("affiliateDiscountValue")?.value,
+        0
+      );
+      const saveBtn = document.getElementById("saveAffiliateCompSettingsBtn");
+
+      if (!affiliateId) {
+        this.setAffiliateCompMessage("Missing affiliate.", "error");
+        return;
+      }
+
+      if (!["percent", "fixed"].includes(commissionType)) {
+        this.setAffiliateCompMessage("Invalid commission type.", "error");
+        return;
+      }
+
+      if (!["percent", "fixed"].includes(discountType)) {
+        this.setAffiliateCompMessage("Invalid discount type.", "error");
+        return;
+      }
+
+      if (commissionValue < 0 || discountValue < 0) {
+        this.setAffiliateCompMessage("Values cannot be negative.", "error");
+        return;
+      }
+
+      try {
+        this.setAffiliateCompMessage("Saving settings...", "");
+        if (saveBtn) {
+          saveBtn.disabled = true;
+          saveBtn.textContent = "Saving...";
+        }
+
+        await dataApi.updateAffiliateCompensation(affiliateId, {
+          commission_type: commissionType,
+          commission_value: commissionValue,
+          discount_type: discountType,
+          discount_value: discountValue
+        });
+
+        await this.loadAffiliates();
+        state.selectedAffiliateId = affiliateId;
+        await this.openAffiliateDetails(affiliateId);
+        this.setAffiliateCompMessage("Settings saved.", "success");
+      } catch (error) {
+        console.error("Failed to save affiliate compensation settings:", error);
+        this.setAffiliateCompMessage(
+          error.message || "Failed to save settings.",
+          "error"
+        );
+      } finally {
+        if (saveBtn) {
+          saveBtn.disabled = false;
+          saveBtn.textContent = "Save Settings";
+        }
+      }
     },
 
     openPayoutReviewModal: function openPayoutReviewModal(claimId) {
