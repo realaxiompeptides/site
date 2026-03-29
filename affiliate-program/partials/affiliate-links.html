@@ -7,23 +7,49 @@
   </div>
 
   <form id="affiliateLinkGeneratorForm" class="affiliate-links-form">
+    <input id="affiliateTargetPath" type="hidden" value="" />
+
     <div class="affiliate-grid-2">
       <div class="affiliate-field">
-        <label for="affiliateTargetPath">Target Path</label>
-        <input
-          id="affiliateTargetPath"
-          class="affiliate-input"
-          type="text"
-          placeholder="/catalog.html or /product-page/product.html?slug=tb500"
-        />
+        <label for="affiliateLinkType">Link Type</label>
+        <select id="affiliateLinkType" class="affiliate-input">
+          <option value="home">Homepage</option>
+          <option value="catalog">Catalog Page</option>
+          <option value="product">Product Page</option>
+          <option value="custom">Custom Path</option>
+        </select>
       </div>
 
-      <div class="affiliate-field affiliate-links-button-wrap">
-        <label>&nbsp;</label>
-        <button type="button" class="affiliate-btn affiliate-btn-primary" id="generateAffiliateLinkBtn">
-          Generate Link
-        </button>
+      <div class="affiliate-field" id="affiliateProductField" hidden>
+        <label for="affiliateProductSlug">Product</label>
+        <select id="affiliateProductSlug" class="affiliate-input">
+          <option value="">Select product</option>
+          <option value="tb500">TB-500</option>
+          <option value="bpc157">BPC-157</option>
+          <option value="ghk-cu">GHK-CU</option>
+          <option value="tesamorelin">Tesamorelin</option>
+          <option value="reta">Reta</option>
+          <option value="cjc-1295-no-dac">CJC-1295 No DAC</option>
+          <option value="ipamorelin">Ipamorelin</option>
+          <option value="mt-2">MT-2</option>
+        </select>
       </div>
+    </div>
+
+    <div class="affiliate-field" id="affiliateCustomPathField" hidden>
+      <label for="affiliateCustomPathInput">Custom Path</label>
+      <input
+        id="affiliateCustomPathInput"
+        class="affiliate-input"
+        type="text"
+        placeholder="/catalog.html or /product-page/product.html?slug=tb500"
+      />
+    </div>
+
+    <div class="affiliate-field affiliate-links-button-wrap">
+      <button type="button" class="affiliate-btn affiliate-btn-primary" id="generateAffiliateLinkBtn">
+        Generate Link
+      </button>
     </div>
 
     <div class="affiliate-field">
@@ -35,7 +61,6 @@
           class="affiliate-btn affiliate-btn-secondary"
           data-affiliate-copy=""
           id="affiliateCopyGeneratedLinkBtn"
-          onclick="this.setAttribute('data-affiliate-copy', document.getElementById('affiliateGeneratedLink').value)"
         >
           Copy Link
         </button>
