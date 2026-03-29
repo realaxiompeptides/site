@@ -1,6 +1,7 @@
 window.AXIOM_AFFILIATE_DASHBOARD = {
   currentUser: null,
   affiliateProfile: null,
+  affiliateProfileIds: [],
   authSubscription: null,
   isRenderingDashboard: false,
   hasInitialized: false,
@@ -18,39 +19,26 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
     const self = this;
 
     this.initPromise = (async function () {
-      try {
-        await self.waitForBaseDom(80, 125);
-        await self.loadDashboardPartialsOnce();
-        self.cacheDom();
+      await self.waitForBaseDom(80, 125);
+      await self.loadDashboardPartialsOnce();
+      self.cacheDom();
+      self.bindAuthEvents();
 
-        const runtimeReady = await self.waitForRuntimeMethods(80, 125);
-        const supabaseReady = await self.waitForSupabase(80, 125);
+      const supabaseReady = await self.waitForSupabase(80, 125);
 
-        if (!runtimeReady) {
-          self.showAuth();
-          self.setMessage("Affiliate dashboard modules are still loading.", "error");
-          return;
-        }
-
-        self.cacheDom();
-        self.bindAuthEvents();
-        self.bindSupabaseAuthListener();
-
-        if (!supabaseReady) {
-          self.showAuth();
-          self.setMessage("Supabase auth is not available.", "error");
-          return;
-        }
-
-        self.hasInitialized = true;
+      if (!supabaseReady) {
         self.showAuth();
-        await self.restoreSessionAndRender();
-      } catch (error) {
-        console.error("[Affiliate Dashboard] Core init failed:", error);
-        self.cacheDom();
-        self.showAuth();
-        self.setMessage("Failed to initialize affiliate dashboard.", "error");
+        self.setMessage("Supabase auth is not available.", "error");
+        return;
       }
+
+      self.bindSupabaseAuthListener();
+
+      if (!self.hasInitialized) {
+        self.hasInitialized = true;
+      }
+
+      await self.restoreSessionAndRender();
     })();
 
     return this.initPromise;
@@ -76,9 +64,8 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
       const hasGuest = !!document.getElementById("affiliateGuestView");
       const hasDashboard = !!document.getElementById("affiliateDashboardView");
       const hasWrap = !!document.getElementById("affiliateDashboardWrap");
-      const hasOverviewMount = !!document.getElementById("affiliateOverviewMount");
 
-      if (hasGuest || hasDashboard || hasWrap || hasOverviewMount) {
+      if (hasGuest || hasDashboard || hasWrap) {
         return true;
       }
 
@@ -86,28 +73,13 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
     }
 
     return false;
-  },
-
-  async waitForRuntimeMethods(maxAttempts = 80, delayMs = 125) {
-    for (let i = 0; i < maxAttempts; i += 1) {
-      if (this.hasRequiredRuntimeMethods()) {
-        return true;
-      }
-      await this.wait(delayMs);
-    }
-    return false;
-  },
-
-  hasRequiredRuntimeMethods() {
-    return (
-      typeof this.bindAuthEvents === "function" &&
-      typeof this.bindSupabaseAuthListener === "function" &&
-      typeof this.restoreSessionAndRender === "function" &&
-      typeof this.showAuth === "function"
-    );
   },
 
   async loadDashboardPartialsOnce() {
+    if (this.partialsLoaded) {
+      return;
+    }
+
     const mounts = [
       { id: "affiliateOverviewMount", file: "partials/affiliate-overview.html" },
       { id: "affiliateLinksMount", file: "partials/affiliate-links.html" },
@@ -117,13 +89,13 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
       { id: "affiliateHelpMount", file: "partials/affiliate-help.html" }
     ];
 
-    const loadResults = await Promise.all(
+    await Promise.all(
       mounts.map(async (item) => {
         const mount = document.getElementById(item.id);
-        if (!mount) return false;
+        if (!mount) return;
 
         if (mount.dataset.loaded === "true") {
-          return true;
+          return;
         }
 
         try {
@@ -131,19 +103,15 @@ window.AXIOM_AFFILIATE_DASHBOARD = {
           if (!response.ok) {
             throw new Error("Failed to load " + item.file);
           }
-
           mount.innerHTML = await response.text();
           mount.dataset.loaded = "true";
-          return true;
         } catch (error) {
           console.error("[Affiliate Dashboard] Partial load failed:", item.file, error);
-          return false;
         }
       })
     );
 
-    this.partialsLoaded = loadResults.some(Boolean);
-    this.cacheDom();
+    this.partialsLoaded = true;
   },
 
   cacheDom() {
