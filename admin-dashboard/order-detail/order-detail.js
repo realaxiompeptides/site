@@ -142,6 +142,9 @@ window.AXIOM_ORDER_DETAIL = {
         }
       });
     }
+
+    this.clear();
+    this.hide();
   },
 
   show() {
@@ -345,6 +348,7 @@ window.AXIOM_ORDER_DETAIL = {
     }
 
     this.updateActionButtons(null);
+    this.hide();
   },
 
   renderOverview(order) {
@@ -573,6 +577,7 @@ window.AXIOM_ORDER_DETAIL = {
 document.addEventListener("DOMContentLoaded", function () {
   if (window.AXIOM_ORDER_DETAIL) {
     window.AXIOM_ORDER_DETAIL.init();
+    window.AXIOM_ORDER_DETAIL.clear();
     window.AXIOM_ORDER_DETAIL.hide();
   }
 });
