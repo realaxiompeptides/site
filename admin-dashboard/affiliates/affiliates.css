@@ -789,3 +789,253 @@
     width: 100%;
   }
 }
+
+/* =========================
+   Affiliate status filter buttons
+   ========================= */
+
+.affiliates-admin-status-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin-top: -2px;
+  margin-bottom: 2px;
+}
+
+.affiliates-admin-status-tab {
+  appearance: none;
+  -webkit-appearance: none;
+  border: 1px solid #dbe5f0;
+  background: #ffffff;
+  color: #5a9bd6;
+  border-radius: 999px;
+  min-height: 38px;
+  padding: 0 14px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  transition:
+    background 0.18s ease,
+    color 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    transform 0.18s ease;
+}
+
+.affiliates-admin-status-tab:hover {
+  transform: translateY(-1px);
+  border-color: #c8d8ea;
+  box-shadow: 0 8px 16px rgba(15, 23, 42, 0.05);
+}
+
+.affiliates-admin-status-tab.is-active,
+.affiliates-admin-status-tab[aria-pressed="true"],
+.affiliates-admin-status-tab.active {
+  background: linear-gradient(135deg, #58a6de, #2f84bf);
+  border-color: #2f84bf;
+  color: #ffffff;
+  box-shadow: 0 12px 24px rgba(47, 132, 191, 0.18);
+}
+
+/* =========================
+   Affiliate detail modal section tabs
+   ========================= */
+
+.affiliates-admin-modal-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 2px;
+}
+
+.affiliates-admin-modal-tab {
+  appearance: none;
+  -webkit-appearance: none;
+  border: 1px solid #dbe5f0;
+  background: #eef6ff;
+  color: #5a9bd6;
+  border-radius: 999px;
+  min-height: 36px;
+  padding: 0 14px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  transition:
+    background 0.18s ease,
+    color 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    transform 0.18s ease;
+}
+
+.affiliates-admin-modal-tab:hover {
+  transform: translateY(-1px);
+  border-color: #c8d8ea;
+  box-shadow: 0 8px 16px rgba(15, 23, 42, 0.05);
+}
+
+.affiliates-admin-modal-tab.is-active,
+.affiliates-admin-modal-tab[aria-pressed="true"],
+.affiliates-admin-modal-tab.active {
+  background: linear-gradient(135deg, #58a6de, #2f84bf);
+  border-color: #2f84bf;
+  color: #ffffff;
+  box-shadow: 0 12px 24px rgba(47, 132, 191, 0.18);
+}
+
+/* =========================
+   Hidden / shown affiliate detail sections
+   ========================= */
+
+.affiliate-detail-section[hidden] {
+  display: none !important;
+}
+
+.affiliate-detail-section {
+  display: block;
+}
+
+/* =========================
+   Inline status / save messages
+   ========================= */
+
+.affiliates-admin-inline-message {
+  border-radius: 16px;
+  padding: 12px 14px;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.5;
+  border: 1px solid #dbe5f0;
+  background: #f8fbff;
+  color: #5a6d8a;
+}
+
+.affiliates-admin-inline-message.is-success {
+  background: #ecfdf3;
+  border-color: #bbf7d0;
+  color: #15803d;
+}
+
+.affiliates-admin-inline-message.is-error {
+  background: #fff1f2;
+  border-color: #fecdd3;
+  color: #be123c;
+}
+
+/* =========================
+   Select styling inside settings card
+   ========================= */
+
+.affiliates-admin-field select {
+  width: 100%;
+  min-height: 58px;
+  border-radius: 18px;
+  border: 1px solid #dbe5f0;
+  background: #ffffff;
+  color: #12203f;
+  font: inherit;
+  padding: 0 18px;
+  box-sizing: border-box;
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image:
+    linear-gradient(45deg, transparent 50%, #7b8ca8 50%),
+    linear-gradient(135deg, #7b8ca8 50%, transparent 50%);
+  background-position:
+    calc(100% - 22px) calc(50% - 3px),
+    calc(100% - 16px) calc(50% - 3px);
+  background-size: 6px 6px, 6px 6px;
+  background-repeat: no-repeat;
+  padding-right: 42px;
+}
+
+.affiliates-admin-field select:focus {
+  border-color: #5a9bd6;
+  box-shadow: 0 0 0 4px rgba(90, 155, 214, 0.12);
+}
+
+/* =========================
+   Notes textarea polish
+   ========================= */
+
+#affiliateNotesInput {
+  min-height: 160px;
+}
+
+/* =========================
+   Mobile
+   ========================= */
+
+@media (max-width: 720px) {
+  .affiliates-admin-status-tabs {
+    gap: 8px;
+    margin-top: -4px;
+  }
+
+  .affiliates-admin-status-tab {
+    min-height: 34px;
+    padding: 0 12px;
+    font-size: 12px;
+  }
+
+  .affiliates-admin-modal-tabs {
+    gap: 8px;
+  }
+
+  .affiliates-admin-modal-tab {
+    min-height: 34px;
+    padding: 0 12px;
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 520px) {
+  .affiliates-admin-status-tabs {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .affiliates-admin-status-tab {
+    width: 100%;
+    min-width: 0;
+    min-height: 36px;
+    padding: 0 10px;
+    font-size: 11px;
+  }
+
+  .affiliates-admin-modal-tabs {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .affiliates-admin-modal-tab {
+    width: 100%;
+    min-width: 0;
+    min-height: 36px;
+    padding: 0 10px;
+    font-size: 11px;
+    text-align: center;
+  }
+
+  .affiliates-admin-field select {
+    min-height: 50px;
+    font-size: 14px;
+  }
+}
