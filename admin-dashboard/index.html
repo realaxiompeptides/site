@@ -410,6 +410,63 @@
             <div class="dashboard-card-header">
               <h3>Orders</h3>
             </div>
+
+            <div
+              class="orders-admin-status-tabs"
+              id="ordersAdminStatusTabs"
+              style="display:flex; flex-wrap:wrap; gap:10px; margin:0 0 16px;"
+            >
+              <button
+                type="button"
+                class="dashboard-btn dashboard-btn-secondary active"
+                data-order-filter="all"
+              >
+                All
+              </button>
+              <button
+                type="button"
+                class="dashboard-btn dashboard-btn-secondary"
+                data-order-filter="fulfilled"
+              >
+                Fulfilled
+              </button>
+              <button
+                type="button"
+                class="dashboard-btn dashboard-btn-secondary"
+                data-order-filter="unfulfilled"
+              >
+                Unfulfilled
+              </button>
+              <button
+                type="button"
+                class="dashboard-btn dashboard-btn-secondary"
+                data-order-filter="paid"
+              >
+                Paid
+              </button>
+              <button
+                type="button"
+                class="dashboard-btn dashboard-btn-secondary"
+                data-order-filter="unpaid"
+              >
+                Unpaid
+              </button>
+              <button
+                type="button"
+                class="dashboard-btn dashboard-btn-secondary"
+                data-order-filter="pending"
+              >
+                Pending
+              </button>
+              <button
+                type="button"
+                class="dashboard-btn dashboard-btn-secondary"
+                data-order-filter="cancelled"
+              >
+                Cancelled
+              </button>
+            </div>
+
             <div id="ordersListWrap" class="dashboard-items-wrap">
               <div class="dashboard-loading">Loading orders...</div>
             </div>
