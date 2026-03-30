@@ -132,6 +132,32 @@
       });
     }
 
+    const compSettingsForm = document.getElementById("affiliateCompSettingsForm");
+    if (compSettingsForm && !compSettingsForm.dataset.bound) {
+      compSettingsForm.dataset.bound = "true";
+      compSettingsForm.addEventListener("submit", async function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+
+        if (typeof actions.saveAffiliateCompSettings === "function") {
+          await actions.saveAffiliateCompSettings();
+        }
+      });
+    }
+
+    const notesForm = document.getElementById("affiliateNotesForm");
+    if (notesForm && !notesForm.dataset.bound) {
+      notesForm.dataset.bound = "true";
+      notesForm.addEventListener("submit", async function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+
+        if (typeof actions.saveAffiliateNotes === "function") {
+          await actions.saveAffiliateNotes();
+        }
+      });
+    }
+
     const payoutReviewModal = document.getElementById("affiliatePayoutReviewModal");
     const payoutReviewConfirmBtn = document.getElementById("affiliatePayoutConfirmPaidBtn");
     const payoutReviewCopyBtn = document.getElementById("affiliatePayoutCopyAddressBtn");
@@ -366,6 +392,14 @@
           ? actions.copyPayoutAddress.bind(actions)
           : null,
       recordPayout: actions.recordPayout.bind(actions),
+      saveAffiliateCompSettings:
+        typeof actions.saveAffiliateCompSettings === "function"
+          ? actions.saveAffiliateCompSettings.bind(actions)
+          : null,
+      saveAffiliateNotes:
+        typeof actions.saveAffiliateNotes === "function"
+          ? actions.saveAffiliateNotes.bind(actions)
+          : null,
       showAffiliateDetailSection: showAffiliateDetailSection,
       setAffiliateStatusTabActive: setAffiliateStatusTabActive,
       get affiliates() {
