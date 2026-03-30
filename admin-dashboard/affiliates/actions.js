@@ -144,6 +144,25 @@
         "affiliates-admin-inline-message" + (type ? " is-" + type : "");
     },
 
+    setAffiliateNotesMessage: function setAffiliateNotesMessage(message, type) {
+      const el = document.getElementById("affiliateNotesMessage");
+      if (!el) return;
+
+      const normalized = cleanText(message);
+
+      if (!normalized) {
+        el.hidden = true;
+        el.textContent = "";
+        el.className = "affiliates-admin-inline-message";
+        return;
+      }
+
+      el.hidden = false;
+      el.textContent = normalized;
+      el.className =
+        "affiliates-admin-inline-message" + (type ? " is-" + type : "");
+    },
+
     applyFilters: function applyFilters() {
       const dom = this.dom || domApi.get();
 
@@ -253,6 +272,18 @@
         const detailData = await dataApi.fetchAffiliateDetails(affiliateId);
         renderApi.renderAffiliateDetail(summary, detailData);
 
+        const notesInput = document.getElementById("affiliateNotesInput");
+        const notesAffiliateId = document.getElementById("affiliateNotesAffiliateId");
+
+        if (notesInput) {
+          notesInput.value = cleanText(summary?.notes || "");
+        }
+
+        if (notesAffiliateId) {
+          notesAffiliateId.value = affiliateId;
+        }
+
+        this.setAffiliateNotesMessage("", "");
         this.dom = domApi.cache();
 
         if (this.dom.modal) {
@@ -346,6 +377,44 @@
         if (saveBtn) {
           saveBtn.disabled = false;
           saveBtn.textContent = "Save Settings";
+        }
+      }
+    },
+
+    saveAffiliateNotes: async function saveAffiliateNotes() {
+      const affiliateId =
+        cleanText(document.getElementById("affiliateNotesAffiliateId")?.value) || "";
+      const notes = cleanText(document.getElementById("affiliateNotesInput")?.value || "");
+      const saveBtn = document.getElementById("saveAffiliateNotesBtn");
+
+      if (!affiliateId) {
+        this.setAffiliateNotesMessage("Missing affiliate.", "error");
+        return;
+      }
+
+      try {
+        this.setAffiliateNotesMessage("Saving notes...", "");
+        if (saveBtn) {
+          saveBtn.disabled = true;
+          saveBtn.textContent = "Saving...";
+        }
+
+        await dataApi.updateAffiliateNotes(affiliateId, notes);
+
+        await this.loadAffiliates();
+        state.selectedAffiliateId = affiliateId;
+        await this.openAffiliateDetails(affiliateId);
+        this.setAffiliateNotesMessage("Notes saved.", "success");
+      } catch (error) {
+        console.error("Failed to save affiliate notes:", error);
+        this.setAffiliateNotesMessage(
+          error.message || "Failed to save notes.",
+          "error"
+        );
+      } finally {
+        if (saveBtn) {
+          saveBtn.disabled = false;
+          saveBtn.textContent = "Save Notes";
         }
       }
     },
