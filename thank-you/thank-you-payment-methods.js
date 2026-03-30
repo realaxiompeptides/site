@@ -124,9 +124,9 @@ const THANK_YOU_PAYMENT_METHODS = {
     label: "Venmo",
     logo: "../images/payment-icons/venmo.jpg",
     handleLabel: "Venmo Username",
-    handle: "@jax-ferone-839",
+    handle: "@thomas-harris-axiom",
     linkLabel: "Venmo Link",
-    link: "https://venmo.com/u/jax-ferone-839",
+    link: "https://venmo.com/code?user_id=4564578725790758651&created=1774909047.164281&printed=1",
     instructions:
       "Send payment through Venmo and include only your order number in the note."
   },
