@@ -211,6 +211,30 @@
     return true;
   }
 
+  async function updateAffiliateNotes(affiliateId, notes) {
+    const supabase = getSupabase();
+
+    if (!affiliateId) {
+      throw new Error("Missing affiliate id.");
+    }
+
+    const normalizedNotes = normalizeText(notes);
+
+    const { error } = await supabase
+      .from("affiliates")
+      .update({
+        notes: normalizedNotes,
+        updated_at: new Date().toISOString()
+      })
+      .eq("id", affiliateId);
+
+    if (error) {
+      throw error;
+    }
+
+    return true;
+  }
+
   async function ensurePayoutRowExists(supabase, claimRow, options) {
     const payoutMethod =
       normalizeText(options.method) ||
@@ -653,6 +677,7 @@
     markClaimUnpaid: markClaimUnpaid,
     recordPayout: recordPayout,
     updateAffiliateReferralCode: updateAffiliateReferralCode,
-    updateAffiliateCompensation: updateAffiliateCompensation
+    updateAffiliateCompensation: updateAffiliateCompensation,
+    updateAffiliateNotes: updateAffiliateNotes
   };
 })();
