@@ -1,6 +1,14 @@
 window.AXIOM_ORDER_DETAIL = {
   currentOrder: null,
 
+  getPanel() {
+    return document.getElementById("orderDetailPanel");
+  },
+
+  getMount() {
+    return document.getElementById("orderDetailMount");
+  },
+
   init() {
     const backBtn = document.getElementById("orderDetailBackBtn");
     if (backBtn && !backBtn.dataset.bound) {
@@ -148,20 +156,24 @@ window.AXIOM_ORDER_DETAIL = {
   },
 
   show() {
-    const panel = document.getElementById("orderDetailPanel");
+    const panel = this.getPanel();
+    const mount = this.getMount();
     const ordersListWrap = document.getElementById("ordersListWrap");
     const ordersListCard = ordersListWrap ? ordersListWrap.closest(".dashboard-card") : null;
 
+    if (mount) mount.hidden = false;
     if (panel) panel.hidden = false;
     if (ordersListCard) ordersListCard.hidden = true;
   },
 
   hide() {
-    const panel = document.getElementById("orderDetailPanel");
+    const panel = this.getPanel();
+    const mount = this.getMount();
     const ordersListWrap = document.getElementById("ordersListWrap");
     const ordersListCard = ordersListWrap ? ordersListWrap.closest(".dashboard-card") : null;
 
     if (panel) panel.hidden = true;
+    if (mount) mount.hidden = true;
     if (ordersListCard) ordersListCard.hidden = false;
   },
 
