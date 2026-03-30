@@ -4,6 +4,59 @@
   const renderApi = window.AXIOM_ADMIN_AFFILIATES_RENDER;
   const actions = window.AXIOM_ADMIN_AFFILIATES_ACTIONS;
 
+  function setAffiliateStatusTabActive(nextStatus) {
+    const tabs = document.querySelectorAll("[data-affiliate-status-tab]");
+    tabs.forEach(function (tab) {
+      const tabStatus = String(tab.getAttribute("data-affiliate-status-tab") || "all")
+        .trim()
+        .toLowerCase();
+
+      const isActive = tabStatus === String(nextStatus || "all").trim().toLowerCase();
+      tab.classList.toggle("is-active", isActive);
+      tab.classList.toggle("active", isActive);
+      tab.setAttribute("aria-pressed", isActive ? "true" : "false");
+    });
+  }
+
+  function syncAffiliateStatusTabsFromSelect() {
+    const statusFilter = document.getElementById("affiliateStatusFilter");
+    const nextStatus = statusFilter ? statusFilter.value : "all";
+    setAffiliateStatusTabActive(nextStatus || "all");
+  }
+
+  function showAffiliateDetailSection(nextSection) {
+    const normalized = String(nextSection || "overview").trim().toLowerCase();
+    const tabs = document.querySelectorAll("[data-affiliate-detail-tab]");
+    const sections = document.querySelectorAll("[data-affiliate-detail-section]");
+
+    tabs.forEach(function (tab) {
+      const tabName = String(tab.getAttribute("data-affiliate-detail-tab") || "")
+        .trim()
+        .toLowerCase();
+
+      const isActive = tabName === normalized;
+      tab.classList.toggle("is-active", isActive);
+      tab.classList.toggle("active", isActive);
+      tab.setAttribute("aria-pressed", isActive ? "true" : "false");
+    });
+
+    sections.forEach(function (section) {
+      const sectionName = String(section.getAttribute("data-affiliate-detail-section") || "")
+        .trim()
+        .toLowerCase();
+
+      section.hidden = sectionName !== normalized;
+    });
+  }
+
+  function ensureAffiliateDetailDefaultSection() {
+    const hasSections = document.querySelector("[data-affiliate-detail-section]");
+    const hasTabs = document.querySelector("[data-affiliate-detail-tab]");
+
+    if (!hasSections || !hasTabs) return;
+    showAffiliateDetailSection("overview");
+  }
+
   async function boot() {
     if (!state || !domApi || !renderApi || !actions) {
       console.error("Affiliate admin failed to boot: missing required modules.");
@@ -27,6 +80,7 @@
       dom.refreshBtn.dataset.bound = "true";
       dom.refreshBtn.addEventListener("click", async function () {
         await actions.loadAffiliates();
+        syncAffiliateStatusTabsFromSelect();
       });
     }
 
@@ -34,6 +88,7 @@
       dom.refreshTopBtn.dataset.bound = "true";
       dom.refreshTopBtn.addEventListener("click", async function () {
         await actions.loadAffiliates();
+        syncAffiliateStatusTabsFromSelect();
       });
     }
 
@@ -41,6 +96,7 @@
       dom.refreshSidebarBtn.dataset.bound = "true";
       dom.refreshSidebarBtn.addEventListener("click", async function () {
         await actions.loadAffiliates();
+        syncAffiliateStatusTabsFromSelect();
       });
     }
 
@@ -55,6 +111,7 @@
       dom.statusFilter.dataset.bound = "true";
       dom.statusFilter.addEventListener("change", function () {
         actions.applyFilters();
+        syncAffiliateStatusTabsFromSelect();
       });
     }
 
@@ -72,32 +129,6 @@
       dom.recordPayoutForm.addEventListener("submit", async function (event) {
         event.preventDefault();
         await actions.recordPayout();
-      });
-    }
-
-    const affiliateCompSettingsForm = document.getElementById("affiliateCompSettingsForm");
-    if (affiliateCompSettingsForm && !affiliateCompSettingsForm.dataset.bound) {
-      affiliateCompSettingsForm.dataset.bound = "true";
-      affiliateCompSettingsForm.addEventListener("submit", async function (event) {
-        event.preventDefault();
-        event.stopPropagation();
-
-        if (typeof actions.saveAffiliateCompSettings === "function") {
-          await actions.saveAffiliateCompSettings();
-        }
-      });
-    }
-
-    const saveAffiliateCompSettingsBtn = document.getElementById("saveAffiliateCompSettingsBtn");
-    if (saveAffiliateCompSettingsBtn && !saveAffiliateCompSettingsBtn.dataset.bound) {
-      saveAffiliateCompSettingsBtn.dataset.bound = "true";
-      saveAffiliateCompSettingsBtn.addEventListener("click", async function (event) {
-        event.preventDefault();
-        event.stopPropagation();
-
-        if (typeof actions.saveAffiliateCompSettings === "function") {
-          await actions.saveAffiliateCompSettings();
-        }
       });
     }
 
@@ -155,6 +186,9 @@
 
         const claimStatusBtn = event.target.closest("[data-claim-status][data-claim-id]");
 
+        const statusTabBtn = event.target.closest("[data-affiliate-status-tab]");
+        const detailTabBtn = event.target.closest("[data-affiliate-detail-tab]");
+
         const modalClose =
           event.target.closest("[data-affiliate-modal-close]") ||
           event.target.closest("#closeAffiliateDetailModal");
@@ -169,6 +203,35 @@
         if (refreshBtn || refreshTopBtn || refreshSidebarBtn) {
           event.preventDefault();
           await actions.loadAffiliates();
+          syncAffiliateStatusTabsFromSelect();
+          return;
+        }
+
+        if (statusTabBtn) {
+          event.preventDefault();
+
+          const nextStatus = String(
+            statusTabBtn.getAttribute("data-affiliate-status-tab") || "all"
+          ).trim().toLowerCase();
+
+          const statusFilter = document.getElementById("affiliateStatusFilter");
+          if (statusFilter) {
+            statusFilter.value = nextStatus;
+          }
+
+          setAffiliateStatusTabActive(nextStatus);
+          actions.applyFilters();
+          return;
+        }
+
+        if (detailTabBtn) {
+          event.preventDefault();
+
+          const nextSection = String(
+            detailTabBtn.getAttribute("data-affiliate-detail-tab") || "overview"
+          ).trim().toLowerCase();
+
+          showAffiliateDetailSection(nextSection);
           return;
         }
 
@@ -182,6 +245,7 @@
           if (!affiliateId) return;
 
           await actions.updateStatus(affiliateId, "approved");
+          syncAffiliateStatusTabsFromSelect();
           return;
         }
 
@@ -195,6 +259,7 @@
           if (!affiliateId) return;
 
           await actions.updateStatus(affiliateId, "rejected");
+          syncAffiliateStatusTabsFromSelect();
           return;
         }
 
@@ -208,6 +273,7 @@
           if (!affiliateId) return;
 
           await actions.updateStatus(affiliateId, "suspended");
+          syncAffiliateStatusTabsFromSelect();
           return;
         }
 
@@ -221,6 +287,7 @@
           if (!affiliateId) return;
 
           await actions.openAffiliateDetails(affiliateId);
+          ensureAffiliateDetailDefaultSection();
           return;
         }
 
@@ -276,13 +343,12 @@
       loadAffiliates: actions.loadAffiliates.bind(actions),
       applyFilters: actions.applyFilters.bind(actions),
       updateStatus: actions.updateStatus.bind(actions),
-      openAffiliateDetails: actions.openAffiliateDetails.bind(actions),
+      openAffiliateDetails: async function (affiliateId) {
+        await actions.openAffiliateDetails(affiliateId);
+        ensureAffiliateDetailDefaultSection();
+      },
       closeModal: actions.closeModal.bind(actions),
       updateClaimStatus: actions.updateClaimStatus.bind(actions),
-      saveAffiliateCompSettings:
-        typeof actions.saveAffiliateCompSettings === "function"
-          ? actions.saveAffiliateCompSettings.bind(actions)
-          : null,
       submitAffiliateClaimReview:
         typeof actions.submitAffiliateClaimReview === "function"
           ? actions.submitAffiliateClaimReview.bind(actions)
@@ -300,6 +366,8 @@
           ? actions.copyPayoutAddress.bind(actions)
           : null,
       recordPayout: actions.recordPayout.bind(actions),
+      showAffiliateDetailSection: showAffiliateDetailSection,
+      setAffiliateStatusTabActive: setAffiliateStatusTabActive,
       get affiliates() {
         return state.affiliates;
       },
@@ -318,6 +386,8 @@
     };
 
     await actions.loadAffiliates();
+    syncAffiliateStatusTabsFromSelect();
+    ensureAffiliateDetailDefaultSection();
   }
 
   window.AXIOM_ADMIN_AFFILIATES_INIT = {
