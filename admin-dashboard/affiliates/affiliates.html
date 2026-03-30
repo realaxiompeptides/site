@@ -1,5 +1,9 @@
-<section class="admin-panel-card affiliates-admin-card" id="affiliateManagementMount" data-affiliate-admin-root>
-  <div class="affiliates-admin-header">
+<section
+  class="admin-panel-card affiliates-admin-card affiliates-admin-shell"
+  id="affiliateManagementMount"
+  data-affiliate-admin-root
+>
+  <div class="affiliates-admin-header affiliates-admin-header-shell">
     <div>
       <p class="affiliates-admin-kicker">Affiliates</p>
       <h2 class="affiliates-admin-title">Affiliate Management</h2>
@@ -20,7 +24,7 @@
     </div>
   </div>
 
-  <div class="affiliates-admin-stats-grid">
+  <div class="affiliates-admin-stats-grid affiliates-admin-stats-shell">
     <div class="affiliates-admin-stat-card">
       <span class="affiliates-admin-stat-label">Total Affiliates</span>
       <strong
@@ -61,7 +65,7 @@
     </div>
   </div>
 
-  <div class="affiliates-admin-toolbar">
+  <div class="affiliates-admin-toolbar affiliates-admin-toolbar-shell">
     <div class="affiliates-admin-search-wrap">
       <input
         type="text"
@@ -88,11 +92,15 @@
     </div>
   </div>
 
-  <div class="affiliates-admin-status-tabs" id="affiliateAdminStatusTabs">
+  <div
+    class="affiliates-admin-status-tabs affiliates-admin-status-tabs-shell"
+    id="affiliateAdminStatusTabs"
+  >
     <button
       type="button"
       class="affiliates-admin-status-tab is-active"
       data-affiliate-status-tab="all"
+      aria-pressed="true"
     >
       All
     </button>
@@ -100,6 +108,7 @@
       type="button"
       class="affiliates-admin-status-tab"
       data-affiliate-status-tab="approved"
+      aria-pressed="false"
     >
       Approved
     </button>
@@ -107,6 +116,7 @@
       type="button"
       class="affiliates-admin-status-tab"
       data-affiliate-status-tab="pending"
+      aria-pressed="false"
     >
       Pending
     </button>
@@ -114,6 +124,7 @@
       type="button"
       class="affiliates-admin-status-tab"
       data-affiliate-status-tab="suspended"
+      aria-pressed="false"
     >
       Suspended
     </button>
@@ -121,6 +132,7 @@
       type="button"
       class="affiliates-admin-status-tab"
       data-affiliate-status-tab="rejected"
+      aria-pressed="false"
     >
       Rejected
     </button>
@@ -133,7 +145,7 @@
     hidden
   ></div>
 
-  <div class="affiliates-admin-payout-requests-card">
+  <div class="affiliates-admin-payout-requests-card affiliates-admin-payout-requests-shell">
     <div class="affiliates-admin-section-header">
       <div>
         <h3>Affiliate Payout Requests</h3>
@@ -174,7 +186,7 @@
     </div>
   </div>
 
-  <div class="affiliates-admin-table-wrap">
+  <div class="affiliates-admin-table-wrap affiliates-admin-main-table-shell">
     <table class="affiliates-admin-table">
       <thead>
         <tr>
@@ -225,7 +237,7 @@
   ></div>
 
   <div
-    class="affiliates-admin-modal-dialog"
+    class="affiliates-admin-modal-dialog affiliates-admin-detail-modal-shell"
     role="dialog"
     aria-modal="true"
     aria-labelledby="affiliateDetailName"
@@ -248,11 +260,12 @@
     </div>
 
     <div class="affiliates-admin-modal-body">
-      <div class="affiliates-admin-modal-tabs" id="affiliateDetailSectionTabs">
+      <div class="affiliates-admin-modal-tabs affiliates-admin-modal-tabs-shell" id="affiliateDetailSectionTabs">
         <button
           type="button"
           class="affiliates-admin-modal-tab is-active"
           data-affiliate-detail-tab="overview"
+          aria-pressed="true"
         >
           Overview
         </button>
@@ -260,6 +273,7 @@
           type="button"
           class="affiliates-admin-modal-tab"
           data-affiliate-detail-tab="settings"
+          aria-pressed="false"
         >
           Settings
         </button>
@@ -267,6 +281,7 @@
           type="button"
           class="affiliates-admin-modal-tab"
           data-affiliate-detail-tab="notes"
+          aria-pressed="false"
         >
           Notes
         </button>
@@ -274,6 +289,7 @@
           type="button"
           class="affiliates-admin-modal-tab"
           data-affiliate-detail-tab="conversions"
+          aria-pressed="false"
         >
           Conversions
         </button>
@@ -281,6 +297,7 @@
           type="button"
           class="affiliates-admin-modal-tab"
           data-affiliate-detail-tab="claims"
+          aria-pressed="false"
         >
           Claims
         </button>
@@ -288,6 +305,7 @@
           type="button"
           class="affiliates-admin-modal-tab"
           data-affiliate-detail-tab="payouts"
+          aria-pressed="false"
         >
           Payouts
         </button>
@@ -295,13 +313,14 @@
           type="button"
           class="affiliates-admin-modal-tab"
           data-affiliate-detail-tab="record-payout"
+          aria-pressed="false"
         >
           Record Payout
         </button>
       </div>
 
       <div
-        class="affiliate-detail-section"
+        class="affiliate-detail-section affiliate-detail-section-overview"
         id="affiliateDetailSectionOverview"
         data-affiliate-detail-section="overview"
       >
@@ -377,7 +396,7 @@
       </div>
 
       <div
-        class="affiliate-detail-section"
+        class="affiliate-detail-section affiliate-detail-section-settings"
         id="affiliateDetailSectionSettings"
         data-affiliate-detail-section="settings"
         hidden
@@ -451,7 +470,7 @@
       </div>
 
       <div
-        class="affiliate-detail-section"
+        class="affiliate-detail-section affiliate-detail-section-notes"
         id="affiliateDetailSectionNotes"
         data-affiliate-detail-section="notes"
         hidden
@@ -496,7 +515,7 @@
       </div>
 
       <div
-        class="affiliate-detail-section"
+        class="affiliate-detail-section affiliate-detail-section-conversions"
         id="affiliateDetailSectionConversions"
         data-affiliate-detail-section="conversions"
         hidden
@@ -512,7 +531,7 @@
       </div>
 
       <div
-        class="affiliate-detail-section"
+        class="affiliate-detail-section affiliate-detail-section-claims"
         id="affiliateDetailSectionClaims"
         data-affiliate-detail-section="claims"
         hidden
@@ -528,7 +547,7 @@
       </div>
 
       <div
-        class="affiliate-detail-section"
+        class="affiliate-detail-section affiliate-detail-section-payouts"
         id="affiliateDetailSectionPayouts"
         data-affiliate-detail-section="payouts"
         hidden
@@ -544,7 +563,7 @@
       </div>
 
       <div
-        class="affiliate-detail-section"
+        class="affiliate-detail-section affiliate-detail-section-record-payout"
         id="affiliateDetailSectionRecordPayout"
         data-affiliate-detail-section="record-payout"
         hidden
