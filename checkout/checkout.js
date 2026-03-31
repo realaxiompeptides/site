@@ -661,7 +661,8 @@ function getAffiliateTrackingAttribution() {
     typeof window.AXIOM_AFFILIATE_TRACKING.getAttributionForCheckout === "function"
   ) {
     try {
-      return window.AXIOM_AFFILIATE_TRACKING.getAttributionForCheckout() || null;
+      const attribution = window.AXIOM_AFFILIATE_TRACKING.getAttributionForCheckout();
+      return attribution && typeof attribution === "object" ? attribution : null;
     } catch (error) {
       console.error("Failed reading affiliate attribution for checkout:", error);
       return null;
@@ -672,41 +673,47 @@ function getAffiliateTrackingAttribution() {
 }
 
 function getAffiliateStateForSession(discountState) {
-  const trackedAttribution = getAffiliateTrackingAttribution();
+  const trackedAttribution = getAffiliateTrackingAttribution() || {};
 
   const trackedAffiliateId =
-    trackedAttribution?.affiliate_id ||
+    trackedAttribution.affiliate_id ||
     axiomCurrentCheckoutSession?.affiliate_id ||
     null;
 
   const trackedAffiliateCode = normalizeDiscountCode(
-    trackedAttribution?.affiliate_code ||
+    trackedAttribution.affiliate_code ||
     axiomCurrentCheckoutSession?.affiliate_code ||
     ""
   );
 
   const trackedAffiliateClickId =
-    trackedAttribution?.affiliate_click_id ||
+    trackedAttribution.affiliate_click_id ||
     axiomCurrentCheckoutSession?.affiliate_click_id ||
     null;
 
   const trackedAffiliateReferralSessionId =
-    trackedAttribution?.affiliate_referral_session_id ||
+    trackedAttribution.affiliate_referral_session_id ||
     axiomCurrentCheckoutSession?.affiliate_referral_session_id ||
     null;
 
   const trackedAffiliateLandingPage =
-    trackedAttribution?.affiliate_landing_page ||
+    trackedAttribution.affiliate_landing_page ||
     axiomCurrentCheckoutSession?.affiliate_landing_page ||
     "";
 
-  const trackedAffiliateDiscountAmount =
-    toNumber(trackedAttribution?.affiliate_discount_amount, 0) ||
-    toNumber(axiomCurrentCheckoutSession?.affiliate_discount_amount, 0);
+  const trackedAffiliateDiscountAmount = toNumber(
+    trackedAttribution.affiliate_discount_amount !== undefined
+      ? trackedAttribution.affiliate_discount_amount
+      : axiomCurrentCheckoutSession?.affiliate_discount_amount,
+    0
+  );
 
-  const trackedAffiliateCommissionAmount =
-    toNumber(trackedAttribution?.affiliate_commission_amount, 0) ||
-    toNumber(axiomCurrentCheckoutSession?.affiliate_commission_amount, 0);
+  const trackedAffiliateCommissionAmount = toNumber(
+    trackedAttribution.affiliate_commission_amount !== undefined
+      ? trackedAttribution.affiliate_commission_amount
+      : axiomCurrentCheckoutSession?.affiliate_commission_amount,
+    0
+  );
 
   const discountAffiliateId = discountState?.affiliateId || null;
   const discountAffiliateCode = normalizeDiscountCode(
@@ -729,53 +736,36 @@ function getAffiliateStateForSession(discountState) {
     0
   );
 
-  const hasTrackedAffiliate = Boolean(trackedAffiliateId || trackedAffiliateCode);
   const hasAffiliateDiscount = Boolean(
     discountState?.isApplied &&
     discountState?.isAffiliateCode &&
     (discountAffiliateId || discountAffiliateCode)
   );
 
-  if (hasTrackedAffiliate) {
-    const isSameAffiliateDiscount =
-      !hasAffiliateDiscount ||
-      (
-        discountAffiliateId &&
-        trackedAffiliateId &&
-        String(discountAffiliateId) === String(trackedAffiliateId)
-      ) ||
-      (
-        discountAffiliateCode &&
-        trackedAffiliateCode &&
-        discountAffiliateCode === trackedAffiliateCode
-      );
+  const hasTrackedAffiliate = Boolean(trackedAffiliateId || trackedAffiliateCode);
 
+  if (hasAffiliateDiscount) {
+    return {
+      affiliate_id: discountAffiliateId || trackedAffiliateId || null,
+      affiliate_code: discountAffiliateCode || trackedAffiliateCode || null,
+      affiliate_click_id: trackedAffiliateClickId || null,
+      affiliate_referral_session_id: trackedAffiliateReferralSessionId || null,
+      affiliate_landing_page: trackedAffiliateLandingPage || null,
+      affiliate_discount_amount: discountAffiliateDiscountAmount,
+      affiliate_commission_amount:
+        discountAffiliateCommissionAmount || trackedAffiliateCommissionAmount || 0
+    };
+  }
+
+  if (hasTrackedAffiliate) {
     return {
       affiliate_id: trackedAffiliateId || null,
       affiliate_code: trackedAffiliateCode || null,
       affiliate_click_id: trackedAffiliateClickId || null,
       affiliate_referral_session_id: trackedAffiliateReferralSessionId || null,
       affiliate_landing_page: trackedAffiliateLandingPage || null,
-      affiliate_discount_amount:
-        hasAffiliateDiscount && isSameAffiliateDiscount
-          ? discountAffiliateDiscountAmount
-          : trackedAffiliateDiscountAmount || 0,
-      affiliate_commission_amount:
-        trackedAffiliateCommissionAmount ||
-        discountAffiliateCommissionAmount ||
-        0
-    };
-  }
-
-  if (hasAffiliateDiscount) {
-    return {
-      affiliate_id: discountAffiliateId || null,
-      affiliate_code: discountAffiliateCode || null,
-      affiliate_click_id: null,
-      affiliate_referral_session_id: null,
-      affiliate_landing_page: null,
-      affiliate_discount_amount: discountAffiliateDiscountAmount,
-      affiliate_commission_amount: discountAffiliateCommissionAmount
+      affiliate_discount_amount: trackedAffiliateDiscountAmount || 0,
+      affiliate_commission_amount: trackedAffiliateCommissionAmount || 0
     };
   }
 
@@ -1013,17 +1003,6 @@ async function syncCheckoutSessionFromForm() {
 
       last_activity_at: new Date().toISOString()
     });
-
-    if (
-      window.AXIOM_AFFILIATE_TRACKING &&
-      typeof window.AXIOM_AFFILIATE_TRACKING.syncAttributionIntoCheckoutSession === "function"
-    ) {
-      try {
-        await window.AXIOM_AFFILIATE_TRACKING.syncAttributionIntoCheckoutSession();
-      } catch (error) {
-        console.error("Affiliate tracking checkout sync failed after form sync:", error);
-      }
-    }
   } else if (hasLocalCheckoutSession()) {
     const session = window.AXIOM_CHECKOUT_SESSION.getSession();
 
@@ -1485,18 +1464,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   await fetchCurrentCheckoutSession();
 
-  if (
-    window.AXIOM_AFFILIATE_TRACKING &&
-    typeof window.AXIOM_AFFILIATE_TRACKING.syncAttributionIntoCheckoutSession === "function"
-  ) {
-    try {
-      await window.AXIOM_AFFILIATE_TRACKING.syncAttributionIntoCheckoutSession();
-      await fetchCurrentCheckoutSession();
-    } catch (error) {
-      console.error("Initial affiliate attribution sync failed:", error);
-    }
-  }
-
   if (window.AXIOM_CART_CHECKOUT_SYNC && typeof window.AXIOM_CART_CHECKOUT_SYNC.syncToSession === "function") {
     await window.AXIOM_CART_CHECKOUT_SYNC.syncToSession({
       session_status: "active"
@@ -1551,18 +1518,6 @@ document.addEventListener("DOMContentLoaded", async () => {
       await syncLocalCartIntoSession(true);
     }
 
-    if (
-      window.AXIOM_AFFILIATE_TRACKING &&
-      typeof window.AXIOM_AFFILIATE_TRACKING.syncAttributionIntoCheckoutSession === "function"
-    ) {
-      try {
-        await window.AXIOM_AFFILIATE_TRACKING.syncAttributionIntoCheckoutSession();
-        await fetchCurrentCheckoutSession();
-      } catch (error) {
-        console.error("Cart-updated affiliate sync failed from checkout page:", error);
-      }
-    }
-
     hydrateCheckoutFormFromSession(axiomCurrentCheckoutSession);
     bindPaymentMethodInputs();
 
@@ -1583,18 +1538,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         await fetchCurrentCheckoutSession();
       } else {
         await syncLocalCartIntoSession(true);
-      }
-
-      if (
-        window.AXIOM_AFFILIATE_TRACKING &&
-        typeof window.AXIOM_AFFILIATE_TRACKING.syncAttributionIntoCheckoutSession === "function"
-      ) {
-        try {
-          await window.AXIOM_AFFILIATE_TRACKING.syncAttributionIntoCheckoutSession();
-          await fetchCurrentCheckoutSession();
-        } catch (error) {
-          console.error("Storage affiliate sync failed from checkout page:", error);
-        }
       }
 
       hydrateCheckoutFormFromSession(axiomCurrentCheckoutSession);
@@ -1671,18 +1614,7 @@ document.addEventListener("submit", async function (e) {
   }
 
   await syncCheckoutSessionFromForm();
-
-  if (
-    window.AXIOM_AFFILIATE_TRACKING &&
-    typeof window.AXIOM_AFFILIATE_TRACKING.syncAttributionIntoCheckoutSession === "function"
-  ) {
-    try {
-      await window.AXIOM_AFFILIATE_TRACKING.syncAttributionIntoCheckoutSession();
-      await fetchCurrentCheckoutSession();
-    } catch (error) {
-      console.error("Affiliate sync failed before checkout submit:", error);
-    }
-  }
+  await fetchCurrentCheckoutSession();
 
   if (hasSupabaseCheckoutSession()) {
     await window.AXIOM_CHECKOUT_SESSION.patchSession({
