@@ -270,7 +270,7 @@ const THANK_YOU_PAYMENT_METHODS = {
     label: "Apple Pay",
     logo: "../images/payment-icons/applepay.jpg",
     handleLabel: "Apple Pay Contact",
-    handle: "530-701-9349",
+    handle: "916-233-5312",
     linkLabel: "",
     link: "",
     instructions:
