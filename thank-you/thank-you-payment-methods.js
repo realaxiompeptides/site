@@ -9,6 +9,8 @@ function thankYouNormalizePaymentMethod(method) {
   if (value.includes("apple")) return "applepay";
   if (value.includes("zelle")) return "zelle";
   if (value.includes("venmo")) return "venmo";
+  if (value.includes("cashapp")) return "cashapp";
+  if (value.includes("cash app")) return "cashapp";
   if (value.includes("crypto")) return "crypto";
   if (value.includes("bitcoin")) return "crypto";
   if (value.includes("ethereum")) return "crypto";
@@ -143,6 +145,18 @@ const THANK_YOU_PAYMENT_METHODS = {
     link: "",
     instructions:
       "Send payment through Zelle, then message the phone number with your order number so we can match your payment."
+  },
+
+  cashapp: {
+    key: "cashapp",
+    label: "Cash App",
+    logo: "../images/payment-icons/cashapp.PNG",
+    handleLabel: "Cash App Tag",
+    handle: "$axiompeptides",
+    linkLabel: "",
+    link: "",
+    instructions:
+      "Send payment through Cash App and include only your order number in the note."
   },
 
   banktransfer: {
