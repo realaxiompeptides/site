@@ -29,7 +29,7 @@ document.addEventListener("DOMContentLoaded", async function () {
   }
 
   function formatDescriptionHtml(value) {
-    return escapeHtml(value || "")
+    return String(value || "")
       .replace(/\r\n/g, "\n")
       .replace(/\r/g, "\n")
       .replace(/\n/g, "<br>");
