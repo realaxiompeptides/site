@@ -439,3 +439,14 @@ header .checkout-logo img {
     box-sizing: border-box;
   }
 }
+
+.thank-you-payment-link-card {
+  margin-top: 24px;
+}
+
+.thank-you-summary-text {
+  color: #6b778c;
+  font-size: 16px;
+  line-height: 1.7;
+  margin: 0 0 16px;
+}
