@@ -158,16 +158,16 @@ const THANK_YOU_PAYMENT_METHODS = {
     linkLabel: "",
     link: "",
     instructionHtml: `
-      <div class="thank-you-payment-steps-card">
-        <div class="thank-you-payment-steps-title">How to Pay with Cash App Bitcoin</div>
-        <ol class="thank-you-payment-steps-list">
-          <li>Open <strong>Cash App</strong> on your phone and tap the <strong>Bitcoin</strong> tab on the home screen.</li>
-          <li>If you do not already have Bitcoin in Cash App, tap <strong>Buy</strong> and purchase enough BTC to cover your order total.</li>
-          <li>After you have Bitcoin, tap <strong>Send</strong> on the Bitcoin screen.</li>
-          <li>Paste our exact Bitcoin address shown below into the recipient address field.</li>
-          <li>Double-check that the address matches exactly before sending: <strong>bc1q7hruzv3vy3hhdkceaa5hmlgjcqnky78wwjs4t8</strong></li>
-          <li>Send the Bitcoin payment, then save your transaction confirmation or screenshot.</li>
-          <li>After sending, message us on WhatsApp or Telegram with your order number and transaction ID so we can confirm your payment.</li>
+      <div class="thank-you-payment-method-instructions">
+        <p><strong>How to pay with Cash App Bitcoin:</strong></p>
+        <ol style="margin: 10px 0 0 20px; padding: 0;">
+          <li style="margin-bottom: 10px;">Open <strong>Cash App</strong> on your phone.</li>
+          <li style="margin-bottom: 10px;">Tap the <strong>Bitcoin</strong> tab inside Cash App.</li>
+          <li style="margin-bottom: 10px;">If you do not already have Bitcoin, tap <strong>Buy</strong> and purchase enough BTC to cover your order total.</li>
+          <li style="margin-bottom: 10px;">Tap <strong>Send</strong> on the Bitcoin screen.</li>
+          <li style="margin-bottom: 10px;">Paste our exact Bitcoin address shown below into the recipient field.</li>
+          <li style="margin-bottom: 10px;">Double-check the address before sending to make sure it matches exactly.</li>
+          <li style="margin-bottom: 0;">After sending, save your transaction confirmation and message us on WhatsApp or Telegram with your order number and transaction ID.</li>
         </ol>
       </div>
     `,
