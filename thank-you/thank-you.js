@@ -176,6 +176,75 @@ function makeTopLogoBigger() {
   });
 }
 
+function buildThankYouPaymentLink(orderNumber) {
+  if (!orderNumber) return "";
+
+  return `${window.location.origin}/thank-you/thank-you.html?order=${encodeURIComponent(orderNumber)}`;
+}
+
+function buildThankYouPaymentLinkCard(orderNumber) {
+  const paymentLink = buildThankYouPaymentLink(orderNumber);
+  if (!paymentLink) return "";
+
+  const safeLink = escapeHtml(paymentLink);
+
+  return `
+    <section
+      id="thankYouSavedPaymentLinkSection"
+      class="thank-you-summary-card thank-you-payment-link-card"
+    >
+      <h2 class="thank-you-summary-title">Save Your Payment Link</h2>
+      <p class="thank-you-summary-text">
+        You can come back to this payment page anytime using the link below.
+      </p>
+
+      <div class="thank-you-payment-copy-block">
+        <div class="thank-you-payment-copy-header">Payment Link</div>
+        <div class="thank-you-payment-copy-row">
+          <input
+            type="text"
+            readonly
+            value="${safeLink}"
+            class="thank-you-payment-copy-input"
+          />
+          <button
+            type="button"
+            class="thank-you-payment-copy-btn"
+            data-copy="${safeLink}"
+          >
+            Copy Link
+          </button>
+        </div>
+      </div>
+    </section>
+  `;
+}
+
+function insertThankYouPaymentLinkSection(order) {
+  const orderNumber = order?.order_number ? String(order.order_number) : "";
+  if (!orderNumber) return;
+
+  const existing = document.getElementById("thankYouSavedPaymentLinkSection");
+  if (existing) {
+    existing.remove();
+  }
+
+  const paymentSection =
+    document.getElementById("paymentMethodsSection") ||
+    document.getElementById("thankYouPaymentInstructions") ||
+    document.getElementById("paymentInstructions") ||
+    document.getElementById("thankYouPaymentDetails") ||
+    document.getElementById("thankYouPayNowBox");
+
+  if (!paymentSection) return;
+
+  paymentSection.insertAdjacentHTML("afterend", buildThankYouPaymentLinkCard(orderNumber));
+
+  if (typeof thankYouBindPaymentCopyButtons === "function") {
+    thankYouBindPaymentCopyButtons();
+  }
+}
+
 function renderOrder(order) {
   if (!order) return;
 
@@ -228,6 +297,7 @@ function renderOrder(order) {
 
   if (typeof renderThankYouPaymentMethods === "function") {
     renderThankYouPaymentMethods(order);
+    insertThankYouPaymentLinkSection(order);
   }
 
   const items = getOrderItems(order);
