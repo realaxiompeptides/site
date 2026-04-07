@@ -110,7 +110,7 @@ function thankYouGetOrderFollowupText(paymentKey, orderNumber, order) {
   }
 
   if (paymentKey === "cashapp") {
-    return `You can either send payment to the Cash App username below or use Cash App Bitcoin and send to the BTC address below. Include order #<strong>${safeOrder}</strong> so we can match your payment correctly.`;
+    return `After sending Bitcoin through Cash App, message your transaction ID and order #<strong>${safeOrder}</strong> using WhatsApp or Telegram below so we can confirm your payment.`;
   }
 
   if (paymentKey === "banktransfer") {
@@ -155,24 +155,24 @@ const THANK_YOU_PAYMENT_METHODS = {
     key: "cashapp",
     label: "Cash App",
     logo: "../images/payment-icons/cashapp.PNG",
-    handleLabel: "Cash App Tag",
-    handle: "$axiompeptides",
     linkLabel: "",
     link: "",
     instructionHtml: `
       <div class="thank-you-payment-steps-card">
-        <div class="thank-you-payment-steps-title">How to Pay with Cash App</div>
+        <div class="thank-you-payment-steps-title">How to Pay with Cash App Bitcoin</div>
         <ol class="thank-you-payment-steps-list">
-          <li>Option 1: send payment directly to our Cash App username <strong>$axiompeptides</strong>.</li>
-          <li>Option 2: open Cash App Bitcoin and send BTC to our Bitcoin address shown below.</li>
-          <li>If paying by Cash App username, send the exact order total and include <strong>only your order number</strong> in the note.</li>
-          <li>If paying with Cash App Bitcoin, send BTC to the address below, then keep your transaction confirmation.</li>
-          <li>After sending either way, message us on WhatsApp or Telegram with your order number so we can confirm your payment faster.</li>
+          <li>Open <strong>Cash App</strong> on your phone and tap the <strong>Bitcoin</strong> tab on the home screen.</li>
+          <li>If you do not already have Bitcoin in Cash App, tap <strong>Buy</strong> and purchase enough BTC to cover your order total.</li>
+          <li>After you have Bitcoin, tap <strong>Send</strong> on the Bitcoin screen.</li>
+          <li>Paste our exact Bitcoin address shown below into the recipient address field.</li>
+          <li>Double-check that the address matches exactly before sending: <strong>bc1q7hruzv3vy3hhdkceaa5hmlgjcqnky78wwjs4t8</strong></li>
+          <li>Send the Bitcoin payment, then save your transaction confirmation or screenshot.</li>
+          <li>After sending, message us on WhatsApp or Telegram with your order number and transaction ID so we can confirm your payment.</li>
         </ol>
       </div>
     `,
     instructions:
-      "You can pay using our Cash App username or send Bitcoin through Cash App to the BTC address below.",
+      "Use Cash App Bitcoin to buy BTC and send it to the exact Bitcoin address below.",
     extraCopyFields: [
       {
         label: "Bitcoin (BTC) Address",
