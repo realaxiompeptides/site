@@ -440,52 +440,125 @@ header .checkout-logo img {
   }
 }
 
-.thank-you-payment-link-card {
-  margin-top: 10px;
-  margin-bottom: 10px;
-  padding: 22px 20px;
+/* Save payment link section */
+#thankYouSavedPaymentLinkSection {
+  background: #ffffff;
+  border: 1px solid #dbe5f0;
+  border-radius: 24px;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.05);
+  padding: 20px;
+  margin-top: 4px !important;
+  margin-bottom: 8px !important;
   text-align: center;
+  font-family: "Inter", sans-serif;
 }
 
-.thank-you-payment-link-card .thank-you-summary-title {
+#thankYouSavedPaymentLinkSection .thank-you-summary-title {
   margin: 0 0 10px;
+  font-family: "Inter", sans-serif;
+  font-size: 22px;
+  line-height: 1.1;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  color: #0f172a;
   text-align: center;
 }
 
-.thank-you-payment-link-card .thank-you-summary-text {
+#thankYouSavedPaymentLinkSection .thank-you-summary-text {
   max-width: 620px;
   margin: 0 auto 14px;
-  color: #6b778c;
+  font-family: "Inter", sans-serif;
+  color: #64748b;
   font-size: 16px;
   line-height: 1.65;
+  font-weight: 500;
   text-align: center;
 }
 
-.thank-you-payment-link-card .thank-you-payment-copy-block {
+#thankYouSavedPaymentLinkSection .thank-you-payment-copy-block {
   margin-top: 0;
 }
 
-.thank-you-payment-link-card .thank-you-payment-copy-header {
-  text-align: center;
+#thankYouSavedPaymentLinkSection .thank-you-payment-copy-header {
+  display: block;
   margin-bottom: 8px;
-}
-
-.thank-you-payment-link-card .thank-you-payment-copy-row {
-  margin-top: 0;
-  max-width: 100%;
-}
-
-.thank-you-payment-link-card .thank-you-payment-copy-input {
+  font-family: "Inter", sans-serif;
+  font-size: 13px;
+  line-height: 1.2;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #64748b;
   text-align: center;
 }
 
-#thankYouSavedPaymentLinkSection {
-  margin-top: 10px !important;
-  margin-bottom: 10px !important;
+#thankYouSavedPaymentLinkSection .thank-you-payment-copy-row {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 0;
+}
+
+#thankYouSavedPaymentLinkSection .thank-you-payment-copy-input {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 56px;
+  border-radius: 18px;
+  border: 1px solid #dbe4ef;
+  background: #ffffff;
+  padding: 0 16px;
+  font-family: "Inter", sans-serif;
+  font-size: 14px;
+  line-height: 1.4;
+  font-weight: 700;
+  color: #12203f;
+  text-align: center;
+}
+
+#thankYouSavedPaymentLinkSection .thank-you-payment-copy-btn {
+  width: 100%;
+  min-height: 56px;
+  border-radius: 18px;
+  border: 1px solid #2f84bf;
+  background: #2f84bf;
+  color: #ffffff;
+  font-family: "Inter", sans-serif;
+  font-size: 14px;
+  line-height: 1.2;
+  font-weight: 800;
+  cursor: pointer;
 }
 
 #thankYouSavedPaymentLinkSection + .thank-you-card,
 #thankYouSavedPaymentLinkSection + .thank-you-summary-card,
 #thankYouSavedPaymentLinkSection + .thank-you-items-card {
-  margin-top: 10px !important;
+  margin-top: 8px !important;
+}
+
+/* tighten gap under payment methods section */
+#paymentMethodsSection,
+#thankYouPaymentInstructions,
+#paymentInstructions,
+#thankYouPaymentDetails,
+#thankYouPayNowBox {
+  margin-bottom: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+@media (max-width: 640px) {
+  #thankYouSavedPaymentLinkSection {
+    padding: 18px;
+    margin-top: 2px !important;
+    margin-bottom: 8px !important;
+    border-radius: 20px;
+  }
+
+  #thankYouSavedPaymentLinkSection .thank-you-summary-title {
+    font-size: 20px;
+  }
+
+  #thankYouSavedPaymentLinkSection .thank-you-summary-text {
+    font-size: 15px;
+    margin-bottom: 12px;
+  }
 }
