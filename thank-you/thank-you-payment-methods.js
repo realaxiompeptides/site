@@ -106,7 +106,11 @@ function thankYouGetOrderFollowupText(paymentKey, orderNumber, order) {
   }
 
   if (paymentKey === "crypto") {
-    return `After sending crypto, message your transaction ID and order #<strong>${safeOrder}</strong> using WhatsApp, Telegram, or Discord below so we can confirm your payment.`;
+    return `After sending crypto, message your transaction ID and order #<strong>${safeOrder}</strong> using WhatsApp or Telegram below so we can confirm your payment.`;
+  }
+
+  if (paymentKey === "cashapp") {
+    return `You can either send payment to the Cash App username below or use Cash App Bitcoin and send to the BTC address below. Include order #<strong>${safeOrder}</strong> so we can match your payment correctly.`;
   }
 
   if (paymentKey === "banktransfer") {
@@ -155,8 +159,38 @@ const THANK_YOU_PAYMENT_METHODS = {
     handle: "$axiompeptides",
     linkLabel: "",
     link: "",
+    instructionHtml: `
+      <div class="thank-you-payment-steps-card">
+        <div class="thank-you-payment-steps-title">How to Pay with Cash App</div>
+        <ol class="thank-you-payment-steps-list">
+          <li>Option 1: send payment directly to our Cash App username <strong>$axiompeptides</strong>.</li>
+          <li>Option 2: open Cash App Bitcoin and send BTC to our Bitcoin address shown below.</li>
+          <li>If paying by Cash App username, send the exact order total and include <strong>only your order number</strong> in the note.</li>
+          <li>If paying with Cash App Bitcoin, send BTC to the address below, then keep your transaction confirmation.</li>
+          <li>After sending either way, message us on WhatsApp or Telegram with your order number so we can confirm your payment faster.</li>
+        </ol>
+      </div>
+    `,
     instructions:
-      "Send payment through Cash App and include only your order number in the note."
+      "You can pay using our Cash App username or send Bitcoin through Cash App to the BTC address below.",
+    extraCopyFields: [
+      {
+        label: "Bitcoin (BTC) Address",
+        value: "bc1q7hruzv3vy3hhdkceaa5hmlgjcqnky78wwjs4t8"
+      }
+    ],
+    actionButtons: [
+      {
+        label: "WhatsApp",
+        href: "https://wa.me/15307019349",
+        external: true
+      },
+      {
+        label: "Telegram",
+        href: "https://t.me/axiompeptides",
+        external: true
+      }
+    ]
   },
 
   banktransfer: {
@@ -296,11 +330,11 @@ const THANK_YOU_PAYMENT_METHODS = {
     label: "Crypto",
     logo: "../images/payment-icons/crypto-group.jpg",
     instructions:
-      "Send the exact amount using the correct crypto and network. After sending, message your transaction ID and order number using WhatsApp, Telegram, or Discord below so we can confirm your payment.",
+      "Send the exact amount using the correct crypto and network. After sending, message your transaction ID and order number using WhatsApp or Telegram below so we can confirm your payment.",
     wallets: [
       {
         label: "Bitcoin (BTC)",
-        value: "bc1qfde75y9d8ad72sah7acf9vlc8csxeaewyk5rah"
+        value: "bc1q7hruzv3vy3hhdkceaa5hmlgjcqnky78wwjs4t8"
       },
       {
         label: "Ethereum (ETH)",
@@ -335,12 +369,7 @@ const THANK_YOU_PAYMENT_METHODS = {
       },
       {
         label: "Telegram",
-        href: "https://t.me/+2hr9SQknvslkZDg5",
-        external: true
-      },
-      {
-        label: "Discord",
-        href: "https://discord.gg/Wz9C39ERe",
+        href: "https://t.me/axiompeptides",
         external: true
       }
     ]
@@ -454,6 +483,24 @@ function thankYouGetBankTransferInstructions(methodConfig, order) {
     : methodConfig.domesticInstructions || "";
 }
 
+function thankYouRenderMethodInstructions(methodConfig, order) {
+  if (!methodConfig) return "";
+
+  if (methodConfig.key === "banktransfer") {
+    return `<p class="thank-you-payment-method-instructions">${thankYouEscapeHtml(
+      thankYouGetBankTransferInstructions(methodConfig, order) || ""
+    )}</p>`;
+  }
+
+  if (methodConfig.instructionHtml) {
+    return methodConfig.instructionHtml;
+  }
+
+  return `<p class="thank-you-payment-method-instructions">${thankYouEscapeHtml(
+    methodConfig.instructions || ""
+  )}</p>`;
+}
+
 function thankYouBuildMethodDetails(methodConfig, orderNumber, order) {
   if (!methodConfig) return "";
 
@@ -478,6 +525,12 @@ function thankYouBuildMethodDetails(methodConfig, orderNumber, order) {
       methodConfig.secondaryLabel || "Additional Info",
       methodConfig.secondaryValue
     );
+  }
+
+  if (Array.isArray(methodConfig.extraCopyFields) && methodConfig.extraCopyFields.length) {
+    detailsHtml += methodConfig.extraCopyFields
+      .map((item) => thankYouCreateCopyButton(item.label, item.value))
+      .join("");
   }
 
   const bankDetails = thankYouGetBankTransferDetails(methodConfig, order);
@@ -516,7 +569,7 @@ function thankYouBuildMethodDetails(methodConfig, orderNumber, order) {
       orderNumber,
       `After sending crypto, message your transaction ID and order number ${
         orderNumber ? `#${thankYouEscapeHtml(orderNumber)}` : ""
-      } using WhatsApp, Telegram, or Discord.`
+      } using WhatsApp or Telegram.`
     );
   }
 
@@ -527,6 +580,16 @@ function thankYouBuildMethodDetails(methodConfig, orderNumber, order) {
       `After sending the ${
         thankYouIsInternationalOrder(order) ? "international wire" : "domestic transfer"
       }, message your order number ${
+        orderNumber ? `#${thankYouEscapeHtml(orderNumber)}` : ""
+      } and payment confirmation.`
+    );
+  }
+
+  if (Array.isArray(methodConfig.actionButtons) && methodConfig.actionButtons.length) {
+    detailsHtml += thankYouCreateActionButtons(
+      methodConfig.actionButtons,
+      orderNumber,
+      `After sending payment, message your order number ${
         orderNumber ? `#${thankYouEscapeHtml(orderNumber)}` : ""
       } and payment confirmation.`
     );
@@ -570,9 +633,6 @@ function thankYouBuildPrimaryMethodCard(methodConfig, orderNumber, order) {
   if (!methodConfig) return "";
 
   const safeLabel = thankYouEscapeHtml(methodConfig.label);
-  const safeInstructions = thankYouEscapeHtml(
-    thankYouGetBankTransferInstructions(methodConfig, order) || methodConfig.instructions || ""
-  );
 
   return `
     <div class="thank-you-payment-method-card is-primary">
@@ -582,7 +642,7 @@ function thankYouBuildPrimaryMethodCard(methodConfig, orderNumber, order) {
 
           <div class="thank-you-payment-method-heading-copy">
             <h3 class="thank-you-payment-method-name">${safeLabel}</h3>
-            <p class="thank-you-payment-method-instructions">${safeInstructions}</p>
+            ${thankYouRenderMethodInstructions(methodConfig, order)}
             ${
               orderNumber
                 ? `<p class="thank-you-payment-order-note">${thankYouGetOrderFollowupText(methodConfig.key, orderNumber, order)}</p>`
@@ -603,9 +663,6 @@ function thankYouBuildAccordionItem(methodConfig, orderNumber, index, order) {
   if (!methodConfig) return "";
 
   const safeLabel = thankYouEscapeHtml(methodConfig.label);
-  const safeInstructions = thankYouEscapeHtml(
-    thankYouGetBankTransferInstructions(methodConfig, order) || methodConfig.instructions || ""
-  );
   const panelId = `thankYouPaymentAccordionPanel${index}`;
 
   return `
@@ -636,7 +693,7 @@ function thankYouBuildAccordionItem(methodConfig, orderNumber, index, order) {
         hidden
       >
         <div class="thank-you-payment-accordion-panel-inner">
-          <p class="thank-you-payment-method-instructions">${safeInstructions}</p>
+          ${thankYouRenderMethodInstructions(methodConfig, order)}
           ${
             orderNumber
               ? `<p class="thank-you-payment-order-note">${thankYouGetOrderFollowupText(methodConfig.key, orderNumber, order)}</p>`
