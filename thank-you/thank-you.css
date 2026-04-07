@@ -441,12 +441,51 @@ header .checkout-logo img {
 }
 
 .thank-you-payment-link-card {
-  margin-top: 24px;
+  margin-top: 10px;
+  margin-bottom: 10px;
+  padding: 22px 20px;
+  text-align: center;
 }
 
-.thank-you-summary-text {
+.thank-you-payment-link-card .thank-you-summary-title {
+  margin: 0 0 10px;
+  text-align: center;
+}
+
+.thank-you-payment-link-card .thank-you-summary-text {
+  max-width: 620px;
+  margin: 0 auto 14px;
   color: #6b778c;
   font-size: 16px;
-  line-height: 1.7;
-  margin: 0 0 16px;
+  line-height: 1.65;
+  text-align: center;
+}
+
+.thank-you-payment-link-card .thank-you-payment-copy-block {
+  margin-top: 0;
+}
+
+.thank-you-payment-link-card .thank-you-payment-copy-header {
+  text-align: center;
+  margin-bottom: 8px;
+}
+
+.thank-you-payment-link-card .thank-you-payment-copy-row {
+  margin-top: 0;
+  max-width: 100%;
+}
+
+.thank-you-payment-link-card .thank-you-payment-copy-input {
+  text-align: center;
+}
+
+#thankYouSavedPaymentLinkSection {
+  margin-top: 10px !important;
+  margin-bottom: 10px !important;
+}
+
+#thankYouSavedPaymentLinkSection + .thank-you-card,
+#thankYouSavedPaymentLinkSection + .thank-you-summary-card,
+#thankYouSavedPaymentLinkSection + .thank-you-items-card {
+  margin-top: 10px !important;
 }
