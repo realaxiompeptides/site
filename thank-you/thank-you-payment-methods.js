@@ -465,45 +465,6 @@ function thankYouCreateActionButtons(buttons, orderNumber, headingText) {
   `;
 }
 
-function thankYouBuildPaymentLink(orderNumber) {
-  if (!orderNumber) return "";
-  const baseUrl = `${window.location.origin}/thank-you/thank-you.html`;
-  return `${baseUrl}?order=${encodeURIComponent(orderNumber)}`;
-}
-
-function thankYouCreatePaymentLinkCard(orderNumber) {
-  const paymentLink = thankYouBuildPaymentLink(orderNumber);
-  if (!paymentLink) return "";
-
-  const safeUrl = thankYouEscapeHtml(paymentLink);
-
-  return `
-    <div class="thank-you-payment-contact-section">
-      <div class="thank-you-payment-copy-header">
-        Save Your Payment Link
-      </div>
-      <div class="thank-you-payment-copy-block">
-        <div class="thank-you-payment-copy-header">Payment Link</div>
-        <div class="thank-you-payment-copy-row">
-          <input
-            type="text"
-            readonly
-            value="${safeUrl}"
-            class="thank-you-payment-copy-input"
-          />
-          <button
-            type="button"
-            class="thank-you-payment-copy-btn"
-            data-copy="${safeUrl}"
-          >
-            Copy Link
-          </button>
-        </div>
-      </div>
-    </div>
-  `;
-}
-
 function thankYouGetBankTransferDetails(methodConfig, order) {
   if (!methodConfig || methodConfig.key !== "banktransfer") return [];
 
@@ -636,7 +597,6 @@ function thankYouBuildMethodDetails(methodConfig, orderNumber, order) {
 
   if (orderNumber) {
     detailsHtml += thankYouCreateCopyButton("Order Number", `#${orderNumber}`);
-    detailsHtml += thankYouCreatePaymentLinkCard(orderNumber);
   }
 
   return detailsHtml;
