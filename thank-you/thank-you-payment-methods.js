@@ -107,7 +107,7 @@ function thankYouBuildDiscountBadge(paymentKey) {
 
   return `
     <span class="thank-you-payment-discount-badge" aria-label="8 percent off">
-      8% OFF
+      5% OFF
     </span>
   `;
 }
