@@ -98,17 +98,17 @@ function thankYouIsInternationalOrder(order) {
   return !["US", "USA", "UNITED STATES", "UNITED STATES OF AMERICA"].includes(country);
 }
 
-function thankYouGetCryptoDiscountHtml(order, paymentKey) {
-  if (paymentKey !== "cashapp" && paymentKey !== "crypto") {
-    return "";
-  }
+function thankYouShouldShowDiscountBadge(paymentKey) {
+  return paymentKey === "cashapp" || paymentKey === "crypto";
+}
+
+function thankYouBuildDiscountBadge(paymentKey) {
+  if (!thankYouShouldShowDiscountBadge(paymentKey)) return "";
 
   return `
-    <div class="thank-you-payment-discount-note">
-      <strong>8% discount applied</strong> for ${
-        paymentKey === "cashapp" ? "Cash App Bitcoin" : "crypto"
-      } payments.
-    </div>
+    <span class="thank-you-payment-discount-badge" aria-label="8 percent off">
+      8% OFF
+    </span>
   `;
 }
 
@@ -173,7 +173,6 @@ const THANK_YOU_PAYMENT_METHODS = {
     link: "",
     instructionHtml: `
       <div class="thank-you-payment-method-instructions">
-        <p><strong>Get 8% off when paying with Cash App Bitcoin.</strong></p>
         <p><strong>How to pay with Cash App Bitcoin:</strong></p>
         <ol style="margin: 10px 0 0 20px; padding: 0;">
           <li style="margin-bottom: 10px;">Open <strong>Cash App</strong> on your phone.</li>
@@ -184,10 +183,20 @@ const THANK_YOU_PAYMENT_METHODS = {
           <li style="margin-bottom: 10px;">Double-check the address before sending to make sure it matches exactly.</li>
           <li style="margin-bottom: 0;">After sending, save your transaction confirmation and message us on WhatsApp or Telegram with your order number and transaction ID.</li>
         </ol>
+
+        <div class="thank-you-payment-good-to-know">
+          <div class="thank-you-payment-good-to-know-title">Good to know</div>
+          <ul class="thank-you-payment-good-to-know-list">
+            <li>You get <strong>8% off</strong> because crypto payments save us processing fees.</li>
+            <li>Cash App Bitcoin is usually one of the easiest ways to pay with crypto.</li>
+            <li>If you need to buy BTC first in Cash App, it usually only takes a moment before you can send it.</li>
+            <li>After sending, message us with your order number and transaction ID so we can confirm your payment faster.</li>
+          </ul>
+        </div>
       </div>
     `,
     instructions:
-      "Use Cash App Bitcoin to buy BTC and send it to the exact Bitcoin address below. Get 8% off when paying this way.",
+      "Use Cash App Bitcoin to buy BTC and send it to the exact Bitcoin address below.",
     extraCopyFields: [
       {
         label: "Bitcoin (BTC) Address",
@@ -345,7 +354,7 @@ const THANK_YOU_PAYMENT_METHODS = {
     label: "Crypto",
     logo: "../images/payment-icons/crypto-group.jpg",
     instructions:
-      "Get 8% off when paying with crypto. Send the exact amount using the correct crypto and network. After sending, message your transaction ID and order number using WhatsApp or Telegram below so we can confirm your payment.",
+      "Send the exact amount using the correct crypto and network. After sending, message your transaction ID and order number using WhatsApp or Telegram below so we can confirm your payment.",
     wallets: [
       {
         label: "Bitcoin (BTC)",
@@ -644,10 +653,19 @@ function thankYouBuildPaymentLogo(methodConfig) {
   `;
 }
 
+function thankYouBuildMethodName(methodConfig) {
+  const safeLabel = thankYouEscapeHtml(methodConfig.label);
+
+  return `
+    <span class="thank-you-payment-method-name-row">
+      <span class="thank-you-payment-method-name-text">${safeLabel}</span>
+      ${thankYouBuildDiscountBadge(methodConfig.key)}
+    </span>
+  `;
+}
+
 function thankYouBuildPrimaryMethodCard(methodConfig, orderNumber, order) {
   if (!methodConfig) return "";
-
-  const safeLabel = thankYouEscapeHtml(methodConfig.label);
 
   return `
     <div class="thank-you-payment-method-card is-primary">
@@ -656,9 +674,8 @@ function thankYouBuildPrimaryMethodCard(methodConfig, orderNumber, order) {
           ${thankYouBuildPaymentLogo(methodConfig)}
 
           <div class="thank-you-payment-method-heading-copy">
-            <h3 class="thank-you-payment-method-name">${safeLabel}</h3>
+            <h3 class="thank-you-payment-method-name">${thankYouBuildMethodName(methodConfig)}</h3>
             ${thankYouRenderMethodInstructions(methodConfig, order)}
-            ${thankYouGetCryptoDiscountHtml(order, methodConfig.key)}
             ${
               orderNumber
                 ? `<p class="thank-you-payment-order-note">${thankYouGetOrderFollowupText(methodConfig.key, orderNumber, order)}</p>`
@@ -678,7 +695,6 @@ function thankYouBuildPrimaryMethodCard(methodConfig, orderNumber, order) {
 function thankYouBuildAccordionItem(methodConfig, orderNumber, index, order) {
   if (!methodConfig) return "";
 
-  const safeLabel = thankYouEscapeHtml(methodConfig.label);
   const panelId = `thankYouPaymentAccordionPanel${index}`;
 
   return `
@@ -693,7 +709,7 @@ function thankYouBuildAccordionItem(methodConfig, orderNumber, index, order) {
           ${thankYouBuildPaymentLogo(methodConfig)}
 
           <span class="thank-you-payment-accordion-title-wrap">
-            <span class="thank-you-payment-accordion-title">${safeLabel}</span>
+            <span class="thank-you-payment-accordion-title">${thankYouBuildMethodName(methodConfig)}</span>
             <span class="thank-you-payment-accordion-subtitle">Tap to view payment details</span>
           </span>
         </span>
@@ -710,7 +726,6 @@ function thankYouBuildAccordionItem(methodConfig, orderNumber, index, order) {
       >
         <div class="thank-you-payment-accordion-panel-inner">
           ${thankYouRenderMethodInstructions(methodConfig, order)}
-          ${thankYouGetCryptoDiscountHtml(order, methodConfig.key)}
           ${
             orderNumber
               ? `<p class="thank-you-payment-order-note">${thankYouGetOrderFollowupText(methodConfig.key, orderNumber, order)}</p>`
