@@ -70,7 +70,7 @@ body.reviews-page {
 
 .reviews-score-label {
   margin: 0 0 10px;
-  color: #10b981;
+  color: #2f84bf;
   font-size: 14px;
   font-weight: 900;
   letter-spacing: 0.08em;
@@ -100,7 +100,7 @@ body.reviews-page {
 }
 
 .reviews-stars i {
-  color: #10b981;
+  color: #2f84bf;
   font-size: 24px;
 }
 
@@ -150,7 +150,7 @@ body.reviews-page {
 .reviews-dist-fill {
   height: 100%;
   border-radius: 999px;
-  background: #10b981;
+  background: #2f84bf;
 }
 
 .reviews-tags {
@@ -277,7 +277,7 @@ body.reviews-page {
 }
 
 .review-stars i {
-  color: #10b981;
+  color: #2f84bf;
   font-size: 18px;
 }
 
@@ -324,8 +324,8 @@ body.reviews-page {
   min-height: 38px;
   padding: 0 14px;
   border-radius: 999px;
-  background: #e8f9f2;
-  color: #0f766e;
+  background: #eef7ff;
+  color: #2f84bf;
   font-size: 14px;
   font-weight: 700;
 }
