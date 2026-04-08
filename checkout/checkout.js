@@ -520,7 +520,12 @@ function bindPaymentMethodInputs() {
 
     radio.addEventListener("change", async function () {
       applySelectedPaymentMethodToUI(this.value);
+
+      renderCheckoutSummary();
+
       await syncCheckoutSessionFromForm();
+      await fetchCurrentCheckoutSession();
+
       renderCheckoutSummary();
     });
   });
@@ -1079,7 +1084,12 @@ function renderShippingRatesFromSession(forceRecalculate = false) {
       });
 
       radio.closest(".shipping-option")?.classList.add("active");
+
+      renderCheckoutSummary();
+
       await syncCheckoutSessionFromForm();
+      await fetchCurrentCheckoutSession();
+
       renderCheckoutSummary();
     });
   });
