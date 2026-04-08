@@ -124,7 +124,7 @@ function thankYouGetOrderFollowupText(paymentKey, orderNumber, order) {
   }
 
   if (paymentKey === "cashapp") {
-    return `After sending Bitcoin through Cash App, message your transaction ID and order #<strong>${safeOrder}</strong> using WhatsApp or Telegram below so we can confirm your payment.`;
+    return "";
   }
 
   if (paymentKey === "banktransfer") {
@@ -181,18 +181,8 @@ const THANK_YOU_PAYMENT_METHODS = {
           <li style="margin-bottom: 10px;">Tap <strong>Send</strong> on the Bitcoin screen.</li>
           <li style="margin-bottom: 10px;">Paste our exact Bitcoin address shown below into the recipient field.</li>
           <li style="margin-bottom: 10px;">Double-check the address before sending to make sure it matches exactly.</li>
-          <li style="margin-bottom: 0;">After sending, save your transaction confirmation and message us on WhatsApp or Telegram with your order number and transaction ID.</li>
+          <li style="margin-bottom: 0;">After sending, save your transaction confirmation and send us your order number and transaction ID.</li>
         </ol>
-
-        <div class="thank-you-payment-good-to-know">
-          <div class="thank-you-payment-good-to-know-title">Good to know</div>
-          <ul class="thank-you-payment-good-to-know-list">
-            <li>You get <strong>8% off</strong> because crypto payments save us processing fees.</li>
-            <li>Cash App Bitcoin is usually one of the easiest ways to pay with crypto.</li>
-            <li>If you need to buy BTC first in Cash App, it usually only takes a moment before you can send it.</li>
-            <li>After sending, message us with your order number and transaction ID so we can confirm your payment faster.</li>
-          </ul>
-        </div>
       </div>
     `,
     instructions:
@@ -214,7 +204,18 @@ const THANK_YOU_PAYMENT_METHODS = {
         href: "https://t.me/axiompeptides",
         external: true
       }
-    ]
+    ],
+    bottomInfoHtml: `
+      <div class="thank-you-payment-good-to-know">
+        <div class="thank-you-payment-good-to-know-title">Good to know</div>
+        <ul class="thank-you-payment-good-to-know-list">
+          <li>You get <strong>8% off</strong> because crypto payments save us processing fees.</li>
+          <li>Cash App Bitcoin is usually one of the easiest ways to pay with crypto.</li>
+          <li>If you need to buy BTC first in Cash App, it usually only takes a moment before you can send it.</li>
+          <li>Confirmation usually takes a short time after sending. Message us with your order number and transaction ID so we can confirm it faster.</li>
+        </ul>
+      </div>
+    `
   },
 
   banktransfer: {
@@ -525,6 +526,11 @@ function thankYouRenderMethodInstructions(methodConfig, order) {
   )}</p>`;
 }
 
+function thankYouRenderBottomInfo(methodConfig) {
+  if (!methodConfig || !methodConfig.bottomInfoHtml) return "";
+  return methodConfig.bottomInfoHtml;
+}
+
 function thankYouBuildMethodDetails(methodConfig, orderNumber, order) {
   if (!methodConfig) return "";
 
@@ -623,6 +629,8 @@ function thankYouBuildMethodDetails(methodConfig, orderNumber, order) {
     detailsHtml += thankYouCreateCopyButton("Order Number", `#${orderNumber}`);
   }
 
+  detailsHtml += thankYouRenderBottomInfo(methodConfig);
+
   return detailsHtml;
 }
 
@@ -677,7 +685,7 @@ function thankYouBuildPrimaryMethodCard(methodConfig, orderNumber, order) {
             <h3 class="thank-you-payment-method-name">${thankYouBuildMethodName(methodConfig)}</h3>
             ${thankYouRenderMethodInstructions(methodConfig, order)}
             ${
-              orderNumber
+              thankYouGetOrderFollowupText(methodConfig.key, orderNumber, order)
                 ? `<p class="thank-you-payment-order-note">${thankYouGetOrderFollowupText(methodConfig.key, orderNumber, order)}</p>`
                 : ""
             }
@@ -727,7 +735,7 @@ function thankYouBuildAccordionItem(methodConfig, orderNumber, index, order) {
         <div class="thank-you-payment-accordion-panel-inner">
           ${thankYouRenderMethodInstructions(methodConfig, order)}
           ${
-            orderNumber
+            thankYouGetOrderFollowupText(methodConfig.key, orderNumber, order)
               ? `<p class="thank-you-payment-order-note">${thankYouGetOrderFollowupText(methodConfig.key, orderNumber, order)}</p>`
               : ""
           }
