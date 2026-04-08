@@ -6,10 +6,10 @@
     name="viewport"
     content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
   />
-  <title>Axiom Reviews | Axiom Peptides</title>
+  <title>Reviews | Axiom Peptides</title>
   <meta
     name="description"
-    content="Read customer reviews, shipping experiences, and product feedback for Axiom Peptides."
+    content="Read customer feedback, product experiences, shipping notes, and verified order impressions for Axiom Peptides."
   />
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -18,7 +18,6 @@
     href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
     rel="stylesheet"
   />
-
   <link
     rel="stylesheet"
     href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
@@ -28,6 +27,7 @@
   <link rel="stylesheet" href="../css/menu.css" />
   <link rel="stylesheet" href="../cart/cart.css" />
   <link rel="stylesheet" href="../footer/footer.css" />
+  <link rel="stylesheet" href="../css/home.css" />
   <link rel="stylesheet" href="../age-gate/age-gate.css" />
   <link rel="stylesheet" href="reviews.css" />
 
@@ -109,6 +109,7 @@
       width: 100% !important;
       padding-left: 16px !important;
       padding-right: 16px !important;
+      position: relative !important;
     }
 
     .site-logo {
@@ -116,11 +117,26 @@
       position: absolute !important;
       left: 50% !important;
       transform: translateX(-50%) !important;
+      z-index: 1 !important;
+    }
+
+    .site-logo img {
+      width: 74px !important;
+      height: 74px !important;
+      object-fit: contain !important;
+      display: block !important;
     }
 
     .hamburger-btn,
     .cart-btn {
       z-index: 10 !important;
+    }
+
+    @media (max-width: 640px) {
+      .site-logo img {
+        width: 66px !important;
+        height: 66px !important;
+      }
     }
   </style>
 </head>
@@ -269,10 +285,70 @@
   <div class="site-overlay" id="siteOverlay"></div>
 
   <main class="reviews-main">
+    <section class="reviews-page-hero">
+      <div class="reviews-page-hero-inner reviews-container">
+        <div class="reviews-page-badge">
+          <i class="fa-solid fa-star"></i>
+          <span>Customer Feedback</span>
+        </div>
+
+        <h1 class="reviews-page-title">Reviews & Researcher Experiences</h1>
+
+        <p class="reviews-page-subtext">
+          Browse customer feedback, product experiences, shipping notes, and verified order impressions for Axiom Peptides.
+        </p>
+
+        <div class="reviews-page-quick-stats">
+          <div class="reviews-page-stat">
+            <strong>4.9/5</strong>
+            <span>Average rating</span>
+          </div>
+
+          <div class="reviews-page-stat">
+            <strong>4,800+</strong>
+            <span>Customer reviews</span>
+          </div>
+
+          <div class="reviews-page-stat">
+            <strong>USA</strong>
+            <span>Fulfilled orders</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <div class="reviews-container">
-      <div id="reviewsHeroMount"></div>
       <div id="reviewsSummaryMount"></div>
       <div id="reviewsMentionsMount"></div>
+
+      <section class="reviews-section reviews-proof-section">
+        <div class="reviews-proof-grid">
+          <div class="reviews-proof-card">
+            <div class="reviews-proof-icon">
+              <i class="fa-solid fa-flask"></i>
+            </div>
+            <h3>Third-Party Tested</h3>
+            <p>We focus on consistency, clean presentation, and a professional research-use-only customer experience.</p>
+          </div>
+
+          <div class="reviews-proof-card">
+            <div class="reviews-proof-icon">
+              <i class="fa-solid fa-box"></i>
+            </div>
+            <h3>Secure Packaging</h3>
+            <p>Customers frequently mention packaging quality, dispatch speed, and the condition orders arrive in.</p>
+          </div>
+
+          <div class="reviews-proof-card">
+            <div class="reviews-proof-icon">
+              <i class="fa-solid fa-truck-fast"></i>
+            </div>
+            <h3>Fast Fulfillment</h3>
+            <p>Review themes often highlight quick processing and reliable delivery updates after orders are placed.</p>
+          </div>
+        </div>
+      </section>
+
       <div id="reviewsListMount"></div>
       <div id="reviewsFaqMount"></div>
     </div>
@@ -325,6 +401,98 @@
             console.error("Age gate failed to load:", error);
           });
       }
+
+      setTimeout(function () {
+        try {
+          const rawCart = localStorage.getItem("axiom_cart");
+          const cart = JSON.parse(rawCart || "[]");
+          const products = Array.isArray(window.AXIOM_PRODUCTS)
+            ? window.AXIOM_PRODUCTS
+            : Array.isArray(window.productData)
+              ? window.productData
+              : [];
+
+          if (!Array.isArray(cart) || !cart.length || !products.length) return;
+
+          let needsUpdate = false;
+
+          function normalizeImagePath(path) {
+            if (!path || typeof path !== "string") return "";
+            const cleanPath = path.trim();
+
+            if (
+              cleanPath.startsWith("http://") ||
+              cleanPath.startsWith("https://") ||
+              cleanPath.startsWith("/")
+            ) {
+              return cleanPath;
+            }
+
+            if (cleanPath.startsWith("./")) {
+              return cleanPath.replace("./", "");
+            }
+
+            if (cleanPath.startsWith("../")) {
+              return cleanPath.replace("../", "");
+            }
+
+            return cleanPath;
+          }
+
+          function getProductImage(product) {
+            if (!product) return "";
+
+            if (typeof product.image === "string" && product.image.trim()) {
+              return normalizeImagePath(product.image);
+            }
+
+            if (Array.isArray(product.images) && product.images.length) {
+              const firstImage = product.images[0];
+              if (typeof firstImage === "string" && firstImage.trim()) {
+                return normalizeImagePath(firstImage);
+              }
+            }
+
+            return "";
+          }
+
+          const fixedCart = cart.map(function (item) {
+            if (item.image && String(item.image).trim()) {
+              return item;
+            }
+
+            const match = products.find(function (product) {
+              if (item.slug && product.slug && item.slug === product.slug) return true;
+              if (item.id && product.id && String(item.id) === String(product.id)) return true;
+
+              if (Array.isArray(product.variants)) {
+                return product.variants.some(function (variant) {
+                  return item.id && variant.id && String(item.id) === String(variant.id);
+                });
+              }
+
+              return false;
+            });
+
+            const image = getProductImage(match);
+            if (!image) return item;
+
+            needsUpdate = true;
+            return {
+              ...item,
+              image: image
+            };
+          });
+
+          if (needsUpdate) {
+            localStorage.setItem("axiom_cart", JSON.stringify(fixedCart));
+            window.dispatchEvent(new Event("axiom-cart-updated"));
+            window.dispatchEvent(new Event("storage"));
+          }
+        } catch (error) {
+          console.error("Failed to repair cart images:", error);
+        }
+      }, 500);
     });
   </script>
 </body>
