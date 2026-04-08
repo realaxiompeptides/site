@@ -69,7 +69,7 @@ function getPaymentMethodDiscountRate(paymentMethod) {
   const normalized = normalizePaymentMethodValue(paymentMethod);
 
   if (normalized === "cashapp" || normalized === "crypto") {
-    return 0.08;
+    return 0.05;
   }
 
   return 0;
@@ -99,7 +99,7 @@ function buildDiscountSummary(subtotal, paymentMethod) {
   }
 
   if (paymentDiscountAmount > 0) {
-    labelParts.push("8% payment discount");
+    labelParts.push("5% payment discount");
   }
 
   return {
