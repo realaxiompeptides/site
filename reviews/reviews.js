@@ -49,6 +49,20 @@ function reviewsGetInitials(name) {
   return parts.map((part) => part.charAt(0).toUpperCase()).join("");
 }
 
+function reviewsGetAvatarClass(name) {
+  const initials = reviewsGetInitials(name);
+  const seed = initials.charCodeAt(0) + (initials.charCodeAt(1) || 0);
+  const classes = [
+    "is-blue",
+    "is-red",
+    "is-green",
+    "is-purple",
+    "is-orange",
+    "is-teal"
+  ];
+  return classes[seed % classes.length];
+}
+
 function reviewsRenderSummary(data) {
   const scoreEl = document.getElementById("reviewsAverageScore");
   const countEl = document.getElementById("reviewsTotalCount");
@@ -62,6 +76,7 @@ function reviewsRenderSummary(data) {
       .map((row) => {
         const label = reviewsEscapeHtml(String(row.stars || ""));
         const percent = Number(row.percent || 0);
+
         return `
           <div class="reviews-dist-row">
             <div class="reviews-dist-label">${label} ★</div>
@@ -88,14 +103,16 @@ function reviewsRenderMentions(data) {
 function reviewsBuildReviewCard(review) {
   const images = Array.isArray(review.images) ? review.images : [];
   const badges = Array.isArray(review.badges) ? review.badges : [];
+  const initials = reviewsGetInitials(review.name);
+  const avatarClass = reviewsGetAvatarClass(review.name);
 
   return `
     <article class="review-card">
       <div class="review-top">
         <div class="review-author-wrap">
-          <div class="review-avatar">${reviewsEscapeHtml(reviewsGetInitials(review.name))}</div>
+          <div class="review-avatar ${avatarClass}">${reviewsEscapeHtml(initials)}</div>
 
-          <div>
+          <div class="review-author-copy">
             <h3 class="review-author">${reviewsEscapeHtml(review.name)}</h3>
             <p class="review-meta">
               ${reviewsEscapeHtml(review.location || "")}${review.review_count ? ` • ${reviewsEscapeHtml(review.review_count)}` : ""}
@@ -125,6 +142,7 @@ function reviewsBuildReviewCard(review) {
                       src="${reviewsEscapeHtml(image)}"
                       alt="${reviewsEscapeHtml(review.title)}"
                       loading="lazy"
+                      onerror="this.style.display='none';"
                     />
                   `
                 )
@@ -143,6 +161,18 @@ function reviewsBuildReviewCard(review) {
           `
           : ""
       }
+
+      <div class="review-actions">
+        <button type="button" class="review-action-btn" aria-label="Mark review useful">
+          <i class="fa-regular fa-heart"></i>
+          <span>Useful</span>
+        </button>
+
+        <button type="button" class="review-action-btn" aria-label="Share review">
+          <i class="fa-solid fa-share-nodes"></i>
+          <span>Share</span>
+        </button>
+      </div>
     </article>
   `;
 }
@@ -185,7 +215,6 @@ function reviewsRenderList(data) {
 
 document.addEventListener("DOMContentLoaded", async function () {
   await Promise.all([
-    loadReviewsPartial("reviewsHeroMount", "partials/reviews-hero.html"),
     loadReviewsPartial("reviewsSummaryMount", "partials/reviews-summary.html"),
     loadReviewsPartial("reviewsMentionsMount", "partials/reviews-top-mentions.html"),
     loadReviewsPartial("reviewsListMount", "partials/reviews-list.html"),
