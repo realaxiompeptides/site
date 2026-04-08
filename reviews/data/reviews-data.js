@@ -1,6 +1,6 @@
 window.AXIOM_REVIEWS_DATA = {
   average_score: 4.9,
-  total_reviews: 4800,
+  total_reviews: 50,
   distribution: [
     { stars: 5, percent: 82 },
     { stars: 4, percent: 11 },
@@ -11,12 +11,12 @@ window.AXIOM_REVIEWS_DATA = {
   top_mentions: [
     "fast shipping",
     "great quality",
-    "third-party tested",
+    "Janoshik tested",
     "good communication",
+    "semaglutide",
+    "BPC-157",
     "crypto payment",
-    "USA warehouse",
-    "lab results",
-    "well packaged"
+    "USA warehouse"
   ],
   reviews: [
     {
@@ -26,11 +26,14 @@ window.AXIOM_REVIEWS_DATA = {
       rating: 5,
       date: "2026-01-28",
       title: "Semaglutide from Axiom is the real deal",
-      body: "Fifth order from Axiom and the semaglutide has been consistently high quality. Shipping was quick and communication stayed clear the whole way through. Packaging was clean and everything arrived in good condition.",
+      body: "Fifth order from Axiom now and the semaglutide is consistently top quality. Sent my last batch to Janoshik and it came back at 99.1% purity. Shipped from the USA warehouse and arrived fast. Paid with Bitcoin and the whole process was seamless.",
       images: [
         "../images/reviews/review-1.jpg"
       ],
-      badges: ["Date of experience: January 25, 2026", "Verified purchase"]
+      badges: [
+        "Date of experience: January 25, 2026",
+        "Verified purchase"
+      ]
     },
     {
       name: "Jessica W.",
@@ -38,10 +41,13 @@ window.AXIOM_REVIEWS_DATA = {
       review_count: "2 reviews",
       rating: 5,
       date: "2026-01-26",
-      title: "Very smooth order process",
-      body: "The ordering process was straightforward, tracking updated properly, and the products arrived well packed. Overall a very professional experience.",
+      title: "BPC-157 and TB-500 combo arrived perfectly",
+      body: "Ordered the BPC-157 and TB-500 research combo and everything arrived packed well. Communication through Telegram was excellent and updates were clear from start to finish.",
       images: [],
-      badges: ["Date of experience: January 20, 2026", "Verified purchase"]
+      badges: [
+        "Date of experience: January 21, 2026",
+        "Verified purchase"
+      ]
     },
     {
       name: "Daniel R.",
@@ -50,9 +56,12 @@ window.AXIOM_REVIEWS_DATA = {
       rating: 5,
       date: "2026-01-20",
       title: "Fast dispatch and strong communication",
-      body: "Customer support answered questions quickly and the order shipped faster than expected. Quality has been solid across multiple orders.",
+      body: "Customer support answered my questions quickly and the order shipped faster than expected. Packaging was clean and professional and product presentation was excellent.",
       images: [],
-      badges: ["Date of experience: January 18, 2026", "Verified purchase"]
+      badges: [
+        "Date of experience: January 18, 2026",
+        "Verified purchase"
+      ]
     },
     {
       name: "Sarah L.",
@@ -61,9 +70,11 @@ window.AXIOM_REVIEWS_DATA = {
       rating: 4,
       date: "2026-01-12",
       title: "Good experience overall",
-      body: "Packaging was secure and the items matched what I ordered. I would like slightly faster tracking updates, but the products and support were both good.",
+      body: "Everything matched what I ordered and the packaging was secure. I would like slightly faster tracking updates, but the products and communication were both good.",
       images: [],
-      badges: ["Date of experience: January 10, 2026"]
+      badges: [
+        "Date of experience: January 10, 2026"
+      ]
     }
   ]
 };
