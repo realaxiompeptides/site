@@ -30,14 +30,6 @@ function reviewsFormatDate(value) {
   });
 }
 
-function reviewsRenderStars(count) {
-  const safeCount = Math.max(0, Math.min(5, Number(count || 0)));
-  return Array.from({ length: 5 }, (_, index) => {
-    const filled = index < safeCount;
-    return `<i class="${filled ? "fa-solid" : "fa-regular"} fa-star"></i>`;
-  }).join("");
-}
-
 function reviewsGetInitials(name) {
   const parts = String(name || "")
     .trim()
@@ -61,6 +53,20 @@ function reviewsGetAvatarClass(name) {
     "is-teal"
   ];
   return classes[seed % classes.length];
+}
+
+function reviewsRenderTrustStars(count) {
+  const safeCount = Math.max(0, Math.min(5, Number(count || 0)));
+
+  return Array.from({ length: 5 }, (_, index) => {
+    const filled = index < safeCount;
+
+    return `
+      <span class="review-star-box ${filled ? "is-filled" : "is-empty"}" aria-hidden="true">
+        <i class="${filled ? "fa-solid" : "fa-regular"} fa-star"></i>
+      </span>
+    `;
+  }).join("");
 }
 
 function reviewsRenderSummary(data) {
@@ -100,14 +106,15 @@ function reviewsRenderMentions(data) {
     .join("");
 }
 
-function reviewsBuildReviewCard(review) {
+function reviewsBuildReviewCard(review, index) {
   const images = Array.isArray(review.images) ? review.images : [];
   const badges = Array.isArray(review.badges) ? review.badges : [];
   const initials = reviewsGetInitials(review.name);
   const avatarClass = reviewsGetAvatarClass(review.name);
+  const usefulCount = Number(review.useful_count || 0);
 
   return `
-    <article class="review-card">
+    <article class="review-card" data-review-index="${index}">
       <div class="review-top">
         <div class="review-author-wrap">
           <div class="review-avatar ${avatarClass}">${reviewsEscapeHtml(initials)}</div>
@@ -123,8 +130,8 @@ function reviewsBuildReviewCard(review) {
         <div class="review-date">${reviewsEscapeHtml(reviewsFormatDate(review.date))}</div>
       </div>
 
-      <div class="review-stars">
-        ${reviewsRenderStars(review.rating)}
+      <div class="review-stars review-stars-trust">
+        ${reviewsRenderTrustStars(review.rating)}
       </div>
 
       <h4 class="review-title">${reviewsEscapeHtml(review.title)}</h4>
@@ -163,18 +170,97 @@ function reviewsBuildReviewCard(review) {
       }
 
       <div class="review-actions">
-        <button type="button" class="review-action-btn" aria-label="Mark review useful">
+        <button
+          type="button"
+          class="review-action-btn review-useful-btn"
+          data-useful="${index}"
+          aria-label="Mark review useful"
+        >
           <i class="fa-regular fa-heart"></i>
-          <span>Useful</span>
+          <span>${usefulCount > 0 ? `Useful (${usefulCount})` : "Useful"}</span>
         </button>
 
-        <button type="button" class="review-action-btn" aria-label="Share review">
+        <button
+          type="button"
+          class="review-action-btn review-share-btn"
+          data-share="${index}"
+          aria-label="Share review"
+        >
           <i class="fa-solid fa-share-nodes"></i>
           <span>Share</span>
         </button>
       </div>
     </article>
   `;
+}
+
+function reviewsBindActions() {
+  const usefulButtons = document.querySelectorAll(".review-useful-btn");
+  const shareButtons = document.querySelectorAll(".review-share-btn");
+
+  usefulButtons.forEach((button) => {
+    if (button.dataset.bound === "true") return;
+    button.dataset.bound = "true";
+
+    button.addEventListener("click", function () {
+      const isActive = this.classList.toggle("is-active");
+      const icon = this.querySelector("i");
+      const label = this.querySelector("span");
+
+      if (icon) {
+        icon.className = isActive ? "fa-solid fa-heart" : "fa-regular fa-heart";
+      }
+
+      const reviewIndex = Number(this.getAttribute("data-useful"));
+      const data = window.AXIOM_REVIEWS_DATA || {};
+      const review = Array.isArray(data.reviews) ? data.reviews[reviewIndex] : null;
+      const baseCount = Number(review?.useful_count || 0);
+
+      if (label) {
+        label.textContent = isActive
+          ? `Useful (${baseCount + 1})`
+          : (baseCount > 0 ? `Useful (${baseCount})` : "Useful");
+      }
+    });
+  });
+
+  shareButtons.forEach((button) => {
+    if (button.dataset.bound === "true") return;
+    button.dataset.bound = "true";
+
+    button.addEventListener("click", async function () {
+      const reviewIndex = Number(this.getAttribute("data-share"));
+      const data = window.AXIOM_REVIEWS_DATA || {};
+      const review = Array.isArray(data.reviews) ? data.reviews[reviewIndex] : null;
+
+      const shareTitle = review?.title || "Axiom Review";
+      const shareText = review?.body || "Read this review on Axiom Peptides.";
+      const shareUrl = window.location.href;
+
+      try {
+        if (navigator.share) {
+          await navigator.share({
+            title: shareTitle,
+            text: shareText,
+            url: shareUrl
+          });
+        } else {
+          await navigator.clipboard.writeText(shareUrl);
+          const label = this.querySelector("span");
+          const original = label ? label.textContent : "Share";
+
+          if (label) {
+            label.textContent = "Copied";
+            setTimeout(() => {
+              label.textContent = original;
+            }, 1200);
+          }
+        }
+      } catch (error) {
+        console.error("Share failed:", error);
+      }
+    });
+  });
 }
 
 function reviewsRenderList(data) {
@@ -201,8 +287,10 @@ function reviewsRenderList(data) {
     }
 
     listEl.innerHTML = reviews.length
-      ? reviews.map(reviewsBuildReviewCard).join("")
+      ? reviews.map((review, index) => reviewsBuildReviewCard(review, index)).join("")
       : `<p class="reviews-empty">No reviews available yet.</p>`;
+
+    reviewsBindActions();
   };
 
   if (sortEl && !sortEl.dataset.bound) {
