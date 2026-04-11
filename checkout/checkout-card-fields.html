@@ -1,35 +1,65 @@
-<section id="checkoutCardFieldsSection" class="checkout-card-fields-section" hidden>
+<section
+  id="checkoutCardFieldsSection"
+  class="checkout-card-fields-section"
+  hidden
+>
   <div class="checkout-card-fields-box">
-    <h3 class="checkout-card-fields-title">Card Details</h3>
-
-    <div class="checkout-card-field-group">
-      <input
-        type="text"
-        id="cardHolderName"
-        class="checkout-input"
-        placeholder="Name on Card"
-        autocomplete="cc-name"
-      />
+    <div class="checkout-card-fields-header">
+      <h3 class="checkout-card-fields-title">Card Details</h3>
+      <p class="checkout-card-fields-subtitle">
+        Enter your card information below to complete payment securely.
+      </p>
     </div>
 
-    <div class="checkout-card-field-group">
-      <input
-        type="text"
-        id="cardNumber"
-        class="checkout-input"
-        placeholder="Card Number"
-        inputmode="numeric"
-        autocomplete="cc-number"
-        maxlength="23"
-      />
+    <div class="checkout-card-brand-row" aria-hidden="true">
+      <span class="checkout-card-brand-pill">
+        <i class="fa-brands fa-cc-visa"></i>
+        <span>Visa</span>
+      </span>
+
+      <span class="checkout-card-brand-pill">
+        <i class="fa-brands fa-cc-mastercard"></i>
+        <span>Mastercard</span>
+      </span>
+
+      <span class="checkout-card-brand-pill">
+        <i class="fa-brands fa-cc-amex"></i>
+        <span>Amex</span>
+      </span>
+
+      <span class="checkout-card-brand-pill">
+        <i class="fa-brands fa-cc-discover"></i>
+        <span>Discover</span>
+      </span>
     </div>
 
-    <div class="checkout-grid two-col">
-      <div class="checkout-card-field-group">
+    <div class="checkout-card-fields-grid">
+      <div class="checkout-field-group checkout-card-field-full">
         <input
+          class="checkout-input"
+          type="text"
+          id="cardHolderName"
+          placeholder="Name on Card"
+          autocomplete="cc-name"
+        />
+      </div>
+
+      <div class="checkout-field-group checkout-card-field-full">
+        <input
+          class="checkout-input"
+          type="text"
+          id="cardNumber"
+          placeholder="Card Number"
+          inputmode="numeric"
+          autocomplete="cc-number"
+        />
+      </div>
+
+      <div class="checkout-field-group">
+        <input
+          class="checkout-input"
           type="text"
           id="cardExpiryMonth"
-          class="checkout-input"
           placeholder="Expiry Month (MM)"
           inputmode="numeric"
           autocomplete="cc-exp-month"
@@ -37,31 +67,31 @@
         />
       </div>
 
-      <div class="checkout-card-field-group">
+      <div class="checkout-field-group">
         <input
+          class="checkout-input"
           type="text"
           id="cardExpiryYear"
-          class="checkout-input"
           placeholder="Expiry Year (YYYY)"
           inputmode="numeric"
           autocomplete="cc-exp-year"
           maxlength="4"
         />
       </div>
+
+      <div class="checkout-field-group checkout-card-field-full">
+        <input
+          class="checkout-input"
+          type="text"
+          id="cardCvv"
+          placeholder="CVV"
+          inputmode="numeric"
+          autocomplete="cc-csc"
+          maxlength="4"
+        />
+      </div>
     </div>
 
-    <div class="checkout-card-field-group">
-      <input
-        type="text"
-        id="cardCvv"
-        class="checkout-input"
-        placeholder="CVV"
-        inputmode="numeric"
-        autocomplete="cc-csc"
-        maxlength="4"
-      />
-    </div>
-
-    <div id="checkoutCardStatus" class="checkout-validation-text" style="display:block;"></div>
+    <div id="checkoutCardStatus" class="checkout-card-status" aria-live="polite"></div>
   </div>
 </section>
