@@ -2,7 +2,7 @@
   <h2 class="checkout-section-title">Payment options</h2>
 
   <div class="checkout-payment-options" id="paymentOptionsGroup">
-    <label class="checkout-payment-option">
+    <label class="checkout-payment-option checkout-payment-option-card">
       <input
         type="radio"
         name="paymentMethod"
@@ -13,10 +13,20 @@
 
       <span class="checkout-payment-content">
         <span class="checkout-payment-title">
-          Credit / Debit Card
+          <span class="checkout-payment-title-row">
+            <span>Credit / Debit Card</span>
+
+            <span class="checkout-payment-card-icons" aria-hidden="true">
+              <i class="fa-brands fa-cc-visa"></i>
+              <i class="fa-brands fa-cc-mastercard"></i>
+              <i class="fa-brands fa-cc-amex"></i>
+              <i class="fa-brands fa-cc-discover"></i>
+            </span>
+          </span>
         </span>
+
         <span class="checkout-payment-description">
-          Pay securely with your credit or debit card. Card payments are processed directly during checkout.
+          Pay securely with your credit or debit card directly at checkout.
         </span>
       </span>
     </label>
@@ -116,7 +126,7 @@
           Apple Pay (please include your order # in the note if prompted)
         </span>
         <span class="checkout-payment-description">
-          Place your order, then follow the instructions on the order confirmation page to complete payment with Apple Pay.
+          Place your order, then follow the order confirmation page instructions to complete payment with Apple Pay.
         </span>
       </span>
     </label>
