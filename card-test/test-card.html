@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+  />
+  <title>Card Payment Test | Axiom</title>
+  <meta name="robots" content="noindex, nofollow" />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap"
+    rel="stylesheet"
+  />
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+  />
+
+  <style>
+    :root {
+      --bg: #f4f7fb;
+      --card: #ffffff;
+      --border: #dbe4ef;
+      --text: #12203f;
+      --muted: #64748b;
+      --accent: #2f84bf;
+      --accent-dark: #256b9a;
+      --danger: #b42318;
+      --success: #0f766e;
+      --shadow: 0 18px 40px rgba(15, 23, 42, 0.06);
+      --radius-xl: 28px;
+      --radius-lg: 20px;
+      --radius-md: 16px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Inter", sans-serif;
+      background: linear-gradient(180deg, #f8fbff 0%, var(--bg) 100%);
+      color: var(--text);
+      padding: 28px 16px 56px;
+    }
+
+    .wrap {
+      max-width: 760px;
+      margin: 0 auto;
+    }
+
+    .top {
+      margin-bottom: 20px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 34px;
+      padding: 0 14px;
+      border-radius: 999px;
+      background: rgba(47, 132, 191, 0.1);
+      color: var(--accent-dark);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      margin-bottom: 14px;
+    }
+
+    h1 {
+      margin: 0 0 10px;
+      font-size: 34px;
+      line-height: 1.05;
+      font-weight: 900;
+      letter-spacing: -0.03em;
+      color: var(--text);
+    }
+
+    .sub {
+      margin: 0;
+      font-size: 16px;
+      line-height: 1.7;
+      color: var(--muted);
+      max-width: 620px;
+    }
+
+    .panel {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .panel-head {
+      padding: 24px 24px 0;
+    }
+
+    .panel-title {
+      margin: 0 0 8px;
+      font-size: 28px;
+      line-height: 1.08;
+      font-weight: 900;
+      letter-spacing: -0.02em;
+      color: var(--text);
+    }
+
+    .panel-copy {
+      margin: 0;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.7;
+    }
+
+    .brands {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding: 18px 24px 0;
+    }
+
+    .brand-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      min-height: 44px;
+      padding: 0 14px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: #fff;
+      color: var(--text);
+      font-size: 14px;
+      font-weight: 800;
+    }
+
+    .brand-pill i {
+      font-size: 24px;
+    }
+
+    .form {
+      padding: 22px 24px 24px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    .field-full {
+      grid-column: 1 / -1;
+    }
+
+    .label {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--text);
+    }
+
+    .input,
+    .select,
+    .textarea {
+      width: 100%;
+      min-height: 58px;
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      background: #fff;
+      color: var(--text);
+      font: inherit;
+      font-size: 16px;
+      font-weight: 600;
+      padding: 0 18px;
+      outline: none;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .textarea {
+      min-height: 120px;
+      padding: 16px 18px;
+      resize: vertical;
+    }
+
+    .input:focus,
+    .select:focus,
+    .textarea:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 4px rgba(47, 132, 191, 0.12);
+    }
+
+    .helper {
+      margin-top: 8px;
+      font-size: 13px;
+      line-height: 1.55;
+      color: var(--muted);
+    }
+
+    .actions {
+      padding: 0 24px 24px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .btn {
+      border: 0;
+      border-radius: 18px;
+      min-height: 58px;
+      padding: 0 22px;
+      font: inherit;
+      font-size: 15px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: transform 0.15s ease, opacity 0.2s ease, background 0.2s ease;
+    }
+
+    .btn:disabled {
+      opacity: 0.65;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #4fa2dc, #2f84bf);
+      color: #fff;
+      box-shadow: 0 14px 30px rgba(47, 132, 191, 0.24);
+    }
+
+    .btn-secondary {
+      background: #fff;
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .status {
+      margin: 0 24px 20px;
+      min-height: 22px;
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--muted);
+    }
+
+    .status.error {
+      color: var(--danger);
+    }
+
+    .status.success {
+      color: var(--success);
+    }
+
+    .output-wrap {
+      margin-top: 20px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .output-head {
+      padding: 20px 22px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .output-title {
+      margin: 0;
+      font-size: 20px;
+      font-weight: 900;
+      color: var(--text);
+    }
+
+    .output {
+      margin: 0;
+      padding: 18px 22px 22px;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 13px;
+      line-height: 1.6;
+      color: #0f172a;
+      background: #fbfdff;
+    }
+
+    @media (max-width: 640px) {
+      h1 {
+        font-size: 28px;
+      }
+
+      .panel-title {
+        font-size: 24px;
+      }
+
+      .form {
+        grid-template-columns: 1fr;
+      }
+
+      .field-full {
+        grid-column: auto;
+      }
+
+      .panel-head,
+      .brands,
+      .form,
+      .actions {
+        padding-left: 18px;
+        padding-right: 18px;
+      }
+
+      .status {
+        margin-left: 18px;
+        margin-right: 18px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="top">
+      <div class="eyebrow">
+        <i class="fa-solid fa-vial"></i>
+        Card payment test page
+      </div>
+      <h1>Test card transactions</h1>
+      <p class="sub">
+        This page is only for testing your Supabase card edge function and Quiklie connection. Do not link this page publicly.
+      </p>
+    </div>
+
+    <section class="panel">
+      <div class="panel-head">
+        <h2 class="panel-title">Create card payment request</h2>
+        <p class="panel-copy">
+          Paste a real checkout session ID from your <code>checkout_sessions</code> table, then send a test payment request.
+        </p>
+      </div>
+
+      <div class="brands">
+        <span class="brand-pill"><i class="fa-brands fa-cc-visa"></i>Visa</span>
+        <span class="brand-pill"><i class="fa-brands fa-cc-mastercard"></i>Mastercard</span>
+        <span class="brand-pill"><i class="fa-brands fa-cc-amex"></i>Amex</span>
+        <span class="brand-pill"><i class="fa-brands fa-cc-discover"></i>Discover</span>
+      </div>
+
+      <form id="cardTestForm" class="form" novalidate>
+        <div class="field-full">
+          <label class="label" for="sessionId">Checkout Session ID</label>
+          <input class="input" id="sessionId" type="text" placeholder="CHK-XXXXXXXX-XXXXXXXX" />
+          <div class="helper">Use a real session_id from your checkout_sessions table.</div>
+        </div>
+
+        <div>
+          <label class="label" for="firstName">First Name</label>
+          <input class="input" id="firstName" type="text" placeholder="Test" />
+        </div>
+
+        <div>
+          <label class="label" for="lastName">Last Name</label>
+          <input class="input" id="lastName" type="text" placeholder="User" />
+        </div>
+
+        <div class="field-full">
+          <label class="label" for="email">Email</label>
+          <input class="input" id="email" type="email" placeholder="test@example.com" />
+        </div>
+
+        <div>
+          <label class="label" for="phone">Phone</label>
+          <input class="input" id="phone" type="text" placeholder="5551234567" />
+        </div>
+
+        <div>
+          <label class="label" for="zipCode">ZIP Code</label>
+          <input class="input" id="zipCode" type="text" placeholder="90001" />
+        </div>
+
+        <div class="field-full">
+          <label class="label" for="address">Street Address</label>
+          <input class="input" id="address" type="text" placeholder="123 Test St" />
+        </div>
+
+        <div>
+          <label class="label" for="city">City</label>
+          <input class="input" id="city" type="text" placeholder="Los Angeles" />
+        </div>
+
+        <div>
+          <label class="label" for="state">State</label>
+          <input class="input" id="state" type="text" placeholder="CA" />
+        </div>
+
+        <div>
+          <label class="label" for="country">Country</label>
+          <input class="input" id="country" type="text" placeholder="US" value="US" />
+        </div>
+
+        <div>
+          <label class="label" for="ipAddress">IP Address</label>
+          <input class="input" id="ipAddress" type="text" placeholder="127.0.0.1" value="127.0.0.1" />
+        </div>
+
+        <div class="field-full">
+          <label class="label" for="cardNumber">Card Number</label>
+          <input class="input" id="cardNumber" type="text" placeholder="4111 1111 1111 1111" />
+        </div>
+
+        <div>
+          <label class="label" for="cardExpiryMonth">Expiry Month</label>
+          <input class="input" id="cardExpiryMonth" type="text" placeholder="12" />
+        </div>
+
+        <div>
+          <label class="label" for="cardExpiryYear">Expiry Year</label>
+          <input class="input" id="cardExpiryYear" type="text" placeholder="2027" />
+        </div>
+
+        <div class="field-full">
+          <label class="label" for="cardCvv">CVV</label>
+          <input class="input" id="cardCvv" type="text" placeholder="123" />
+        </div>
+      </form>
+
+      <div id="cardTestStatus" class="status"></div>
+
+      <div class="actions">
+        <button id="sendCreatePaymentBtn" class="btn btn-primary" type="button">
+          Send create-card-payment test
+        </button>
+        <button id="fillSampleBtn" class="btn btn-secondary" type="button">
+          Fill sample values
+        </button>
+        <button id="clearOutputBtn" class="btn btn-secondary" type="button">
+          Clear output
+        </button>
+      </div>
+    </section>
+
+    <section class="output-wrap">
+      <div class="output-head">
+        <h3 class="output-title">Response</h3>
+      </div>
+      <pre id="cardTestOutput" class="output">No request sent yet.</pre>
+    </section>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../admin-dashboard/dashboard-config.js"></script>
+  <script src="../admin-dashboard/shared/tracking-config.js"></script>
+  <script src="../admin-dashboard/shared/helpers.js"></script>
+  <script src="../admin-dashboard/supabase-client.js"></script>
+  <script src="test-card.js"></script>
+</body>
+</html>
