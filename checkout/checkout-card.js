@@ -99,13 +99,63 @@ function axiomGetCheckoutValue(id) {
   return document.getElementById(id)?.value?.trim() || "";
 }
 
+function axiomFormatCardNumber(value) {
+  return String(value || "")
+    .replace(/\D/g, "")
+    .slice(0, 19)
+    .replace(/(.{4})/g, "$1 ")
+    .trim();
+}
+
+function axiomFormatDigits(value, maxLength) {
+  return String(value || "")
+    .replace(/\D/g, "")
+    .slice(0, maxLength);
+}
+
+function axiomBindCardFieldFormatting() {
+  const cardNumberEl = document.getElementById("cardNumber");
+  const monthEl = document.getElementById("cardExpiryMonth");
+  const yearEl = document.getElementById("cardExpiryYear");
+  const cvvEl = document.getElementById("cardCvv");
+
+  if (cardNumberEl && cardNumberEl.dataset.formatBound !== "true") {
+    cardNumberEl.dataset.formatBound = "true";
+    cardNumberEl.addEventListener("input", function () {
+      this.value = axiomFormatCardNumber(this.value);
+    });
+  }
+
+  if (monthEl && monthEl.dataset.formatBound !== "true") {
+    monthEl.dataset.formatBound = "true";
+    monthEl.addEventListener("input", function () {
+      this.value = axiomFormatDigits(this.value, 2);
+    });
+  }
+
+  if (yearEl && yearEl.dataset.formatBound !== "true") {
+    yearEl.dataset.formatBound = "true";
+    yearEl.addEventListener("input", function () {
+      this.value = axiomFormatDigits(this.value, 4);
+    });
+  }
+
+  if (cvvEl && cvvEl.dataset.formatBound !== "true") {
+    cvvEl.dataset.formatBound = "true";
+    cvvEl.addEventListener("input", function () {
+      this.value = axiomFormatDigits(this.value, 4);
+    });
+  }
+}
+
 function axiomGetCardPayload() {
-  const cardHolderName =
-    axiomGetCheckoutValue("cardHolderName") ||
-    [axiomGetCheckoutValue("firstName"), axiomGetCheckoutValue("lastName")]
-      .filter(Boolean)
-      .join(" ")
-      .trim();
+  const cardHolderName = [
+    axiomGetCheckoutValue("firstName"),
+    axiomGetCheckoutValue("lastName")
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
 
   return {
     cardHolderName,
@@ -117,11 +167,23 @@ function axiomGetCardPayload() {
 }
 
 function axiomValidateCardPayload(payload) {
-  if (!payload.cardHolderName) return "Name on card is required.";
+  if (!payload.cardHolderName) return "Enter your first and last name above.";
   if (!payload.cardNumber || payload.cardNumber.length < 12) return "Enter a valid card number.";
   if (!payload.cardExpiryMonth || payload.cardExpiryMonth.length < 2) return "Enter a valid expiry month.";
   if (!payload.cardExpiryYear || payload.cardExpiryYear.length < 4) return "Enter a valid expiry year.";
   if (!payload.cardCvv || payload.cardCvv.length < 3) return "Enter a valid CVV.";
+
+  const month = Number(payload.cardExpiryMonth);
+  const year = Number(payload.cardExpiryYear);
+
+  if (!Number.isFinite(month) || month < 1 || month > 12) {
+    return "Enter a valid expiry month.";
+  }
+
+  if (!Number.isFinite(year) || year < new Date().getFullYear()) {
+    return "Enter a valid expiry year.";
+  }
+
   return "";
 }
 
@@ -145,6 +207,30 @@ function axiomGetOrderNumberFromSessionOrResponse(response) {
   }
 
   return response?.order_number || "";
+}
+
+async function axiomPatchSuccessfulCardPayment(orderNumber, transactionId, rawResponse) {
+  if (!window.AXIOM_CHECKOUT_SESSION || typeof window.AXIOM_CHECKOUT_SESSION.patchSession !== "function") {
+    return;
+  }
+
+  try {
+    await window.AXIOM_CHECKOUT_SESSION.patchSession({
+      session_status: "pending_payment",
+      payment_status: "paid",
+      payment_method: "creditcard",
+      order_number: orderNumber || null,
+      gateway_name: "quiklie",
+      gateway_transaction_id: transactionId || null,
+      gateway_status: "SUCCESS",
+      gateway_status_code: "1",
+      gateway_response_raw: rawResponse || null,
+      payment_collected_at: new Date().toISOString(),
+      last_activity_at: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error("Failed to patch successful card payment:", error);
+  }
 }
 
 async function axiomHandleCreditCardCheckoutSubmit(e) {
@@ -204,15 +290,26 @@ async function axiomHandleCreditCardCheckoutSubmit(e) {
 
     const status = String(response?.status || "").toUpperCase();
     const statusCode = String(response?.statusCode || "");
-    const redirectUrl =
-      String(response?.redirectUrl || response?.quikleeRedirectUrl || "").trim();
+    const redirectUrl = String(
+      response?.redirectUrl ||
+      response?.quikleeRedirectUrl ||
+      response?.redirect_url ||
+      ""
+    ).trim();
 
     if (status === "SUCCESS" || statusCode === "1") {
       axiomSetCardStatus("Payment successful. Redirecting...", "success");
 
-      await axiomRefreshCheckoutSessionIfPossible();
-
       const orderNumber = axiomGetOrderNumberFromSessionOrResponse(response);
+      const transactionId =
+        response?.transactionId ||
+        response?.qkpaymentId ||
+        response?.quikleePaymentId ||
+        response?.transaction_id ||
+        "";
+
+      await axiomPatchSuccessfulCardPayment(orderNumber, transactionId, response);
+      await axiomRefreshCheckoutSessionIfPossible();
 
       if (!orderNumber) {
         window.location.href = "../thank-you/thank-you.html";
@@ -236,7 +333,11 @@ async function axiomHandleCreditCardCheckoutSubmit(e) {
       }
 
       const otpResponse = await axiomInvokeFunction("quiklie-verify-otp", {
-        transactionId: response?.transactionId || response?.qkpaymentId || response?.quikleePaymentId,
+        transactionId:
+          response?.transactionId ||
+          response?.qkpaymentId ||
+          response?.quikleePaymentId ||
+          response?.transaction_id,
         otp
       });
 
@@ -244,11 +345,21 @@ async function axiomHandleCreditCardCheckoutSubmit(e) {
       const otpStatusCode = String(otpResponse?.statusCode || "");
 
       if (otpStatus === "SUCCESS" || otpStatusCode === "1") {
-        await axiomRefreshCheckoutSessionIfPossible();
-
         const orderNumber =
           axiomGetOrderNumberFromSessionOrResponse(otpResponse) ||
           axiomGetOrderNumberFromSessionOrResponse(response);
+
+        const transactionId =
+          otpResponse?.transactionId ||
+          otpResponse?.qkpaymentId ||
+          otpResponse?.quikleePaymentId ||
+          response?.transactionId ||
+          response?.qkpaymentId ||
+          response?.quikleePaymentId ||
+          "";
+
+        await axiomPatchSuccessfulCardPayment(orderNumber, transactionId, otpResponse);
+        await axiomRefreshCheckoutSessionIfPossible();
 
         if (!orderNumber) {
           window.location.href = "../thank-you/thank-you.html";
@@ -303,6 +414,7 @@ async function axiomMountCardFieldsWhenReady() {
         }
       }
 
+      axiomBindCardFieldFormatting();
       axiomBindCardPaymentVisibility();
       axiomToggleCardFields();
       return;
