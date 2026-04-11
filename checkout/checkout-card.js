@@ -300,7 +300,7 @@ async function axiomHandleCreditCardCheckoutSubmit(e) {
 
     axiomSetCardStatus("Processing card payment...", "success");
 
-    const response = await axiomInvokeFunction("quiklie-create-payment", {
+    const response = await axiomInvokeFunction("create-card-payment", {
       session_id: sessionId,
       firstName,
       lastName,
@@ -359,7 +359,7 @@ async function axiomHandleCreditCardCheckoutSubmit(e) {
         return;
       }
 
-      const otpResponse = await axiomInvokeFunction("quiklie-verify-otp", {
+      const otpResponse = await axiomInvokeFunction("get-card-payment-status", {
         session_id: sessionId,
         transactionId:
           response?.transactionId ||
