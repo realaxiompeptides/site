@@ -768,15 +768,7 @@ async function syncLocalCartIntoSession(forceUseLocal = false) {
       total_amount: totalAmount,
       session_status: "active",
       payment_method: selectedPaymentMethod || null,
-      last_activity_at: new Date().toISOString(),
-
-      affiliate_id: null,
-      affiliate_code: null,
-      affiliate_click_id: null,
-      affiliate_referral_session_id: null,
-      affiliate_landing_page: null,
-      affiliate_discount_amount: 0,
-      affiliate_commission_amount: 0
+      last_activity_at: new Date().toISOString()
     });
 
     await fetchCurrentCheckoutSession();
@@ -801,14 +793,6 @@ async function syncLocalCartIntoSession(forceUseLocal = false) {
 
     session.shipping_selection.amount = existingShippingAmount;
     session.session_status = "active";
-
-    delete session.affiliate_id;
-    delete session.affiliate_code;
-    delete session.affiliate_click_id;
-    delete session.affiliate_referral_session_id;
-    delete session.affiliate_landing_page;
-    delete session.affiliate_discount_amount;
-    delete session.affiliate_commission_amount;
 
     window.AXIOM_CHECKOUT_SESSION.saveSession(session);
     axiomCurrentCheckoutSession = normalizeSessionShape(session);
@@ -911,15 +895,7 @@ async function syncCheckoutSessionFromForm() {
         discountSummary.paymentDiscountAmount > 0
           ? `Includes 5% payment discount for ${paymentMethod}.`
           : null,
-      last_activity_at: new Date().toISOString(),
-
-      affiliate_id: null,
-      affiliate_code: null,
-      affiliate_click_id: null,
-      affiliate_referral_session_id: null,
-      affiliate_landing_page: null,
-      affiliate_discount_amount: 0,
-      affiliate_commission_amount: 0
+      last_activity_at: new Date().toISOString()
     });
   } else if (hasLocalCheckoutSession()) {
     const session = window.AXIOM_CHECKOUT_SESSION.getSession();
@@ -954,14 +930,6 @@ async function syncCheckoutSessionFromForm() {
       discountSummary.paymentDiscountAmount > 0
         ? `Includes 5% payment discount for ${paymentMethod}.`
         : null;
-
-    delete session.affiliate_id;
-    delete session.affiliate_code;
-    delete session.affiliate_click_id;
-    delete session.affiliate_referral_session_id;
-    delete session.affiliate_landing_page;
-    delete session.affiliate_discount_amount;
-    delete session.affiliate_commission_amount;
 
     window.AXIOM_CHECKOUT_SESSION.saveSession(session);
   }
@@ -1587,30 +1555,13 @@ document.addEventListener("submit", async function (e) {
       session_status: "pending_payment",
       payment_status: "unpaid",
       payment_method: selectedPaymentMethod,
-      last_activity_at: new Date().toISOString(),
-
-      affiliate_id: null,
-      affiliate_code: null,
-      affiliate_click_id: null,
-      affiliate_referral_session_id: null,
-      affiliate_landing_page: null,
-      affiliate_discount_amount: 0,
-      affiliate_commission_amount: 0
+      last_activity_at: new Date().toISOString()
     });
   } else if (hasLocalCheckoutSession()) {
     const session = window.AXIOM_CHECKOUT_SESSION.getSession();
     session.session_status = "pending_payment";
     session.payment_status = "unpaid";
     session.payment_method = selectedPaymentMethod;
-
-    delete session.affiliate_id;
-    delete session.affiliate_code;
-    delete session.affiliate_click_id;
-    delete session.affiliate_referral_session_id;
-    delete session.affiliate_landing_page;
-    delete session.affiliate_discount_amount;
-    delete session.affiliate_commission_amount;
-
     window.AXIOM_CHECKOUT_SESSION.saveSession(session);
   }
 });
