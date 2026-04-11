@@ -707,6 +707,7 @@
               </section>
 
               <div id="payment-methods"></div>
+              <div id="checkoutCardFieldsMount"></div>
 
               <section class="checkout-section">
                 <div class="checkout-summary-static">
@@ -921,9 +922,6 @@
   <script src="discount-codes/discount-codes-api.js" defer></script>
   <script src="discount-codes/discount-codes-ui.js" defer></script>
 
-  <!-- MOVED UP: affiliate tracking must load BEFORE checkout session + order scripts -->
-  <script src="../affiliate-program/affiliate-tracking.js" defer></script>
-
   <script src="checkout-session.js" defer></script>
   <script src="../admin-dashboard/checkout-session/checkout-session.js" defer></script>
 
@@ -933,5 +931,6 @@
   <script src="../admin-dashboard/orders/checkout-order-submit.js" defer></script>
 
   <script src="checkout.js" defer></script>
+  <script src="checkout-card.js" defer></script>
 </body>
 </html>
