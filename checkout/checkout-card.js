@@ -13,13 +13,19 @@ function axiomSetCardStatus(message, type) {
   if (type === "success") el.classList.add("success");
 }
 
+function axiomNormalizeCardPaymentMethod(value) {
+  const normalized = String(value || "").trim().toLowerCase();
+  if (normalized === "credit_card") return "creditcard";
+  if (normalized === "credit card") return "creditcard";
+  if (normalized === "card") return "creditcard";
+  return normalized;
+}
+
 function axiomCardSelected() {
   const checked = document.querySelector('input[name="paymentMethod"]:checked');
   if (!checked) return false;
 
-  return ["creditcard", "credit_card", "card"].includes(
-    String(checked.value || "").trim().toLowerCase()
-  );
+  return axiomNormalizeCardPaymentMethod(checked.value) === "creditcard";
 }
 
 function axiomToggleCardFields() {
@@ -110,13 +116,6 @@ async function axiomRefreshCheckoutSessionIfPossible() {
 
 function axiomGetOrderNumberFromSessionOrResponse(response) {
   if (
-    window.axiomCurrentCheckoutSession &&
-    window.axiomCurrentCheckoutSession.order_number
-  ) {
-    return window.axiomCurrentCheckoutSession.order_number;
-  }
-
-  if (
     typeof axiomCurrentCheckoutSession !== "undefined" &&
     axiomCurrentCheckoutSession &&
     axiomCurrentCheckoutSession.order_number
@@ -167,7 +166,7 @@ async function axiomHandleCreditCardCheckoutSubmit(e) {
 
     axiomSetCardStatus("Processing card payment...", "success");
 
-    const response = await axiomInvokeFunction("create-card-payment", {
+    const response = await axiomInvokeFunction("quiklie-create-payment", {
       session_id: sessionId,
       firstName,
       lastName,
@@ -184,7 +183,8 @@ async function axiomHandleCreditCardCheckoutSubmit(e) {
 
     const status = String(response?.status || "").toUpperCase();
     const statusCode = String(response?.statusCode || "");
-    const redirectUrl = String(response?.redirectUrl || "").trim();
+    const redirectUrl =
+      String(response?.redirectUrl || response?.quikleeRedirectUrl || "").trim();
 
     if (status === "SUCCESS" || statusCode === "1") {
       axiomSetCardStatus("Payment successful. Redirecting...", "success");
@@ -208,11 +208,41 @@ async function axiomHandleCreditCardCheckoutSubmit(e) {
     }
 
     if (statusCode === "3" || status === "OTP REQUIRED") {
-      axiomSetCardStatus(
-        "This payment requires OTP verification. That flow is not wired yet.",
-        "error"
-      );
-      alert("This payment requires OTP verification. OTP handling still needs to be added.");
+      const otp = window.prompt("Enter the OTP code sent by your bank:");
+      if (!otp) {
+        axiomSetCardStatus("OTP is required to continue.", "error");
+        return;
+      }
+
+      const otpResponse = await axiomInvokeFunction("quiklie-verify-otp", {
+        transactionId: response?.transactionId || response?.qkpaymentId || response?.quikleePaymentId,
+        otp
+      });
+
+      const otpStatus = String(otpResponse?.status || "").toUpperCase();
+      const otpStatusCode = String(otpResponse?.statusCode || "");
+
+      if (otpStatus === "SUCCESS" || otpStatusCode === "1") {
+        await axiomRefreshCheckoutSessionIfPossible();
+
+        const orderNumber = axiomGetOrderNumberFromSessionOrResponse(otpResponse) ||
+          axiomGetOrderNumberFromSessionOrResponse(response);
+
+        if (!orderNumber) {
+          window.location.href = "../thank-you/thank-you.html";
+          return;
+        }
+
+        window.location.href = `../thank-you/thank-you.html?order=${encodeURIComponent(orderNumber)}`;
+        return;
+      }
+
+      const otpMessage =
+        String(otpResponse?.raw?.message || otpResponse?.message || "").trim() ||
+        "OTP verification did not complete payment.";
+
+      axiomSetCardStatus(otpMessage, "error");
+      alert(otpMessage);
       return;
     }
 
@@ -229,24 +259,44 @@ async function axiomHandleCreditCardCheckoutSubmit(e) {
   }
 }
 
-document.addEventListener("DOMContentLoaded", async function () {
-  const mount = document.getElementById("checkoutCardFieldsMount");
+async function axiomMountCardFieldsWhenReady() {
+  let attempts = 0;
+  const maxAttempts = 40;
 
-  if (mount) {
-    try {
-      const response = await fetch("checkout-card-fields.html", { cache: "no-store" });
-      if (!response.ok) {
-        throw new Error("Failed loading checkout-card-fields.html");
+  while (attempts < maxAttempts) {
+    const mount = document.getElementById("checkoutCardFieldsMount");
+
+    if (mount) {
+      if (!mount.dataset.loaded) {
+        try {
+          const response = await fetch("checkout-card-fields.html", { cache: "no-store" });
+          if (!response.ok) {
+            throw new Error("Failed loading checkout-card-fields.html");
+          }
+
+          mount.innerHTML = await response.text();
+          mount.dataset.loaded = "true";
+        } catch (error) {
+          console.error(error);
+        }
       }
-      mount.innerHTML = await response.text();
-    } catch (error) {
-      console.error(error);
+
+      axiomBindCardPaymentVisibility();
+      axiomToggleCardFields();
+      return;
     }
+
+    attempts += 1;
+    await new Promise((resolve) => setTimeout(resolve, 150));
   }
 
+  console.error("checkoutCardFieldsMount was not found after waiting.");
+}
+
+document.addEventListener("DOMContentLoaded", function () {
   setTimeout(function () {
-    axiomBindCardPaymentVisibility();
-  }, 250);
+    axiomMountCardFieldsWhenReady();
+  }, 300);
 });
 
 document.addEventListener("submit", axiomHandleCreditCardCheckoutSubmit, true);
