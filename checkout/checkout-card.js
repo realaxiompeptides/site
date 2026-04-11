@@ -16,7 +16,10 @@ function axiomSetCardStatus(message, type) {
 function axiomCardSelected() {
   const checked = document.querySelector('input[name="paymentMethod"]:checked');
   if (!checked) return false;
-  return String(checked.value || "").trim().toLowerCase() === "creditcard";
+
+  return ["creditcard", "credit_card", "card"].includes(
+    String(checked.value || "").trim().toLowerCase()
+  );
 }
 
 function axiomToggleCardFields() {
@@ -28,6 +31,7 @@ function axiomToggleCardFields() {
 
 function axiomBindCardPaymentVisibility() {
   const radios = document.querySelectorAll('input[name="paymentMethod"]');
+
   radios.forEach((radio) => {
     if (radio.dataset.cardToggleBound === "true") return;
     radio.dataset.cardToggleBound = "true";
@@ -58,19 +62,30 @@ async function axiomInvokeFunction(functionName, body) {
   });
 
   if (error) {
-    throw error;
+    throw new Error(error.message || "Function call failed.");
   }
 
   return data;
 }
 
+function axiomGetCheckoutValue(id) {
+  return document.getElementById(id)?.value?.trim() || "";
+}
+
 function axiomGetCardPayload() {
+  const cardHolderName =
+    axiomGetCheckoutValue("cardHolderName") ||
+    [axiomGetCheckoutValue("firstName"), axiomGetCheckoutValue("lastName")]
+      .filter(Boolean)
+      .join(" ")
+      .trim();
+
   return {
-    cardHolderName: document.getElementById("cardHolderName")?.value.trim() || "",
-    cardNumber: document.getElementById("cardNumber")?.value.replace(/\s+/g, "") || "",
-    cardExpiryMonth: document.getElementById("cardExpiryMonth")?.value.trim() || "",
-    cardExpiryYear: document.getElementById("cardExpiryYear")?.value.trim() || "",
-    cardCvv: document.getElementById("cardCvv")?.value.trim() || ""
+    cardHolderName,
+    cardNumber: (document.getElementById("cardNumber")?.value || "").replace(/\s+/g, ""),
+    cardExpiryMonth: axiomGetCheckoutValue("cardExpiryMonth"),
+    cardExpiryYear: axiomGetCheckoutValue("cardExpiryYear"),
+    cardCvv: axiomGetCheckoutValue("cardCvv")
   };
 }
 
@@ -81,6 +96,35 @@ function axiomValidateCardPayload(payload) {
   if (!payload.cardExpiryYear || payload.cardExpiryYear.length < 4) return "Enter a valid expiry year.";
   if (!payload.cardCvv || payload.cardCvv.length < 3) return "Enter a valid CVV.";
   return "";
+}
+
+async function axiomRefreshCheckoutSessionIfPossible() {
+  if (typeof fetchCurrentCheckoutSession === "function") {
+    try {
+      await fetchCurrentCheckoutSession();
+    } catch (error) {
+      console.error("Failed refreshing checkout session:", error);
+    }
+  }
+}
+
+function axiomGetOrderNumberFromSessionOrResponse(response) {
+  if (
+    window.axiomCurrentCheckoutSession &&
+    window.axiomCurrentCheckoutSession.order_number
+  ) {
+    return window.axiomCurrentCheckoutSession.order_number;
+  }
+
+  if (
+    typeof axiomCurrentCheckoutSession !== "undefined" &&
+    axiomCurrentCheckoutSession &&
+    axiomCurrentCheckoutSession.order_number
+  ) {
+    return axiomCurrentCheckoutSession.order_number;
+  }
+
+  return response?.order_number || "";
 }
 
 async function axiomHandleCreditCardCheckoutSubmit(e) {
@@ -104,63 +148,80 @@ async function axiomHandleCreditCardCheckoutSubmit(e) {
 
     const cardPayload = axiomGetCardPayload();
     const cardError = axiomValidateCardPayload(cardPayload);
+
     if (cardError) {
       axiomSetCardStatus(cardError, "error");
       alert(cardError);
       return;
     }
 
+    const email = axiomGetCheckoutValue("checkoutEmail");
+    const phone = axiomGetCheckoutValue("phone");
+    const firstName = axiomGetCheckoutValue("firstName");
+    const lastName = axiomGetCheckoutValue("lastName");
+    const address = axiomGetCheckoutValue("address1");
+    const city = axiomGetCheckoutValue("city");
+    const state = axiomGetCheckoutValue("state");
+    const zipCode = axiomGetCheckoutValue("zip");
+    const country = document.getElementById("country")?.value?.trim() || "US";
+
     axiomSetCardStatus("Processing card payment...", "success");
 
-    const response = await axiomInvokeFunction("quiklie-create-payment", {
+    const response = await axiomInvokeFunction("create-card-payment", {
       session_id: sessionId,
+      firstName,
+      lastName,
+      email,
+      phone,
+      address,
+      city,
+      state,
+      zipCode,
+      country,
       ...cardPayload,
       ipAddress: ""
     });
 
     const status = String(response?.status || "").toUpperCase();
     const statusCode = String(response?.statusCode || "");
-    const redirectUrl = String(response?.redirectUrl || "");
-    const orderNumber = response?.order_number;
+    const redirectUrl = String(response?.redirectUrl || "").trim();
 
     if (status === "SUCCESS" || statusCode === "1") {
       axiomSetCardStatus("Payment successful. Redirecting...", "success");
+
+      await axiomRefreshCheckoutSessionIfPossible();
+
+      const orderNumber = axiomGetOrderNumberFromSessionOrResponse(response);
+
+      if (!orderNumber) {
+        window.location.href = "../thank-you/thank-you.html";
+        return;
+      }
+
       window.location.href = `../thank-you/thank-you.html?order=${encodeURIComponent(orderNumber)}`;
       return;
     }
 
-    if (statusCode === "2" && redirectUrl) {
+    if ((statusCode === "2" || status === "3DS REQUIRED") && redirectUrl) {
       window.location.href = redirectUrl;
       return;
     }
 
-    if (statusCode === "3") {
-      const otp = window.prompt("Enter the OTP code sent by your bank:");
-      if (!otp) {
-        axiomSetCardStatus("OTP is required to continue.", "error");
-        return;
-      }
-
-      const otpResponse = await axiomInvokeFunction("quiklie-verify-otp", {
-        transactionId: response?.transactionId,
-        otp
-      });
-
-      const otpStatus = String(otpResponse?.status || "").toUpperCase();
-      const otpStatusCode = String(otpResponse?.statusCode || "");
-
-      if (otpStatus === "SUCCESS" || otpStatusCode === "1") {
-        window.location.href = `../thank-you/thank-you.html?order=${encodeURIComponent(orderNumber)}`;
-        return;
-      }
-
-      axiomSetCardStatus("OTP verification did not complete payment.", "error");
-      alert("OTP verification did not complete payment.");
+    if (statusCode === "3" || status === "OTP REQUIRED") {
+      axiomSetCardStatus(
+        "This payment requires OTP verification. That flow is not wired yet.",
+        "error"
+      );
+      alert("This payment requires OTP verification. OTP handling still needs to be added.");
       return;
     }
 
-    axiomSetCardStatus("Payment was not approved. Please try another method.", "error");
-    alert("Payment was not approved. Please try another method.");
+    const gatewayMessage =
+      String(response?.raw?.message || response?.message || "").trim() ||
+      "Payment was not approved. Please try another method.";
+
+    axiomSetCardStatus(gatewayMessage, "error");
+    alert(gatewayMessage);
   } catch (error) {
     console.error(error);
     axiomSetCardStatus("Card payment failed. Please try again.", "error");
@@ -170,10 +231,13 @@ async function axiomHandleCreditCardCheckoutSubmit(e) {
 
 document.addEventListener("DOMContentLoaded", async function () {
   const mount = document.getElementById("checkoutCardFieldsMount");
+
   if (mount) {
     try {
       const response = await fetch("checkout-card-fields.html", { cache: "no-store" });
-      if (!response.ok) throw new Error("Failed loading checkout-card-fields.html");
+      if (!response.ok) {
+        throw new Error("Failed loading checkout-card-fields.html");
+      }
       mount.innerHTML = await response.text();
     } catch (error) {
       console.error(error);
