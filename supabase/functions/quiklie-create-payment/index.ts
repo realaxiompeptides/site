@@ -36,7 +36,7 @@ Deno.serve(async (req) => {
 
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
-    const serviceRoleKey = Deno.env.get("SERVICE_ROLE_KEY");
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     const quiklieBaseUrl = Deno.env.get("QUIKLIE_BASE_URL");
     const quiklieMerchantId = Deno.env.get("QUIKLIE_MERCHANT_ID");
     const callbackBase = Deno.env.get("QUIKLIE_CALLBACK_URL");
