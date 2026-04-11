@@ -7,7 +7,7 @@
     <div class="checkout-card-fields-header">
       <h3 class="checkout-card-fields-title">Complete your card payment</h3>
       <p class="checkout-card-fields-subtitle">
-        Enter your card details below. This payment section is required when Credit / Debit Card is selected.
+        Enter your card details below to complete payment securely.
       </p>
     </div>
 
@@ -15,7 +15,7 @@
       <div class="checkout-field-group checkout-card-field-full">
         <label class="checkout-card-label" for="cardNumber">Card Number *</label>
         <input
-          class="checkout-input"
+          class="checkout-input checkout-card-input"
           type="text"
           id="cardNumber"
           placeholder="1234 5678 9012 3456"
@@ -26,37 +26,23 @@
       </div>
 
       <div class="checkout-field-group">
-        <label class="checkout-card-label" for="cardExpiryMonth">Expiry Month *</label>
+        <label class="checkout-card-label" for="cardExpiry">Expiry Date *</label>
         <input
-          class="checkout-input"
+          class="checkout-input checkout-card-input"
           type="text"
-          id="cardExpiryMonth"
-          placeholder="MM"
+          id="cardExpiry"
+          placeholder="MM / YY"
           inputmode="numeric"
-          autocomplete="cc-exp-month"
-          maxlength="2"
+          autocomplete="cc-exp"
+          maxlength="7"
           required
         />
       </div>
 
       <div class="checkout-field-group">
-        <label class="checkout-card-label" for="cardExpiryYear">Expiry Year *</label>
-        <input
-          class="checkout-input"
-          type="text"
-          id="cardExpiryYear"
-          placeholder="YYYY"
-          inputmode="numeric"
-          autocomplete="cc-exp-year"
-          maxlength="4"
-          required
-        />
-      </div>
-
-      <div class="checkout-field-group checkout-card-field-full">
         <label class="checkout-card-label" for="cardCvv">Security Code (CVV) *</label>
         <input
-          class="checkout-input"
+          class="checkout-input checkout-card-input"
           type="text"
           id="cardCvv"
           placeholder="CVV"
@@ -66,10 +52,6 @@
           required
         />
       </div>
-    </div>
-
-    <div class="checkout-card-required-note">
-      Billing name will use the first and last name entered above.
     </div>
 
     <div id="checkoutCardStatus" class="checkout-card-status" aria-live="polite"></div>
