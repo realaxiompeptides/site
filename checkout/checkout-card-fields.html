@@ -1,0 +1,51 @@
+<section class="checkout-section" id="checkoutCardFieldsSection" hidden>
+  <h2 class="checkout-section-title">Card Details</h2>
+
+  <div class="checkout-grid two-col">
+    <input
+      class="checkout-input checkout-span-2"
+      type="text"
+      id="cardHolderName"
+      placeholder="Name on Card"
+      autocomplete="cc-name"
+    />
+
+    <input
+      class="checkout-input checkout-span-2"
+      type="text"
+      id="cardNumber"
+      placeholder="Card Number"
+      autocomplete="cc-number"
+      inputmode="numeric"
+    />
+
+    <input
+      class="checkout-input"
+      type="text"
+      id="cardExpiryMonth"
+      placeholder="MM"
+      autocomplete="cc-exp-month"
+      inputmode="numeric"
+    />
+
+    <input
+      class="checkout-input"
+      type="text"
+      id="cardExpiryYear"
+      placeholder="YYYY"
+      autocomplete="cc-exp-year"
+      inputmode="numeric"
+    />
+
+    <input
+      class="checkout-input checkout-span-2"
+      type="text"
+      id="cardCvv"
+      placeholder="CVV"
+      autocomplete="cc-csc"
+      inputmode="numeric"
+    />
+  </div>
+
+  <div id="checkoutCardStatus" class="checkout-validation-text"></div>
+</section>
