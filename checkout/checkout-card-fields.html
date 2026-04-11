@@ -1,51 +1,67 @@
-<section class="checkout-section" id="checkoutCardFieldsSection" hidden>
-  <h2 class="checkout-section-title">Card Details</h2>
+<section id="checkoutCardFieldsSection" class="checkout-card-fields-section" hidden>
+  <div class="checkout-card-fields-box">
+    <h3 class="checkout-card-fields-title">Card Details</h3>
 
-  <div class="checkout-grid two-col">
-    <input
-      class="checkout-input checkout-span-2"
-      type="text"
-      id="cardHolderName"
-      placeholder="Name on Card"
-      autocomplete="cc-name"
-    />
+    <div class="checkout-card-field-group">
+      <input
+        type="text"
+        id="cardHolderName"
+        class="checkout-input"
+        placeholder="Name on Card"
+        autocomplete="cc-name"
+      />
+    </div>
 
-    <input
-      class="checkout-input checkout-span-2"
-      type="text"
-      id="cardNumber"
-      placeholder="Card Number"
-      autocomplete="cc-number"
-      inputmode="numeric"
-    />
+    <div class="checkout-card-field-group">
+      <input
+        type="text"
+        id="cardNumber"
+        class="checkout-input"
+        placeholder="Card Number"
+        inputmode="numeric"
+        autocomplete="cc-number"
+        maxlength="23"
+      />
+    </div>
 
-    <input
-      class="checkout-input"
-      type="text"
-      id="cardExpiryMonth"
-      placeholder="MM"
-      autocomplete="cc-exp-month"
-      inputmode="numeric"
-    />
+    <div class="checkout-grid two-col">
+      <div class="checkout-card-field-group">
+        <input
+          type="text"
+          id="cardExpiryMonth"
+          class="checkout-input"
+          placeholder="Expiry Month (MM)"
+          inputmode="numeric"
+          autocomplete="cc-exp-month"
+          maxlength="2"
+        />
+      </div>
 
-    <input
-      class="checkout-input"
-      type="text"
-      id="cardExpiryYear"
-      placeholder="YYYY"
-      autocomplete="cc-exp-year"
-      inputmode="numeric"
-    />
+      <div class="checkout-card-field-group">
+        <input
+          type="text"
+          id="cardExpiryYear"
+          class="checkout-input"
+          placeholder="Expiry Year (YYYY)"
+          inputmode="numeric"
+          autocomplete="cc-exp-year"
+          maxlength="4"
+        />
+      </div>
+    </div>
 
-    <input
-      class="checkout-input checkout-span-2"
-      type="text"
-      id="cardCvv"
-      placeholder="CVV"
-      autocomplete="cc-csc"
-      inputmode="numeric"
-    />
+    <div class="checkout-card-field-group">
+      <input
+        type="text"
+        id="cardCvv"
+        class="checkout-input"
+        placeholder="CVV"
+        inputmode="numeric"
+        autocomplete="cc-csc"
+        maxlength="4"
+      />
+    </div>
+
+    <div id="checkoutCardStatus" class="checkout-validation-text" style="display:block;"></div>
   </div>
-
-  <div id="checkoutCardStatus" class="checkout-validation-text"></div>
 </section>
