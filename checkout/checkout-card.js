@@ -24,15 +24,33 @@ function axiomNormalizeCardPaymentMethod(value) {
 function axiomCardSelected() {
   const checked = document.querySelector('input[name="paymentMethod"]:checked');
   if (!checked) return false;
-
   return axiomNormalizeCardPaymentMethod(checked.value) === "creditcard";
+}
+
+function axiomScrollCardSectionIntoView() {
+  const section = document.getElementById("checkoutCardFieldsSection");
+  if (!section || section.hidden) return;
+
+  setTimeout(() => {
+    section.scrollIntoView({
+      behavior: "smooth",
+      block: "start"
+    });
+  }, 120);
 }
 
 function axiomToggleCardFields() {
   const section = document.getElementById("checkoutCardFieldsSection");
   if (!section) return;
 
-  section.hidden = !axiomCardSelected();
+  const shouldShow = axiomCardSelected();
+  const wasHidden = section.hidden;
+
+  section.hidden = !shouldShow;
+
+  if (shouldShow && wasHidden) {
+    axiomScrollCardSectionIntoView();
+  }
 }
 
 function axiomBindCardPaymentVisibility() {
@@ -41,7 +59,10 @@ function axiomBindCardPaymentVisibility() {
   radios.forEach((radio) => {
     if (radio.dataset.cardToggleBound === "true") return;
     radio.dataset.cardToggleBound = "true";
-    radio.addEventListener("change", axiomToggleCardFields);
+
+    radio.addEventListener("change", function () {
+      axiomToggleCardFields();
+    });
   });
 
   axiomToggleCardFields();
@@ -225,7 +246,8 @@ async function axiomHandleCreditCardCheckoutSubmit(e) {
       if (otpStatus === "SUCCESS" || otpStatusCode === "1") {
         await axiomRefreshCheckoutSessionIfPossible();
 
-        const orderNumber = axiomGetOrderNumberFromSessionOrResponse(otpResponse) ||
+        const orderNumber =
+          axiomGetOrderNumberFromSessionOrResponse(otpResponse) ||
           axiomGetOrderNumberFromSessionOrResponse(response);
 
         if (!orderNumber) {
