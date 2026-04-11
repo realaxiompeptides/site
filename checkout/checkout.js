@@ -520,11 +520,14 @@ function bindPaymentMethodInputs() {
 
     radio.addEventListener("change", async function () {
       applySelectedPaymentMethodToUI(this.value);
-
       renderCheckoutSummary();
 
-      await syncCheckoutSessionFromForm();
-      await fetchCurrentCheckoutSession();
+      try {
+        await syncCheckoutSessionFromForm();
+        await fetchCurrentCheckoutSession();
+      } catch (error) {
+        console.error("Payment method sync failed:", error);
+      }
 
       renderCheckoutSummary();
     });
@@ -906,7 +909,7 @@ async function syncCheckoutSessionFromForm() {
       shipping_service_level: shippingSelection.service_level || null,
       payment_notes:
         discountSummary.paymentDiscountAmount > 0
-          ? `Includes 8% payment discount for ${paymentMethod}.`
+          ? `Includes 5% payment discount for ${paymentMethod}.`
           : null,
       last_activity_at: new Date().toISOString(),
 
@@ -949,7 +952,7 @@ async function syncCheckoutSessionFromForm() {
     session.shipping_service_level = shippingSelection.service_level || null;
     session.payment_notes =
       discountSummary.paymentDiscountAmount > 0
-        ? `Includes 8% payment discount for ${paymentMethod}.`
+        ? `Includes 5% payment discount for ${paymentMethod}.`
         : null;
 
     delete session.affiliate_id;
@@ -986,7 +989,7 @@ async function syncCheckoutSessionFromForm() {
     shipping_service_level: shippingSelection.service_level || null,
     payment_notes:
       discountSummary.paymentDiscountAmount > 0
-        ? `Includes 8% payment discount for ${paymentMethod}.`
+        ? `Includes 5% payment discount for ${paymentMethod}.`
         : null,
     last_activity_at: new Date().toISOString()
   });
@@ -1084,11 +1087,14 @@ function renderShippingRatesFromSession(forceRecalculate = false) {
       });
 
       radio.closest(".shipping-option")?.classList.add("active");
-
       renderCheckoutSummary();
 
-      await syncCheckoutSessionFromForm();
-      await fetchCurrentCheckoutSession();
+      try {
+        await syncCheckoutSessionFromForm();
+        await fetchCurrentCheckoutSession();
+      } catch (error) {
+        console.error("Shipping method sync failed:", error);
+      }
 
       renderCheckoutSummary();
     });
@@ -1283,9 +1289,15 @@ function setupRateButton() {
       return;
     }
 
-    await syncCheckoutSessionFromForm();
     renderShippingRatesFromSession(true);
-    await syncCheckoutSessionFromForm();
+
+    try {
+      await syncCheckoutSessionFromForm();
+      await fetchCurrentCheckoutSession();
+    } catch (error) {
+      console.error("Rate button sync failed:", error);
+    }
+
     renderCheckoutSummary();
   });
 }
@@ -1319,11 +1331,19 @@ function bindLiveCheckoutTracking() {
         validateAddressFields(true);
       }
 
-      await syncCheckoutSessionFromForm();
+      if (fieldsThatAffectRates.includes(input.id)) {
+        if (isAddressReadyForRates()) {
+          renderShippingRatesFromSession(true);
+        } else {
+          const ratesWrap = document.getElementById("shippingRates");
+          if (ratesWrap) ratesWrap.innerHTML = "";
+        }
+      }
 
-      if (fieldsThatAffectRates.includes(input.id) && isAddressReadyForRates()) {
-        renderShippingRatesFromSession(true);
+      try {
         await syncCheckoutSessionFromForm();
+      } catch (error) {
+        console.error("Checkout session sync failed:", error);
       }
 
       renderCheckoutSummary();
@@ -1350,11 +1370,19 @@ function bindLiveCheckoutTracking() {
         validateAddressFields(true);
       }
 
-      await syncCheckoutSessionFromForm();
+      if (fieldsThatAffectRates.includes(input.id)) {
+        if (isAddressReadyForRates()) {
+          renderShippingRatesFromSession(true);
+        } else {
+          const ratesWrap = document.getElementById("shippingRates");
+          if (ratesWrap) ratesWrap.innerHTML = "";
+        }
+      }
 
-      if (fieldsThatAffectRates.includes(input.id) && isAddressReadyForRates()) {
-        renderShippingRatesFromSession(true);
+      try {
         await syncCheckoutSessionFromForm();
+      } catch (error) {
+        console.error("Checkout session sync failed:", error);
       }
 
       renderCheckoutSummary();
@@ -1370,7 +1398,11 @@ function bindDiscountHooks() {
   };
 
   window.addEventListener("axiom-discount-updated", async function () {
-    await syncCheckoutSessionFromForm();
+    try {
+      await syncCheckoutSessionFromForm();
+    } catch (error) {
+      console.error("Discount sync failed:", error);
+    }
     renderCheckoutSummary();
   });
 }
@@ -1394,7 +1426,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   hydrateCheckoutFormFromSession(axiomCurrentCheckoutSession);
   bindPaymentMethodInputs();
-
   bindDiscountHooks();
 
   if (window.AXIOM_DISCOUNT_CODES_UI && typeof window.AXIOM_DISCOUNT_CODES_UI.init === "function") {
@@ -1408,7 +1439,11 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   if (isAddressReadyForRates()) {
     renderShippingRatesFromSession(false);
-    await syncCheckoutSessionFromForm();
+    try {
+      await syncCheckoutSessionFromForm();
+    } catch (error) {
+      console.error("Initial sync failed:", error);
+    }
     renderCheckoutSummary();
   }
 
@@ -1442,7 +1477,11 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     if (isAddressReadyForRates()) {
       renderShippingRatesFromSession(true);
-      await syncCheckoutSessionFromForm();
+      try {
+        await syncCheckoutSessionFromForm();
+      } catch (error) {
+        console.error("Cart update sync failed:", error);
+      }
     }
 
     renderCheckoutSummary();
@@ -1464,7 +1503,11 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       if (isAddressReadyForRates()) {
         renderShippingRatesFromSession(true);
-        await syncCheckoutSessionFromForm();
+        try {
+          await syncCheckoutSessionFromForm();
+        } catch (error) {
+          console.error("Storage sync failed:", error);
+        }
       }
 
       renderCheckoutSummary();
@@ -1532,8 +1575,12 @@ document.addEventListener("submit", async function (e) {
     return;
   }
 
-  await syncCheckoutSessionFromForm();
-  await fetchCurrentCheckoutSession();
+  try {
+    await syncCheckoutSessionFromForm();
+    await fetchCurrentCheckoutSession();
+  } catch (error) {
+    console.error("Submit sync failed:", error);
+  }
 
   if (hasSupabaseCheckoutSession()) {
     await window.AXIOM_CHECKOUT_SESSION.patchSession({
