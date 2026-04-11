@@ -107,16 +107,45 @@ function axiomFormatCardNumber(value) {
     .trim();
 }
 
+function axiomFormatExpiry(value) {
+  const digits = String(value || "").replace(/\D/g, "").slice(0, 4);
+
+  if (digits.length <= 2) return digits;
+  return `${digits.slice(0, 2)} / ${digits.slice(2)}`;
+}
+
 function axiomFormatDigits(value, maxLength) {
   return String(value || "")
     .replace(/\D/g, "")
     .slice(0, maxLength);
 }
 
+function axiomParseExpiry(value) {
+  const digits = String(value || "").replace(/\D/g, "");
+
+  if (digits.length < 3) {
+    return {
+      month: "",
+      year: ""
+    };
+  }
+
+  const month = digits.slice(0, 2);
+  let year = digits.slice(2);
+
+  if (year.length === 2) {
+    year = `20${year}`;
+  }
+
+  return {
+    month,
+    year
+  };
+}
+
 function axiomBindCardFieldFormatting() {
   const cardNumberEl = document.getElementById("cardNumber");
-  const monthEl = document.getElementById("cardExpiryMonth");
-  const yearEl = document.getElementById("cardExpiryYear");
+  const expiryEl = document.getElementById("cardExpiry");
   const cvvEl = document.getElementById("cardCvv");
 
   if (cardNumberEl && cardNumberEl.dataset.formatBound !== "true") {
@@ -126,17 +155,10 @@ function axiomBindCardFieldFormatting() {
     });
   }
 
-  if (monthEl && monthEl.dataset.formatBound !== "true") {
-    monthEl.dataset.formatBound = "true";
-    monthEl.addEventListener("input", function () {
-      this.value = axiomFormatDigits(this.value, 2);
-    });
-  }
-
-  if (yearEl && yearEl.dataset.formatBound !== "true") {
-    yearEl.dataset.formatBound = "true";
-    yearEl.addEventListener("input", function () {
-      this.value = axiomFormatDigits(this.value, 4);
+  if (expiryEl && expiryEl.dataset.formatBound !== "true") {
+    expiryEl.dataset.formatBound = "true";
+    expiryEl.addEventListener("input", function () {
+      this.value = axiomFormatExpiry(this.value);
     });
   }
 
@@ -157,11 +179,13 @@ function axiomGetCardPayload() {
     .join(" ")
     .trim();
 
+  const parsedExpiry = axiomParseExpiry(document.getElementById("cardExpiry")?.value || "");
+
   return {
     cardHolderName,
     cardNumber: (document.getElementById("cardNumber")?.value || "").replace(/\s+/g, ""),
-    cardExpiryMonth: axiomGetCheckoutValue("cardExpiryMonth"),
-    cardExpiryYear: axiomGetCheckoutValue("cardExpiryYear"),
+    cardExpiryMonth: parsedExpiry.month,
+    cardExpiryYear: parsedExpiry.year,
     cardCvv: axiomGetCheckoutValue("cardCvv")
   };
 }
@@ -169,19 +193,20 @@ function axiomGetCardPayload() {
 function axiomValidateCardPayload(payload) {
   if (!payload.cardHolderName) return "Enter your first and last name above.";
   if (!payload.cardNumber || payload.cardNumber.length < 12) return "Enter a valid card number.";
-  if (!payload.cardExpiryMonth || payload.cardExpiryMonth.length < 2) return "Enter a valid expiry month.";
-  if (!payload.cardExpiryYear || payload.cardExpiryYear.length < 4) return "Enter a valid expiry year.";
+  if (!payload.cardExpiryMonth || payload.cardExpiryMonth.length < 2) return "Enter a valid expiry date.";
+  if (!payload.cardExpiryYear || payload.cardExpiryYear.length < 4) return "Enter a valid expiry date.";
   if (!payload.cardCvv || payload.cardCvv.length < 3) return "Enter a valid CVV.";
 
   const month = Number(payload.cardExpiryMonth);
   const year = Number(payload.cardExpiryYear);
+  const currentYear = new Date().getFullYear();
 
   if (!Number.isFinite(month) || month < 1 || month > 12) {
-    return "Enter a valid expiry month.";
+    return "Enter a valid expiry date.";
   }
 
-  if (!Number.isFinite(year) || year < new Date().getFullYear()) {
-    return "Enter a valid expiry year.";
+  if (!Number.isFinite(year) || year < currentYear) {
+    return "Enter a valid expiry date.";
   }
 
   return "";
@@ -304,7 +329,7 @@ async function axiomHandleCreditCardCheckoutSubmit(e) {
       const transactionId =
         response?.transactionId ||
         response?.qkpaymentId ||
-        response?.quikleePaymentId ||
+        response?.quikliePaymentId ||
         response?.transaction_id ||
         "";
 
@@ -336,7 +361,7 @@ async function axiomHandleCreditCardCheckoutSubmit(e) {
         transactionId:
           response?.transactionId ||
           response?.qkpaymentId ||
-          response?.quikleePaymentId ||
+          response?.quikliePaymentId ||
           response?.transaction_id,
         otp
       });
@@ -352,10 +377,10 @@ async function axiomHandleCreditCardCheckoutSubmit(e) {
         const transactionId =
           otpResponse?.transactionId ||
           otpResponse?.qkpaymentId ||
-          otpResponse?.quikleePaymentId ||
+          otpResponse?.quikliePaymentId ||
           response?.transactionId ||
           response?.qkpaymentId ||
-          response?.quikleePaymentId ||
+          response?.quikliePaymentId ||
           "";
 
         await axiomPatchSuccessfulCardPayment(orderNumber, transactionId, otpResponse);
