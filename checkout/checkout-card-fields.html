@@ -5,81 +5,56 @@
 >
   <div class="checkout-card-fields-box">
     <div class="checkout-card-fields-header">
-      <h3 class="checkout-card-fields-title">Card Details</h3>
+      <h3 class="checkout-card-fields-title">Complete your card payment</h3>
       <p class="checkout-card-fields-subtitle">
-        Enter your card information below to complete payment securely.
+        Enter your card details below. This payment section is required when Credit / Debit Card is selected.
       </p>
-    </div>
-
-    <div class="checkout-card-brand-row" aria-hidden="true">
-      <span class="checkout-card-brand-pill">
-        <i class="fa-brands fa-cc-visa"></i>
-        <span>Visa</span>
-      </span>
-
-      <span class="checkout-card-brand-pill">
-        <i class="fa-brands fa-cc-mastercard"></i>
-        <span>Mastercard</span>
-      </span>
-
-      <span class="checkout-card-brand-pill">
-        <i class="fa-brands fa-cc-amex"></i>
-        <span>Amex</span>
-      </span>
-
-      <span class="checkout-card-brand-pill">
-        <i class="fa-brands fa-cc-discover"></i>
-        <span>Discover</span>
-      </span>
     </div>
 
     <div class="checkout-card-fields-grid">
       <div class="checkout-field-group checkout-card-field-full">
-        <input
-          class="checkout-input"
-          type="text"
-          id="cardHolderName"
-          placeholder="Name on Card"
-          autocomplete="cc-name"
-        />
-      </div>
-
-      <div class="checkout-field-group checkout-card-field-full">
+        <label class="checkout-card-label" for="cardNumber">Card Number *</label>
         <input
           class="checkout-input"
           type="text"
           id="cardNumber"
-          placeholder="Card Number"
+          placeholder="1234 5678 9012 3456"
           inputmode="numeric"
           autocomplete="cc-number"
+          required
         />
       </div>
 
       <div class="checkout-field-group">
+        <label class="checkout-card-label" for="cardExpiryMonth">Expiry Month *</label>
         <input
           class="checkout-input"
           type="text"
           id="cardExpiryMonth"
-          placeholder="Expiry Month (MM)"
+          placeholder="MM"
           inputmode="numeric"
           autocomplete="cc-exp-month"
           maxlength="2"
+          required
         />
       </div>
 
       <div class="checkout-field-group">
+        <label class="checkout-card-label" for="cardExpiryYear">Expiry Year *</label>
         <input
           class="checkout-input"
           type="text"
           id="cardExpiryYear"
-          placeholder="Expiry Year (YYYY)"
+          placeholder="YYYY"
           inputmode="numeric"
           autocomplete="cc-exp-year"
           maxlength="4"
+          required
         />
       </div>
 
       <div class="checkout-field-group checkout-card-field-full">
+        <label class="checkout-card-label" for="cardCvv">Security Code (CVV) *</label>
         <input
           class="checkout-input"
           type="text"
@@ -88,8 +63,13 @@
           inputmode="numeric"
           autocomplete="cc-csc"
           maxlength="4"
+          required
         />
       </div>
+    </div>
+
+    <div class="checkout-card-required-note">
+      Billing name will use the first and last name entered above.
     </div>
 
     <div id="checkoutCardStatus" class="checkout-card-status" aria-live="polite"></div>
