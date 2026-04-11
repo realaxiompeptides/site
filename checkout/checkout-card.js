@@ -241,7 +241,7 @@ async function axiomPatchSuccessfulCardPayment(orderNumber, transactionId, rawRe
 
   try {
     await window.AXIOM_CHECKOUT_SESSION.patchSession({
-      session_status: "pending_payment",
+      session_status: "converted",
       payment_status: "paid",
       payment_method: "creditcard",
       order_number: orderNumber || null,
@@ -251,6 +251,8 @@ async function axiomPatchSuccessfulCardPayment(orderNumber, transactionId, rawRe
       gateway_status_code: "1",
       gateway_response_raw: rawResponse || null,
       payment_collected_at: new Date().toISOString(),
+      confirmed_at: new Date().toISOString(),
+      completed_at: new Date().toISOString(),
       last_activity_at: new Date().toISOString()
     });
   } catch (error) {
@@ -358,6 +360,7 @@ async function axiomHandleCreditCardCheckoutSubmit(e) {
       }
 
       const otpResponse = await axiomInvokeFunction("quiklie-verify-otp", {
+        session_id: sessionId,
         transactionId:
           response?.transactionId ||
           response?.qkpaymentId ||
