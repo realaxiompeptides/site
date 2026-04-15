@@ -17,33 +17,33 @@ window.AXIOM_ORDER_SUBMIT = {
       return Number.isFinite(num) ? num : fallback;
     }
 
-    function safeObject(value) {
-      return value && typeof value === "object" && !Array.isArray(value) ? value : {};
-    }
-
     function normalizeCartItems(items) {
       if (!Array.isArray(items)) return [];
 
       return items.map((item) => {
         const quantity = Number(item.quantity || item.qty || 1);
+        const safeQuantity = Number.isFinite(quantity) && quantity > 0 ? quantity : 1;
+
         const unitPrice = Number(
           item.unit_price !== undefined && item.unit_price !== null
             ? item.unit_price
             : item.price || 0
         );
+        const safeUnitPrice = Number.isFinite(unitPrice) ? unitPrice : 0;
+
+        const rawLineTotal =
+          item.line_total !== undefined && item.line_total !== null
+            ? Number(item.line_total || 0)
+            : safeUnitPrice * safeQuantity;
 
         return {
           id: item.id || "",
           slug: item.slug || "",
           product_name: item.product_name || item.name || "Product",
           variant_label: item.variant_label || item.variantLabel || item.variant || "",
-          quantity: Number.isFinite(quantity) && quantity > 0 ? quantity : 1,
-          unit_price: Number.isFinite(unitPrice) ? unitPrice : 0,
-          line_total:
-            item.line_total !== undefined && item.line_total !== null
-              ? Number(item.line_total || 0)
-              : (Number.isFinite(unitPrice) ? unitPrice : 0) *
-                (Number.isFinite(quantity) && quantity > 0 ? quantity : 1),
+          quantity: safeQuantity,
+          unit_price: safeUnitPrice,
+          line_total: Number.isFinite(rawLineTotal) ? rawLineTotal : safeUnitPrice * safeQuantity,
           image: item.image || "",
           weight_oz:
             item.weight_oz !== undefined && item.weight_oz !== null
@@ -53,6 +53,10 @@ window.AXIOM_ORDER_SUBMIT = {
                 : 0
         };
       });
+    }
+
+    function safeJsonObject(value) {
+      return value && typeof value === "object" && !Array.isArray(value) ? value : {};
     }
 
     async function getNextOrderNumber() {
@@ -172,9 +176,9 @@ window.AXIOM_ORDER_SUBMIT = {
         tax_amount: taxAmount,
         discount_amount: discountAmount,
         total_amount: totalAmount,
-        shipping_selection: safeObject(sessionRow.shipping_selection),
-        shipping_address: safeObject(sessionRow.shipping_address),
-        billing_address: safeObject(sessionRow.billing_address),
+        shipping_selection: safeJsonObject(sessionRow.shipping_selection),
+        shipping_address: safeJsonObject(sessionRow.shipping_address),
+        billing_address: safeJsonObject(sessionRow.billing_address),
         payment_method: sessionRow.payment_method || null,
         payment_reference: sessionRow.payment_reference || null,
         tracking_number: sessionRow.tracking_number || null,
@@ -184,6 +188,15 @@ window.AXIOM_ORDER_SUBMIT = {
         discount_code: sessionRow.discount_code || null,
         shipping_carrier: sessionRow.shipping_carrier || null,
         shipping_service: sessionRow.shipping_service_level || null,
+        shipped_at: sessionRow.shipped_at || null,
+        shipping_label_status: sessionRow.shipping_label_status || "not_purchased",
+        label_url: sessionRow.label_url || null,
+        payment_collected_at: sessionRow.payment_collected_at || null,
+        confirmed_at: sessionRow.confirmed_at || null,
+        completed_at: sessionRow.completed_at || null,
+        cancelled_at: sessionRow.cancelled_at || null,
+        payment_notes: sessionRow.payment_notes || null,
+        payment_confirmed_by: sessionRow.payment_confirmed_by || null,
         gateway_name: sessionRow.gateway_name || null,
         gateway_transaction_id: sessionRow.gateway_transaction_id || null,
         gateway_status: sessionRow.gateway_status || null,
